@@ -7,6 +7,7 @@
 #include <QKeySequence>
 #include <QDebug>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDateTime>
 #include <QtWidgets/QApplication>
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusInterface>
@@ -63,8 +64,7 @@ bool KGlobalAccelHotkey::install()
     // Connect the triggered signal - use Qt::QueuedConnection to ensure it runs in the event loop
     connect(m_action.get(), &QAction::triggered, this, [this](bool) {
         qDebug() << "KGlobalAccelHotkey: QAction::triggered signal received!";
-        std::cerr << "[KGlobalAccelHotkey] QAction::triggered signal received!" << std::endl;
-        emit hotkeyPressed(QPoint());
+        triggerHotkey();
     }, Qt::QueuedConnection);
     
     // ALSO connect to the DBus signal from KGlobalAccel daemon(s)
@@ -186,14 +186,23 @@ void KGlobalAccelHotkey::setHotkey(int modifiers, int keyCode)
     }
 }
 
+void KGlobalAccelHotkey::triggerHotkey()
+{
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (now - m_lastHotkeyTime < 350) {
+        return;
+    }
+    m_lastHotkeyTime = now;
+    emit hotkeyPressed(QPoint());
+}
+
 void KGlobalAccelHotkey::onGlobalShortcutPressed(const QString& component, const QString& shortcut, qlonglong timestamp)
 {
     Q_UNUSED(component);
     Q_UNUSED(timestamp);
     if (shortcut == "show-panel") {
         qDebug() << "KGlobalAccelHotkey: globalShortcutPressed signal received via DBus!";
-        std::cerr << "[KGlobalAccelHotkey] globalShortcutPressed signal received via DBus!" << std::endl;
-        emit hotkeyPressed(QPoint());
+        triggerHotkey();
     }
 }
 

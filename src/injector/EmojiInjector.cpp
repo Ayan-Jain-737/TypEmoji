@@ -199,11 +199,11 @@ bool EmojiInjector::clipboardFallback(const QString& emoji, TargetState* targetS
     // Small delay to ensure clipboard buffers have propagated
     QThread::msleep(40);
 
-    // 3. For X11, ensure target window has focus
-    if (!m_isWayland && targetState && targetState->isValid()) {
+    // 3. Ensure target window has focus before simulating paste (Wayland KWin & X11)
+    if (targetState && targetState->isValid()) {
         targetState->ensureForeground();
         QCoreApplication::processEvents();
-        QThread::msleep(40);
+        QThread::msleep(50);
     }
 
     // 4. Simulate paste (Ctrl+V) using priority backends

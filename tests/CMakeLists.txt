@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 # Test target
-find_package(Qt6 REQUIRED COMPONENTS Core Test Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Test Widgets DBus)
 
 # Linux/X11 dependencies for tests
 find_package(X11 REQUIRED)
@@ -20,6 +20,7 @@ target_link_libraries(EmojiTyperTests PRIVATE
     Qt6::Core
     Qt6::Test
     Qt6::Widgets
+    Qt6::DBus
     ${X11_LIBRARIES}
     ${XTEST_LIB}
 )

@@ -30,22 +30,30 @@ public:
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
         QStyleOptionViewItem opt = option;
         initStyleOption(&opt, index);
-        // Use EmojiCharRole (Qt::UserRole + 6) instead of DisplayRole
         QString emoji = index.data(Qt::UserRole + 6).toString();
         if (!emoji.isEmpty()) {
             painter->save();
             painter->setRenderHint(QPainter::TextAntialiasing);
+
+            QRect r = opt.rect.adjusted(3, 3, -3, -3);
+
+            // Draw selection background / border
+            if (option.state & QStyle::State_Selected) {
+                painter->setPen(QPen(QColor(0, 120, 212), 2));
+                painter->setBrush(QColor(0, 120, 212, 50));
+                painter->drawRoundedRect(r, 8, 8);
+            } else if (option.state & QStyle::State_MouseOver) {
+                painter->setPen(QPen(QColor(128, 128, 128, 60), 1));
+                painter->setBrush(QColor(128, 128, 128, 30));
+                painter->drawRoundedRect(r, 8, 8);
+            }
+
             QFont f = opt.font;
             f.setPointSize(28);
             f.setFamilies({"Segoe UI Emoji","Noto Color Emoji","Apple Color Emoji","Symbola","DejaVu Sans"});
             painter->setFont(f);
-            QRect r = opt.rect.adjusted(4,4,-4,-4);
-            painter->drawText(r, Qt::AlignCenter, emoji);
-            if (option.state & QStyle::State_Selected) {
-                painter->setPen(Qt::NoPen);
-                painter->setBrush(QColor(0,120,212,40));
-                painter->drawRoundedRect(option.rect, 8,8);
-            }
+            painter->setPen(opt.palette.text().color());
+            painter->drawText(opt.rect, Qt::AlignCenter, emoji);
             painter->restore();
             return;
         }
@@ -54,18 +62,17 @@ public:
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
         Q_UNUSED(option);
         Q_UNUSED(index);
-        return QSize(64,64);
+        return QSize(64, 64);
     }
 };
 
 EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
                        TargetState* targetState, QWidget* parent)
-    : QWidget(parent, Qt::Tool | Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus | Qt::WindowStaysOnTopHint)
+    : QWidget(parent, Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
     , m_database(database)
     , m_injector(injector)
     , m_targetState(targetState)
 {
-    setAttribute(Qt::WA_ShowWithoutActivating, true);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setWindowTitle("EmojiTyper");
 
@@ -80,10 +87,10 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
         resize(savedSize);
     }
 
-    setFocusPolicy(Qt::NoFocus);
+    setFocusPolicy(Qt::StrongFocus);
 
     m_clickOutsideTimer = new QTimer(this);
-    m_clickOutsideTimer->setInterval(50);
+    m_clickOutsideTimer->setInterval(60);
     connect(m_clickOutsideTimer, &QTimer::timeout, this, [this]() {
         if (!isVisible()) return;
         if (m_isInjecting) return;
@@ -97,10 +104,6 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
     setupUi();
     applyTheme();
 
-    // No auto-hide timer. Panel stays open until user dismisses it
-    // (Esc, close button, or clicking outside) — matching Plasma/Windows behavior.
-
-    // Install global event filter to detect clicks outside the panel
     if (qApp) {
         qApp->installEventFilter(this);
     }
@@ -140,10 +143,9 @@ void EmojiPanel::setupUi()
     m_searchEdit->setFixedHeight(32);
     m_searchEdit->setObjectName("searchEdit");
     m_searchEdit->setStyleSheet("#searchEdit { border-radius: 16px; }");
-    m_searchEdit->setFocusPolicy(Qt::ClickFocus);
+    m_searchEdit->setFocusPolicy(Qt::StrongFocus);
     connect(m_searchEdit, &QLineEdit::returnPressed, this, [this]() {
-        int curIdx = m_stackedWidget->currentIndex();
-        if (m_listViews.value(curIdx) && m_proxyModel->rowCount() > 0) {
+        if (m_proxyModel->rowCount() > 0) {
             QModelIndex firstIdx = m_proxyModel->index(0, 0);
             if (firstIdx.isValid()) {
                 onEmojiClicked(firstIdx);
@@ -250,7 +252,7 @@ void EmojiPanel::createCategoryViews()
         listView->setFlow(QListView::LeftToRight);
         listView->setWrapping(true);
         listView->setSelectionMode(QAbstractItemView::SingleSelection);
-        listView->setFocusPolicy(Qt::NoFocus);
+        listView->setFocusPolicy(Qt::StrongFocus);
         listView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         listView->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
         listView->setUniformItemSizes(true);
@@ -259,9 +261,10 @@ void EmojiPanel::createCategoryViews()
         f.setPointSize(28);
         f.setFamilies({"Segoe UI Emoji","Noto Color Emoji","Apple Color Emoji","Symbola","DejaVu Sans"});
         listView->setFont(f);
-        listView->setStyleSheet("QListView { outline: none; border: none; } QListView::item { padding: 6px; }");
+        listView->setStyleSheet("QListView { outline: none; border: none; } QListView::item { padding: 4px; }");
         listView->setItemDelegate(new EmojiDelegate(listView));
         connect(listView, &QListView::clicked, this, &EmojiPanel::onEmojiClicked);
+        connect(listView, &QListView::activated, this, &EmojiPanel::onEmojiClicked);
         m_listViews.append(listView);
         m_stackedWidget->addWidget(listView);
     }
@@ -513,11 +516,23 @@ void EmojiPanel::showAt(const QPoint& pos)
     QVector<EmojiEntry> frequent = m_database ? m_database->frequentEmojis(frequentMap) : QVector<EmojiEntry>();
     m_model->setShowFrequent(frequent);
 
+    m_wasActivated = false;
+    m_searchEdit->clear();
+
     qDebug() << "EmojiPanel: Calling show()";
     show();
     qDebug() << "EmojiPanel: Calling raise()";
     raise();
-    // Don't call activateWindow() - panel must remain non-activating per SPEC R2
+    activateWindow();
+
+    int curIdx = m_stackedWidget->currentIndex();
+    if (curIdx >= 0 && curIdx < m_listViews.size()) {
+        QListView* curList = m_listViews[curIdx];
+        if (m_proxyModel->rowCount() > 0) {
+            curList->setCurrentIndex(m_proxyModel->index(0, 0));
+        }
+        curList->setFocus();
+    }
 
     if (m_clickOutsideTimer) {
         m_clickOutsideTimer->start();
@@ -552,6 +567,7 @@ void EmojiPanel::positionAtCaret(const QPoint& caretPos)
 void EmojiPanel::hidePanel()
 {
     if (isVisible()) {
+        m_wasActivated = false;
         if (m_clickOutsideTimer) {
             m_clickOutsideTimer->stop();
         }
@@ -591,8 +607,18 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
         } else {
             emit emojiInserted(emoji);
         }
-        QTimer::singleShot(300, this, [this]() {
+        // Yield focus briefly so the target window receives the injection,
+        // then re-activate EmojiPanel so the user can continue typing or arrow-navigating!
+        QTimer::singleShot(120, this, [this]() {
             m_isInjecting = false;
+            if (isVisible()) {
+                raise();
+                activateWindow();
+                int curIdx = m_stackedWidget->currentIndex();
+                if (curIdx >= 0 && curIdx < m_listViews.size()) {
+                    m_listViews[curIdx]->setFocus();
+                }
+            }
         });
     }
 }
@@ -654,6 +680,7 @@ void EmojiPanel::closeEvent(QCloseEvent* event)
     event->ignore();
 }
 
+
 void EmojiPanel::keyPressEvent(QKeyEvent* event)
 {
     // Ignore any simulated key events from injection
@@ -672,31 +699,99 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
         return;
     }
 
+    int curIdx = m_stackedWidget->currentIndex();
+    QListView* curList = (curIdx >= 0 && curIdx < m_listViews.size()) ? m_listViews[curIdx] : nullptr;
+
     switch (event->key()) {
     case Qt::Key_Escape:
-        hidePanel();
-        break;
-    case Qt::Key_Return:
-    case Qt::Key_Enter:
-        if (m_listViews.value(m_stackedWidget->currentIndex()) &&
-            m_listViews[m_stackedWidget->currentIndex()]->currentIndex().isValid()) {
-            onEmojiClicked(m_listViews[m_stackedWidget->currentIndex()]->currentIndex());
+        if (m_searchEdit && !m_searchEdit->text().isEmpty()) {
+            m_searchEdit->clear();
+            if (curList) curList->setFocus();
+        } else {
+            hidePanel();
         }
         break;
+
+    case Qt::Key_Tab:
+        if (m_searchEdit && m_searchEdit->hasFocus()) {
+            m_categoryTabBar->setFocus();
+        } else if (m_categoryTabBar->hasFocus()) {
+            if (curList) curList->setFocus();
+        } else {
+            if (m_searchEdit) m_searchEdit->setFocus();
+        }
+        break;
+
+    case Qt::Key_Backtab:
+        if (m_searchEdit && m_searchEdit->hasFocus()) {
+            if (curList) curList->setFocus();
+        } else if (m_categoryTabBar->hasFocus()) {
+            if (m_searchEdit) m_searchEdit->setFocus();
+        } else {
+            m_categoryTabBar->setFocus();
+        }
+        break;
+
+    case Qt::Key_Return:
+    case Qt::Key_Enter:
+        if (curList && curList->currentIndex().isValid()) {
+            onEmojiClicked(curList->currentIndex());
+        } else if (m_proxyModel->rowCount() > 0) {
+            onEmojiClicked(m_proxyModel->index(0, 0));
+        }
+        break;
+
+    case Qt::Key_Down:
+        if (m_searchEdit && m_searchEdit->hasFocus()) {
+            if (curList) {
+                curList->setFocus();
+                if (!curList->currentIndex().isValid() && m_proxyModel->rowCount() > 0) {
+                    curList->setCurrentIndex(m_proxyModel->index(0, 0));
+                }
+            }
+            break;
+        }
+        if (curList) {
+            QApplication::sendEvent(curList, event);
+        }
+        break;
+
+    case Qt::Key_Up:
+        if (curList && curList->hasFocus()) {
+            if (curList->currentIndex().row() < 6 && m_searchEdit) {
+                m_searchEdit->setFocus();
+                break;
+            }
+        }
+        if (curList) {
+            QApplication::sendEvent(curList, event);
+        }
+        break;
+
     case Qt::Key_Left:
     case Qt::Key_Right:
-    case Qt::Key_Up:
-    case Qt::Key_Down:
-    case Qt::Key_Tab:
-    case Qt::Key_Backtab:
-        QWidget::keyPressEvent(event);
+    case Qt::Key_PageUp:
+    case Qt::Key_PageDown:
+    case Qt::Key_Home:
+    case Qt::Key_End:
+        if (curList) {
+            if (!curList->hasFocus()) {
+                curList->setFocus();
+            }
+            if (!curList->currentIndex().isValid() && m_proxyModel->rowCount() > 0) {
+                curList->setCurrentIndex(m_proxyModel->index(0, 0));
+            }
+            QApplication::sendEvent(curList, event);
+        }
         break;
+
     default:
-        // If searchEdit does not have focus, any other key closes the panel
-        // so the user can immediately resume typing normal text
-        if (m_searchEdit && !m_searchEdit->hasFocus()) {
-            hidePanel();
-            event->ignore();
+        // If user is focused on grid and types printable characters, redirect to search edit
+        if (curList && curList->hasFocus() && !event->text().isEmpty() && event->text()[0].isPrint()) {
+            if (m_searchEdit) {
+                m_searchEdit->setFocus();
+                m_searchEdit->setText(m_searchEdit->text() + event->text());
+            }
         } else {
             QWidget::keyPressEvent(event);
         }

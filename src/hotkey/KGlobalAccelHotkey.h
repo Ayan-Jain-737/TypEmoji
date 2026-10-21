@@ -35,10 +35,12 @@ public slots:
 
 private:
     void setupAction();
+    void triggerHotkey();
 
     std::unique_ptr<KActionCollection> m_actionCollection;
     std::unique_ptr<QAction> m_action;
     int m_modifiers = 0;
     int m_keyCode = 0x2e;  // Qt::Key_Period
     bool m_installed = false;
+    qint64 m_lastHotkeyTime = 0;
 };

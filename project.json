@@ -1,0 +1,9 @@
+{
+  "title": "EmojiTyper",
+  "version": "1.0.0",
+  "description": "Direct emoji typing tool for Windows - types emojis directly into focused text fields without clipboard",
+  "author": {
+    "name": "Ayan Jain",
+    "email": "ayanjain737@gmail.com"
+  }
+}

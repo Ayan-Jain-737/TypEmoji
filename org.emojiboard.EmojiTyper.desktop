@@ -1,0 +1,19 @@
+[Desktop Entry]
+Type=Application
+Name=EmojiTyper
+GenericName=Emoji Picker
+Comment=Direct emoji typing tool for Linux (X11 & Wayland)
+Exec=EmojiTyper
+Icon=emojityper
+Terminal=false
+Categories=Utility;Accessibility;Qt;
+Keywords=emoji;emoticon;picker;symbols;unicode;typing;
+StartupNotify=false
+SingleMainWindow=true
+X-KDE-GlobalAccel-Target=true
+X-KDE-Shortcuts=Meta+.
+Actions=ShowPanel;
+
+[Desktop Action ShowPanel]
+Name=Show Emoji Panel
+Exec=EmojiTyper

@@ -1,0 +1,1 @@
+// EmojiSearchProxy.cpp - stub

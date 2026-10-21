@@ -1,0 +1,24 @@
+Source: emojityper
+Section: utils
+Priority: optional
+Maintainer: EmojiTyper Contributors <contact@emojityper.org>
+Build-Depends: debhelper-compat (= 13),
+               cmake,
+               ninja-build,
+               qt6-base-dev,
+               qt6-tools-dev,
+               libkf6globalaccel-dev,
+               libkf6xmlgui-dev,
+               libx11-dev,
+               libxtst-dev
+Standards-Version: 4.6.2
+Homepage: https://github.com/Ayan-Jain-737/TypEmoji
+
+Package: emojityper
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, fonts-noto-color-emoji
+Recommends: wl-clipboard, wtype, xclip
+Description: Direct emoji picker and typing utility for Linux (X11 & Wayland)
+ EmojiTyper is a fast, responsive emoji selector and typing helper that allows
+ you to search and type Unicode emojis directly into any focused window with
+ global hotkey support (Super+.).

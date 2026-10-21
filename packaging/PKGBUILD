@@ -1,0 +1,47 @@
+# Maintainer: EmojiTyper Contributors <contact@emojityper.org>
+pkgname=emojityper
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Direct emoji picker and typing utility for Linux (X11 & Wayland)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/Ayan-Jain-737/TypEmoji"
+license=('MIT')
+depends=(
+    'qt6-base'
+    'qt6-declarative'
+    'libxtst'
+    'libx11'
+    'kglobalaccel'
+    'kxmlgui'
+)
+optdepends=(
+    'wtype: Wayland direct keyboard typing injection'
+    'wl-clipboard: Wayland clipboard injection fallback'
+    'xclip: X11 clipboard injection fallback'
+    'noto-fonts-emoji: High-quality emoji rendering'
+)
+makedepends=(
+    'cmake'
+    'ninja'
+    'gcc'
+    'qt6-tools'
+)
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cmake -B build -S "$pkgname-$pkgver" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -G Ninja
+    cmake --build build
+}
+
+check() {
+    ctest --test-dir build --output-on-failure
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+    install -Dm644 "$pkgname-$pkgver/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

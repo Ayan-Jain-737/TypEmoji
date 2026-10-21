@@ -1,0 +1,1 @@
+# Emoji data placeholder

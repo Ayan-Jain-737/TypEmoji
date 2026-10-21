@@ -32,6 +32,12 @@ public:
     // Ensure target has focus before injection
     bool ensureForeground();
 
+    // Ensure EmojiPanel stays on top (Wayland keepAbove)
+    bool ensurePanelAbove();
+
+    // Re-activate EmojiPanel after injection
+    bool activateEmojiPanel();
+
     // Clear captured state
     void clear();
 

@@ -525,6 +525,10 @@ void EmojiPanel::showAt(const QPoint& pos)
     raise();
     activateWindow();
 
+    if (m_targetState) {
+        m_targetState->ensurePanelAbove();
+    }
+
     int curIdx = m_stackedWidget->currentIndex();
     if (curIdx >= 0 && curIdx < m_listViews.size()) {
         QListView* curList = m_listViews[curIdx];
@@ -608,10 +612,14 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
             emit emojiInserted(emoji);
         }
         // Yield focus briefly so the target window receives the injection,
-        // then re-activate EmojiPanel so the user can continue typing or arrow-navigating!
+        // then keep EmojiPanel above and re-activated so the user can continue multi-typing!
         QTimer::singleShot(120, this, [this]() {
             m_isInjecting = false;
             if (isVisible()) {
+                if (m_targetState) {
+                    m_targetState->ensurePanelAbove();
+                    m_targetState->activateEmojiPanel();
+                }
                 raise();
                 activateWindow();
                 int curIdx = m_stackedWidget->currentIndex();

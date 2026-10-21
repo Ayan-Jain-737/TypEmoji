@@ -13,6 +13,7 @@
 #include <QtWidgets/QTabBar>
 #include <QtWidgets/QStackedWidget>
 #include <QtCore/QTimer>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QThread>
 #include <QtCore/QSettings>
 #include <QtCore/QDebug>
@@ -264,7 +265,6 @@ void EmojiPanel::createCategoryViews()
         listView->setStyleSheet("QListView { outline: none; border: none; } QListView::item { padding: 4px; }");
         listView->setItemDelegate(new EmojiDelegate(listView));
         connect(listView, &QListView::clicked, this, &EmojiPanel::onEmojiClicked);
-        connect(listView, &QListView::activated, this, &EmojiPanel::onEmojiClicked);
         m_listViews.append(listView);
         m_stackedWidget->addWidget(listView);
     }
@@ -579,10 +579,15 @@ void EmojiPanel::hidePanel()
             m_clickOutsideTimer->stop();
         }
 
-        // Save geometry
+        // Save geometry and flush any pending recents to disk immediately
         Settings& settings = Settings::instance();
         settings.setPanelPos(pos());
         settings.setPanelSize(size());
+        settings.save();
+
+        if (m_targetState) {
+            m_targetState->clear();
+        }
 
         hide();
         emit panelClosed();

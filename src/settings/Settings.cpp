@@ -9,6 +9,7 @@
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonArray>
+#include <QtCore/QTimer>
 
 Settings::Settings(QObject* parent) : QObject(parent)
 {
@@ -151,10 +152,24 @@ void Settings::save()
         return;
     }
 
+    if (m_saveTimer) {
+        m_saveTimer->stop();
+    }
+
     file.write(doc.toJson(QJsonDocument::Indented));
     file.close();
 
     qDebug() << "Settings saved to:" << path;
+}
+
+void Settings::saveLater()
+{
+    if (!m_saveTimer) {
+        m_saveTimer = new QTimer(this);
+        m_saveTimer->setSingleShot(true);
+        connect(m_saveTimer, &QTimer::timeout, this, &Settings::save);
+    }
+    m_saveTimer->start(1000);
 }
 
 void Settings::setHotkeyModifiers(int modifiers)
@@ -242,14 +257,14 @@ void Settings::addRecentEmoji(const QString& emoji)
         m_recentEmojis.removeLast();
     }
 
-    save();
+    saveLater();
     emit recentEmojisChanged();
 }
 
 void Settings::removeRecentEmoji(const QString& emoji)
 {
     if (m_recentEmojis.removeAll(emoji) > 0) {
-        save();
+        saveLater();
         emit recentEmojisChanged();
     }
 }
@@ -258,7 +273,7 @@ void Settings::clearRecentEmojis()
 {
     if (!m_recentEmojis.isEmpty()) {
         m_recentEmojis.clear();
-        save();
+        saveLater();
         emit recentEmojisChanged();
     }
 }
@@ -283,14 +298,14 @@ void Settings::incrementFrequency(const QString& emoji)
         }
     }
 
-    save();
+    saveLater();
     emit frequentEmojisChanged();
 }
 
 void Settings::removeFrequentEmoji(const QString& emoji)
 {
     if (m_frequentEmojis.remove(emoji) > 0) {
-        save();
+        saveLater();
         emit frequentEmojisChanged();
     }
 }
@@ -299,7 +314,7 @@ void Settings::clearFrequentEmojis()
 {
     if (!m_frequentEmojis.isEmpty()) {
         m_frequentEmojis.clear();
-        save();
+        saveLater();
         emit frequentEmojisChanged();
     }
 }
@@ -308,7 +323,7 @@ void Settings::setPanelPos(const QPoint& pos)
 {
     if (m_panelPos != pos) {
         m_panelPos = pos;
-        save();
+        saveLater();
     }
 }
 
@@ -316,6 +331,6 @@ void Settings::setPanelSize(const QSize& size)
 {
     if (m_panelSize != size) {
         m_panelSize = size;
-        save();
+        saveLater();
     }
 }

@@ -98,6 +98,8 @@ private:
     static const int MAX_RECENT = 50;
     static const int MAX_FREQUENT = 100;
 
+    class QTimer* m_saveTimer = nullptr;
+    void saveLater();
     QString settingsFilePath() const;
     void applyDefaults();
 };

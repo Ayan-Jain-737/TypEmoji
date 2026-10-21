@@ -13,7 +13,7 @@ class TargetState : public QObject
     Q_CLASSINFO("D-Bus Interface", "org.emojiboard.TargetState")
 public:
     explicit TargetState(QObject* parent = nullptr);
-    ~TargetState() override = default;
+    ~TargetState() override { clear(); }
 
     // Capture current foreground window and caret position
     bool capture();

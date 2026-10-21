@@ -175,40 +175,7 @@ bool TargetState::activateKWinWayland()
 
 bool TargetState::ensurePanelAbove()
 {
-    if (!m_isWayland) return false;
-
-    QString script =
-        "var clients = workspace.windowList();\n"
-        "for (var i = 0; i < clients.length; i++) {\n"
-        "    var c = clients[i];\n"
-        "    var cap = c.caption || '';\n"
-        "    var res = c.resourceClass || '';\n"
-        "    if (cap.indexOf('EmojiTyper') !== -1 || res.indexOf('EmojiTyper') !== -1 || res.indexOf('emojityper') !== -1) {\n"
-        "        c.keepAbove = true;\n"
-        "        c.skipTaskbar = true;\n"
-        "        c.skipPager = true;\n"
-        "    }\n"
-        "}\n";
-
-    QString scriptPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/emojityper_above.js";
-    QFile f(scriptPath);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        return false;
-    }
-    f.write(script.toUtf8());
-    f.close();
-
-    QString pluginName = QString("et_above_%1").arg(QDateTime::currentMSecsSinceEpoch());
-    QDBusInterface kwinScripting("org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting", QDBusConnection::sessionBus());
-    QDBusReply<int> reply = kwinScripting.call("loadScript", scriptPath, pluginName);
-    if (reply.isValid() && reply.value() > 0) {
-        int scriptId = reply.value();
-        QDBusInterface scriptObj("org.kde.KWin", QString("/Scripting/Script%1").arg(scriptId), "org.kde.kwin.Script", QDBusConnection::sessionBus());
-        scriptObj.call("run");
-        kwinScripting.call("unloadScript", pluginName);
-    }
-    QFile::remove(scriptPath);
-    return true;
+    return true; // Already forced by ~/.config/kwinrulesrc
 }
 
 bool TargetState::activateEmojiPanel()

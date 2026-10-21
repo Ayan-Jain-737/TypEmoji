@@ -1,9 +1,9 @@
 /**
  * TargetState implementation - X11/Wayland target capture & focus restoration
+ * High-performance implementation using native QtDBus (0ms process spawn overhead)
  */
 #include "TargetState.h"
 #include <QtCore/QDebug>
-#include <QtCore/QProcess>
 #include <QtCore/QFile>
 #include <QtCore/QDateTime>
 #include <QtCore/QStandardPaths>
@@ -12,6 +12,8 @@
 #include <QtGui/QCursor>
 #include <QtWidgets/QApplication>
 #include <QtDBus/QDBusConnection>
+#include <QtDBus/QDBusInterface>
+#include <QtDBus/QDBusReply>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/keysym.h>
@@ -55,34 +57,19 @@ bool TargetState::captureKWinWayland()
     f.close();
 
     QString pluginName = QString("et_cap_%1").arg(QDateTime::currentMSecsSinceEpoch());
-    QProcess loadProc;
-    loadProc.start("qdbus", QStringList() << "org.kde.KWin" << "/Scripting" << "org.kde.kwin.Scripting.loadScript" << scriptPath << pluginName);
-    if (!loadProc.waitForStarted(200) || !loadProc.waitForFinished(1000)) {
-        QFile::remove(scriptPath);
-        return false;
-    }
-    QString scriptId = QString::fromUtf8(loadProc.readAllStandardOutput()).trimmed();
-    if (scriptId.isEmpty() || scriptId == "-1") {
-        QFile::remove(scriptPath);
-        return false;
-    }
+    QDBusInterface kwinScripting("org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting", QDBusConnection::sessionBus());
+    QDBusReply<int> reply = kwinScripting.call("loadScript", scriptPath, pluginName);
+    if (reply.isValid() && reply.value() > 0) {
+        int scriptId = reply.value();
+        QDBusInterface scriptObj("org.kde.KWin", QString("/Scripting/Script%1").arg(scriptId), "org.kde.kwin.Script", QDBusConnection::sessionBus());
+        scriptObj.call("run");
 
-    QProcess runProc;
-    runProc.start("qdbus", QStringList() << "org.kde.KWin" << QString("/Scripting/Script%1").arg(scriptId) << "org.kde.kwin.Script.run");
-    if (runProc.waitForStarted(200)) {
-        runProc.waitForFinished(1000);
-    }
+        for (int i = 0; i < 20 && m_targetUuid.isEmpty(); ++i) {
+            QCoreApplication::processEvents();
+            QThread::msleep(5);
+        }
 
-    // Process pending DBus events to receive the setTargetUuid callback from KWin
-    for (int i = 0; i < 20 && m_targetUuid.isEmpty(); ++i) {
-        QCoreApplication::processEvents();
-        QThread::msleep(10);
-    }
-
-    QProcess unloadProc;
-    unloadProc.start("qdbus", QStringList() << "org.kde.KWin" << "/Scripting" << "org.kde.kwin.Scripting.unloadScript" << pluginName);
-    if (unloadProc.waitForStarted(200)) {
-        unloadProc.waitForFinished(500);
+        kwinScripting.call("unloadScript", pluginName);
     }
     QFile::remove(scriptPath);
 
@@ -160,16 +147,7 @@ bool TargetState::activateKWinWayland()
         "for (var i = 0; i < clients.length; i++) {\n"
         "    if (String(clients[i].internalId) === '%1') {\n"
         "        workspace.activeWindow = clients[i];\n"
-        "    }\n"
-        "}\n"
-        "for (var i = 0; i < clients.length; i++) {\n"
-        "    var c = clients[i];\n"
-        "    var cap = c.caption || '';\n"
-        "    var res = c.resourceClass || '';\n"
-        "    if (cap.indexOf('EmojiTyper') !== -1 || res.indexOf('EmojiTyper') !== -1 || res.indexOf('emojityper') !== -1) {\n"
-        "        c.keepAbove = true;\n"
-        "        c.skipTaskbar = true;\n"
-        "        c.skipPager = true;\n"
+        "        break;\n"
         "    }\n"
         "}\n"
     ).arg(m_targetUuid);
@@ -183,31 +161,15 @@ bool TargetState::activateKWinWayland()
     f.close();
 
     QString pluginName = QString("et_act_%1").arg(QDateTime::currentMSecsSinceEpoch());
-    QProcess loadProc;
-    loadProc.start("qdbus", QStringList() << "org.kde.KWin" << "/Scripting" << "org.kde.kwin.Scripting.loadScript" << scriptPath << pluginName);
-    if (!loadProc.waitForStarted(200) || !loadProc.waitForFinished(1000)) {
-        QFile::remove(scriptPath);
-        return false;
-    }
-    QString scriptId = QString::fromUtf8(loadProc.readAllStandardOutput()).trimmed();
-    if (scriptId.isEmpty() || scriptId == "-1") {
-        QFile::remove(scriptPath);
-        return false;
-    }
-
-    QProcess runProc;
-    runProc.start("qdbus", QStringList() << "org.kde.KWin" << QString("/Scripting/Script%1").arg(scriptId) << "org.kde.kwin.Script.run");
-    if (runProc.waitForStarted(200)) {
-        runProc.waitForFinished(1000);
-    }
-
-    QProcess unloadProc;
-    unloadProc.start("qdbus", QStringList() << "org.kde.KWin" << "/Scripting" << "org.kde.kwin.Scripting.unloadScript" << pluginName);
-    if (unloadProc.waitForStarted(200)) {
-        unloadProc.waitForFinished(500);
+    QDBusInterface kwinScripting("org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting", QDBusConnection::sessionBus());
+    QDBusReply<int> reply = kwinScripting.call("loadScript", scriptPath, pluginName);
+    if (reply.isValid() && reply.value() > 0) {
+        int scriptId = reply.value();
+        QDBusInterface scriptObj("org.kde.KWin", QString("/Scripting/Script%1").arg(scriptId), "org.kde.kwin.Script", QDBusConnection::sessionBus());
+        scriptObj.call("run");
+        kwinScripting.call("unloadScript", pluginName);
     }
     QFile::remove(scriptPath);
-    qDebug() << "TargetState: activated KWin Wayland target UUID:" << m_targetUuid << "(with EmojiPanel keepAbove)";
     return true;
 }
 
@@ -237,22 +199,13 @@ bool TargetState::ensurePanelAbove()
     f.close();
 
     QString pluginName = QString("et_above_%1").arg(QDateTime::currentMSecsSinceEpoch());
-    QProcess loadProc;
-    loadProc.start("qdbus", QStringList() << "org.kde.KWin" << "/Scripting" << "org.kde.kwin.Scripting.loadScript" << scriptPath << pluginName);
-    if (loadProc.waitForStarted(200) && loadProc.waitForFinished(1000)) {
-        QString scriptId = QString::fromUtf8(loadProc.readAllStandardOutput()).trimmed();
-        if (!scriptId.isEmpty() && scriptId != "-1") {
-            QProcess runProc;
-            runProc.start("qdbus", QStringList() << "org.kde.KWin" << QString("/Scripting/Script%1").arg(scriptId) << "org.kde.kwin.Script.run");
-            if (runProc.waitForStarted(200)) {
-                runProc.waitForFinished(1000);
-            }
-            QProcess unloadProc;
-            unloadProc.start("qdbus", QStringList() << "org.kde.KWin" << "/Scripting" << "org.kde.kwin.Scripting.unloadScript" << pluginName);
-            if (unloadProc.waitForStarted(200)) {
-                unloadProc.waitForFinished(500);
-            }
-        }
+    QDBusInterface kwinScripting("org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting", QDBusConnection::sessionBus());
+    QDBusReply<int> reply = kwinScripting.call("loadScript", scriptPath, pluginName);
+    if (reply.isValid() && reply.value() > 0) {
+        int scriptId = reply.value();
+        QDBusInterface scriptObj("org.kde.KWin", QString("/Scripting/Script%1").arg(scriptId), "org.kde.kwin.Script", QDBusConnection::sessionBus());
+        scriptObj.call("run");
+        kwinScripting.call("unloadScript", pluginName);
     }
     QFile::remove(scriptPath);
     return true;
@@ -284,22 +237,13 @@ bool TargetState::activateEmojiPanel()
     f.close();
 
     QString pluginName = QString("et_act_p_%1").arg(QDateTime::currentMSecsSinceEpoch());
-    QProcess loadProc;
-    loadProc.start("qdbus", QStringList() << "org.kde.KWin" << "/Scripting" << "org.kde.kwin.Scripting.loadScript" << scriptPath << pluginName);
-    if (loadProc.waitForStarted(200) && loadProc.waitForFinished(1000)) {
-        QString scriptId = QString::fromUtf8(loadProc.readAllStandardOutput()).trimmed();
-        if (!scriptId.isEmpty() && scriptId != "-1") {
-            QProcess runProc;
-            runProc.start("qdbus", QStringList() << "org.kde.KWin" << QString("/Scripting/Script%1").arg(scriptId) << "org.kde.kwin.Script.run");
-            if (runProc.waitForStarted(200)) {
-                runProc.waitForFinished(1000);
-            }
-            QProcess unloadProc;
-            unloadProc.start("qdbus", QStringList() << "org.kde.KWin" << "/Scripting" << "org.kde.kwin.Scripting.unloadScript" << pluginName);
-            if (unloadProc.waitForStarted(200)) {
-                unloadProc.waitForFinished(500);
-            }
-        }
+    QDBusInterface kwinScripting("org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting", QDBusConnection::sessionBus());
+    QDBusReply<int> reply = kwinScripting.call("loadScript", scriptPath, pluginName);
+    if (reply.isValid() && reply.value() > 0) {
+        int scriptId = reply.value();
+        QDBusInterface scriptObj("org.kde.KWin", QString("/Scripting/Script%1").arg(scriptId), "org.kde.kwin.Script", QDBusConnection::sessionBus());
+        scriptObj.call("run");
+        kwinScripting.call("unloadScript", pluginName);
     }
     QFile::remove(scriptPath);
     return true;

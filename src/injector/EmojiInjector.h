@@ -57,6 +57,8 @@ private:
 
     bool m_hasClipboardBackup = false;
     bool m_isWayland = false;
+    bool m_wtypeTested = false;
+    bool m_wtypeSupported = false;
     QString m_savedClipboardText;
     class QTimer* m_restoreTimer = nullptr;
 };

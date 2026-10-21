@@ -94,6 +94,8 @@ private:
     QPoint m_lastCaretPos;
     bool m_isClosing = false;
     bool m_isInjecting = false;
+    bool m_hasPendingInjection = false;
+    QModelIndex m_pendingIndex;
     bool m_wasActivated = false;
     QTimer* m_clickOutsideTimer = nullptr;
 };

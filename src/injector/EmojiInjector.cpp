@@ -95,11 +95,11 @@ bool EmojiInjector::pasteViaYdotool()
     env.insert("YDOTOOL_SOCKET", socketPath);
     ydoProc.setProcessEnvironment(env);
 
-    ydoProc.start("ydotool", QStringList() << "key" << "29:1" << "47:1" << "47:0" << "29:0");
-    if (!ydoProc.waitForStarted(300)) {
+    ydoProc.start("ydotool", QStringList() << "key" << "-d" << "0" << "29:1" << "47:1" << "47:0" << "29:0");
+    if (!ydoProc.waitForStarted(200)) {
         return false;
     }
-    ydoProc.waitForFinished(1000);
+    ydoProc.waitForFinished(500);
     return (ydoProc.exitStatus() == QProcess::NormalExit && ydoProc.exitCode() == 0);
 }
 
@@ -107,16 +107,24 @@ bool EmojiInjector::insertEmoji(const QString& emoji, TargetState* targetState)
 {
     if (emoji.isEmpty()) return false;
 
-    // Direct wtype: only works on compositors with zwp_virtual_keyboard_v1 (e.g. Sway, Hyprland)
-    // On compositors without it (like KWin), sendViaWtype fails immediately and falls through.
+    // Direct wtype: only works on compositors with zwp_virtual_keyboard_v1 (e.g. Sway, Hyprland).
+    // Test once on Wayland: if not supported (e.g. KWin), cache the result to avoid running a doomed subprocess every click!
     if (m_isWayland) {
-        if (sendViaWtype(emoji)) {
-            qDebug() << "EmojiInjector: direct typing via wtype succeeded";
-            return true;
+        if (!m_wtypeTested) {
+            m_wtypeTested = true;
+            m_wtypeSupported = sendViaWtype(emoji);
+            if (m_wtypeSupported) {
+                qDebug() << "EmojiInjector: direct typing via wtype succeeded";
+                return true;
+            }
+        } else if (m_wtypeSupported) {
+            if (sendViaWtype(emoji)) {
+                return true;
+            }
         }
     }
 
-    // Universal clipboard paste pipeline (works reliably across all Linux compositors)
+    // Universal high-performance clipboard paste pipeline (works reliably across all Linux compositors)
     return clipboardFallback(emoji, targetState);
 }
 
@@ -137,10 +145,10 @@ bool EmojiInjector::sendViaWtype(const QString& str)
 {
     QProcess process;
     process.start("wtype", QStringList() << str);
-    if (!process.waitForStarted(200)) {
+    if (!process.waitForStarted(100)) {
         return false;
     }
-    process.waitForFinished(1000);
+    process.waitForFinished(200);
     return process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0;
 }
 
@@ -178,38 +186,34 @@ bool EmojiInjector::sendViaXTest(const QString& str)
 
 bool EmojiInjector::clipboardFallback(const QString& emoji, TargetState* targetState)
 {
-    // 1. Save existing clipboard content for later restoration
+    // 1. Save existing clipboard content for later restoration (in-memory 0ms)
     saveClipboard();
 
-    // 2. Set emoji to system clipboard
-    if (m_isWayland) {
-        QProcess copyProc;
-        copyProc.start("wl-copy", QStringList() << emoji);
-        if (copyProc.waitForStarted(200)) {
-            copyProc.waitForFinished(500);
-        }
-    }
-
+    // 2. Set emoji to system clipboard via Qt's native clipboard interface (0ms)
     QClipboard* clipboard = QApplication::clipboard();
     if (clipboard) {
         clipboard->setText(emoji, QClipboard::Clipboard);
         clipboard->setText(emoji, QClipboard::Selection);
     }
 
-    // Small delay to ensure clipboard buffers have propagated
-    QThread::msleep(40);
+    // Also notify wl-copy quickly for non-Qt Wayland clients
+    if (m_isWayland) {
+        QProcess copyProc;
+        copyProc.start("wl-copy", QStringList() << emoji);
+        copyProc.waitForFinished(50);
+    }
 
     // 3. Ensure target window has focus before simulating paste (Wayland KWin & X11)
     if (targetState && targetState->isValid()) {
         targetState->ensureForeground();
         QCoreApplication::processEvents();
-        QThread::msleep(50);
+        QThread::msleep(15);
     }
 
     // 4. Simulate paste (Ctrl+V) using priority backends
     bool pasteSimulated = false;
 
-    // Backend 1: ydotool key (evdev hardware level, works on KDE Wayland, GNOME, Sway, X11)
+    // Backend 1: ydotool key with -d 0 (evdev hardware level, works in ~1ms on KDE Wayland, GNOME, Sway, X11)
     if (pasteViaYdotool()) {
         pasteSimulated = true;
         qDebug() << "EmojiInjector: pasted via ydotool key";
@@ -257,6 +261,9 @@ bool EmojiInjector::clipboardFallback(const QString& emoji, TargetState* targetS
         }
     }
 
+    // Brief delay to allow target application to process Ctrl+V paste event
+    QThread::msleep(10);
+
     // 5. Restore user's previous clipboard after inactivity
     if (m_hasClipboardBackup) {
         if (!m_restoreTimer) {
@@ -282,25 +289,29 @@ bool EmojiInjector::saveClipboard()
         return true;
     }
 
+    // In Qt 6, QClipboard maintains the clipboard buffer in memory across Wayland & X11 (0ms)
+    QClipboard* clipboard = QApplication::clipboard();
+    if (clipboard) {
+        m_savedClipboardText = clipboard->text(QClipboard::Clipboard);
+        if (!m_savedClipboardText.isEmpty()) {
+            m_hasClipboardBackup = true;
+            return true;
+        }
+    }
+
+    // Fallback to wl-paste only if QClipboard was empty and running on Wayland
     if (m_isWayland) {
         QProcess proc;
         proc.start("wl-paste", QStringList() << "--no-newline");
-        if (proc.waitForStarted(200) && proc.waitForFinished(1000)) {
+        if (proc.waitForStarted(50) && proc.waitForFinished(100)) {
             m_savedClipboardText = QString::fromUtf8(proc.readAllStandardOutput());
             m_hasClipboardBackup = !m_savedClipboardText.isEmpty();
             return m_hasClipboardBackup;
         }
-        m_hasClipboardBackup = false;
-        return false;
-    } else {
-        QClipboard* clipboard = QApplication::clipboard();
-        if (clipboard) {
-            m_savedClipboardText = clipboard->text(QClipboard::Clipboard);
-            m_hasClipboardBackup = !m_savedClipboardText.isEmpty();
-            return m_hasClipboardBackup;
-        }
-        return false;
     }
+
+    m_hasClipboardBackup = false;
+    return false;
 }
 
 void EmojiInjector::restoreClipboard()

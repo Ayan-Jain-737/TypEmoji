@@ -517,6 +517,9 @@ void EmojiPanel::showAt(const QPoint& pos)
     m_model->setShowFrequent(frequent);
 
     m_wasActivated = false;
+    m_isInjecting = false;
+    m_hasPendingInjection = false;
+    m_pendingIndex = QModelIndex();
     m_searchEdit->clear();
 
     qDebug() << "EmojiPanel: Calling show()";
@@ -591,6 +594,12 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
 {
     if (!index.isValid()) return;
 
+    if (m_isInjecting) {
+        // Queue this emoji so fast clicks are never dropped!
+        m_pendingIndex = index;
+        return;
+    }
+
     // Get emoji character from model
     QVariant data = m_proxyModel->data(index, EmojiModel::EmojiCharRole);
     QString emoji = data.toString();
@@ -611,23 +620,36 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
         } else {
             emit emojiInserted(emoji);
         }
-        // Yield focus briefly so the target window receives the injection,
-        // then keep EmojiPanel above and re-activated so the user can continue multi-typing!
-        QTimer::singleShot(120, this, [this]() {
-            m_isInjecting = false;
-            if (isVisible()) {
-                if (m_targetState) {
-                    m_targetState->ensurePanelAbove();
-                    m_targetState->activateEmojiPanel();
-                }
-                raise();
-                activateWindow();
-                int curIdx = m_stackedWidget->currentIndex();
-                if (curIdx >= 0 && curIdx < m_listViews.size()) {
-                    m_listViews[curIdx]->setFocus();
-                }
+
+        // Return focus immediately to EmojiPanel so the user can continue multi-typing with zero lag!
+        if (isVisible()) {
+            if (m_targetState) {
+                m_targetState->activateEmojiPanel();
             }
-        });
+            raise();
+            activateWindow();
+            int curIdx = m_stackedWidget->currentIndex();
+            if (curIdx >= 0 && curIdx < m_listViews.size()) {
+                m_listViews[curIdx]->setFocus();
+            }
+        }
+        m_isInjecting = false;
+
+        // Immediately handle any pending injection that was queued during the ~20ms injection
+        if (m_hasPendingInjection) {
+            m_hasPendingInjection = false;
+            int curIdx = m_stackedWidget->currentIndex();
+            QListView* curList = (curIdx >= 0 && curIdx < m_listViews.size()) ? m_listViews[curIdx] : nullptr;
+            if (curList && curList->currentIndex().isValid()) {
+                onEmojiClicked(curList->currentIndex());
+            } else if (m_proxyModel->rowCount() > 0) {
+                onEmojiClicked(m_proxyModel->index(0, 0));
+            }
+        } else if (m_pendingIndex.isValid()) {
+            QModelIndex nextIdx = m_pendingIndex;
+            m_pendingIndex = QModelIndex();
+            onEmojiClicked(nextIdx);
+        }
     }
 }
 
@@ -691,8 +713,12 @@ void EmojiPanel::closeEvent(QCloseEvent* event)
 
 void EmojiPanel::keyPressEvent(QKeyEvent* event)
 {
-    // Ignore any simulated key events from injection
+    // If injection is currently occurring (within that tiny ~25ms window)
     if (m_isInjecting) {
+        event->accept(); // CRITICAL: Always accept so it NEVER leaks to the target app!
+        if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && !event->isAutoRepeat()) {
+            m_hasPendingInjection = true;
+        }
         return;
     }
 
@@ -704,6 +730,7 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
         event->key() == Qt::Key_Super_L ||
         event->key() == Qt::Key_Super_R ||
         (event->modifiers() & Qt::ControlModifier)) {
+        event->accept();
         return;
     }
 
@@ -712,6 +739,7 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
 
     switch (event->key()) {
     case Qt::Key_Escape:
+        event->accept();
         if (m_searchEdit && !m_searchEdit->text().isEmpty()) {
             m_searchEdit->clear();
             if (curList) curList->setFocus();
@@ -721,6 +749,7 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
         break;
 
     case Qt::Key_Tab:
+        event->accept();
         if (m_searchEdit && m_searchEdit->hasFocus()) {
             m_categoryTabBar->setFocus();
         } else if (m_categoryTabBar->hasFocus()) {
@@ -731,6 +760,7 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
         break;
 
     case Qt::Key_Backtab:
+        event->accept();
         if (m_searchEdit && m_searchEdit->hasFocus()) {
             if (curList) curList->setFocus();
         } else if (m_categoryTabBar->hasFocus()) {
@@ -742,6 +772,10 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
 
     case Qt::Key_Return:
     case Qt::Key_Enter:
+        event->accept(); // Always accept Enter to prevent leaking to underlying chat window!
+        if (event->isAutoRepeat()) {
+            return; // Ignore key repeat to prevent flooding
+        }
         if (curList && curList->currentIndex().isValid()) {
             onEmojiClicked(curList->currentIndex());
         } else if (m_proxyModel->rowCount() > 0) {

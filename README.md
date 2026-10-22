@@ -165,11 +165,14 @@ Distribution packaging files are located in `packaging/`:
 - **Debian / Ubuntu**: `packaging/debian/`
 - **Flatpak**: `packaging/org.emojiboard.EmojiTyper.yml`
 
-To generate a portable tarball via CPack:
-```bash
-cd build
-cpack -G TGZ
-```
+## Documentation
+
+Detailed documentation and technical specifications:
+- [Architecture Guide](docs/ARCHITECTURE.md)
+- [Build Instructions](docs/BUILD.md)
+- [Global Hotkey & Desktop Integration](docs/HOTKEY_REPLACEMENT.md)
+- [Specification Compliance](docs/SPEC_COMPLIANCE.md)
+- [Validation & Test Results](docs/validation.md)
 
 ---
 

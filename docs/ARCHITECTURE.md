@@ -4,19 +4,25 @@
 emojiboard/
 ├── src/                    # Source code organized by feature
 │   ├── main.cpp           # Application entry point
-│   ├── TargetState/       # Window/control target capture (X11)
-│   ├── injector/          # Unicode injection (wtype + XTest)
-│   ├── panel/             # Floating emoji panel UI
-│   ├── tray/              # System tray host
-│   ├── hotkey/            # Global hotkey (XGrabKey)
+│   ├── TargetState.{h,cpp}# Window/control target capture
+│   ├── injector/          # Unicode injection (wtype, ydotool, XTest)
+│   ├── panel/             # Floating emoji panel UI & models
+│   ├── tray/              # System tray host & orchestration
+│   ├── hotkey/            # Global hotkey (KGlobalAccel & XGrabKey)
 │   ├── data/              # Emoji database loader
 │   ├── settings/          # JSON persistence (~/.config)
 │   └── ipc/               # Single instance IPC (QLocalServer)
-├── tests/                 # Unit tests
-├── assets/                # Emoji data, icons
+├── data/                  # Unicode emoji datasets (emoji-test, emoji-zwj)
+├── assets/                # Application icons and branding
+├── docs/                  # Project documentation & architecture guides
+│   └── dev/               # Development research & tracking notes
+├── packaging/             # Distro packaging (Arch, Fedora, Debian, Flatpak)
+├── installer/             # Systemd service unit & installer definitions
+├── scripts/               # Helper scripts (install.sh, uninstall.sh)
+├── tests/                 # Unit tests & verification
+├── tools/                 # Standalone tools & test daemons
 ├── CMakeLists.txt         # CMake build configuration
 ├── README.md              # Project documentation
-├── SPEC_COMPLIANCE.md     # Requirement compliance matrix
 └── LICENSE
 ```
 

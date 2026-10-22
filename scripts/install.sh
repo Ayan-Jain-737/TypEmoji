@@ -6,7 +6,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="$SCRIPT_DIR/build"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+BUILD_DIR="$PROJECT_ROOT/build"
 BIN_NAME="EmojiTyper"
 INSTALL_BIN="${HOME}/.local/bin"
 INSTALL_DATA="${HOME}/.local/share/emojityper"
@@ -47,7 +48,7 @@ EXISTING_BIN="$BUILD_DIR/bin/$BIN_NAME"
 if [[ ! -f "$EXISTING_BIN" ]]; then
     echo "  No existing build found. Running cmake + ninja..."
     mkdir -p "$BUILD_DIR"
-    cmake -S "$SCRIPT_DIR" -B "$BUILD_DIR" \
+    cmake -S "$PROJECT_ROOT" -B "$BUILD_DIR" \
         -DCMAKE_BUILD_TYPE=Release \
         -G Ninja \
         -DCMAKE_INSTALL_PREFIX="${HOME}/.local" \
@@ -77,14 +78,14 @@ fi
 step "Installing emoji data files to $INSTALL_DATA"
 
 mkdir -p "$INSTALL_DATA/data"
-cp -f "$SCRIPT_DIR/data/emoji-test.txt"       "$INSTALL_DATA/data/"
-cp -f "$SCRIPT_DIR/data/emoji-zwj-sequences.txt" "$INSTALL_DATA/data/"
+cp -f "$PROJECT_ROOT/data/emoji-test.txt"       "$INSTALL_DATA/data/"
+cp -f "$PROJECT_ROOT/data/emoji-zwj-sequences.txt" "$INSTALL_DATA/data/"
 ok "Data files installed"
 
 # ── 4. INSTALL ICON ──────────────────────────────────────────────────────────
 step "Installing application icon"
 
-SVG_ICON="$SCRIPT_DIR/assets/icons/emojityper.svg"
+SVG_ICON="$PROJECT_ROOT/assets/icons/emojityper.svg"
 if [[ -f "$SVG_ICON" ]]; then
     mkdir -p "$INSTALL_ICONS/scalable/apps"
     cp -f "$SVG_ICON" "$INSTALL_ICONS/scalable/apps/emojityper.svg"

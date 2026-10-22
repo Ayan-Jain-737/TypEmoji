@@ -24,7 +24,6 @@
 #include <QtCore/QTimer>
 #include <QtGui/QClipboard>
 #include <QtWidgets/QApplication>
-#include <cstdlib>
 
 #include <X11/Xlib.h>
 #include <X11/extensions/XTest.h>

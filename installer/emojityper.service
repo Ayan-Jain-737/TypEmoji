@@ -1,13 +1,16 @@
 [Unit]
-Description=EmojiTyper - Linux Direct Emoji Typer Service
+Description=EmojiTyper - Linux Direct Emoji Typer
+Documentation=https://github.com/emojiboard/emojityper
 After=graphical-session.target
 PartOf=graphical-session.target
 
 [Service]
 Type=exec
-ExecStart=/usr/bin/EmojiTyper
+ExecStart=%h/.local/bin/EmojiTyper
 Restart=on-failure
 RestartSec=3
+# Forward display environment so Qt can connect to the X11/Wayland compositor
+PassEnvironment=DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR DBUS_SESSION_BUS_ADDRESS XDG_CURRENT_DESKTOP
 
 [Install]
 WantedBy=graphical-session.target

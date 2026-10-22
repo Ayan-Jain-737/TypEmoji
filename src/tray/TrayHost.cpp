@@ -17,6 +17,8 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QStyle>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDir>
+#include <QtCore/QFile>
 #include <QtGui/QGuiApplication>
 #include <iostream>
 
@@ -53,22 +55,85 @@ bool TrayHost::initialize()
         m_x11Hotkey->setHotkey(settings.hotkeyModifiers(), settings.hotkeyKey());
     }
 
+    // Setup tray FIRST so even if hotkey fails we have a working tray icon
     setupTray();
     setupConnections();
-    
+
     bool hotkeyInstalled = false;
     if (m_useKdeHotkey && m_kdeHotkey) {
         hotkeyInstalled = m_kdeHotkey->install();
     } else if (m_x11Hotkey) {
         hotkeyInstalled = m_x11Hotkey->install();
     }
-    
+
     if (!hotkeyInstalled) {
-        qWarning() << "Failed to install hotkey (platform:" << platform << "desktop:" << desktop << ")";
-        return false;
+        // Non-fatal: app continues in tray-only mode. User can left-click the
+        // tray icon or use "Show Emoji Panel" from the context menu.
+        qWarning() << "Failed to install global hotkey (platform:" << platform << "desktop:" << desktop << ")";
+        qWarning() << "EmojiTyper running in tray-only mode. Use tray icon to open emoji panel.";
+        m_trayIcon->showMessage(
+            "EmojiTyper",
+            "Hotkey registration failed. Click the tray icon to open the emoji panel.",
+            QSystemTrayIcon::Warning, 4000
+        );
     }
+
+    // Auto-setup XDG autostart on first run so EmojiTyper starts with the session
+    setupAutostart();
+
     qDebug() << "TrayHost initialized successfully";
     return true;
+}
+
+void TrayHost::setupAutostart()
+{
+    // Find own executable path
+    QString execPath = QCoreApplication::applicationFilePath();
+
+    // XDG autostart directory (~/.config/autostart/)
+    QString autostartDir = QDir::homePath() + "/.config/autostart";
+    QDir().mkpath(autostartDir);
+
+    QString desktopFilePath = autostartDir + "/org.emojiboard.EmojiTyper.desktop";
+
+    // Only (re)write if not already present or if exec path changed
+    QFile f(desktopFilePath);
+    if (f.exists()) {
+        if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QString content = QString::fromUtf8(f.readAll());
+            f.close();
+            if (content.contains("Exec=" + execPath)) {
+                qDebug() << "TrayHost: autostart entry already up-to-date";
+                return;
+            }
+        }
+    }
+
+    QString desktopContent = QString(
+        "[Desktop Entry]\n"
+        "Type=Application\n"
+        "Name=EmojiTyper\n"
+        "GenericName=Emoji Picker\n"
+        "Comment=Direct emoji typing tool for Linux (X11 & Wayland)\n"
+        "Exec=%1\n"
+        "Icon=emojityper\n"
+        "Terminal=false\n"
+        "Categories=Utility;Accessibility;Qt;\n"
+        "Keywords=emoji;emoticon;picker;symbols;unicode;typing;\n"
+        "StartupNotify=false\n"
+        "X-GNOME-Autostart-enabled=true\n"
+        "X-KDE-autostart-after=panel\n"
+        "X-KDE-GlobalAccel-Target=true\n"
+        "X-KDE-Shortcuts=Meta+.\n"
+    ).arg(execPath);
+
+    if (f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        f.write(desktopContent.toUtf8());
+        f.close();
+        qDebug() << "TrayHost: wrote XDG autostart entry to" << desktopFilePath;
+    } else {
+        qWarning() << "TrayHost: failed to write autostart entry to" << desktopFilePath;
+    }
 }
 
 void TrayHost::setupTray()
@@ -86,8 +151,16 @@ void TrayHost::setupTray()
     }
     m_trayIcon->setIcon(icon);
     m_trayIcon->setContextMenu(m_trayMenu.get());
-    m_trayIcon->setToolTip("EmojiTyper");
+    m_trayIcon->setToolTip("EmojiTyper — Press Meta+. for emoji panel");
     m_trayIcon->show();
+
+    // Open panel on left-click (Trigger) of the tray icon
+    connect(m_trayIcon.get(), &QSystemTrayIcon::activated, this,
+            [this](QSystemTrayIcon::ActivationReason reason) {
+                if (reason == QSystemTrayIcon::Trigger) {
+                    showPanel();
+                }
+            });
 }
 
 void TrayHost::setupConnections()
@@ -136,7 +209,7 @@ void TrayHost::onHotkeyPressed(const QPoint& caretPos)
 
 void TrayHost::onPanelClosed() { emit panelClosed(); }
 void TrayHost::showSettings() { QMessageBox::information(nullptr, "Settings", "Settings UI coming soon"); }
-void TrayHost::onAbout() { QMessageBox::about(nullptr, "EmojiTyper", "EmojiTyper v1.0.0\nPress Win+. to open"); }
+void TrayHost::onAbout() { QMessageBox::about(nullptr, "EmojiTyper", "EmojiTyper v1.0.0\nPress Meta+. to open"); }
 void TrayHost::onQuit() { quit(); }
 void TrayHost::quit()
 {

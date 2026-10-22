@@ -41,6 +41,7 @@ private:
     void setupTray();
     void setupConnections();
     void createPanel();
+    void setupAutostart();  // Write XDG autostart entry on first launch
 
     std::unique_ptr<QSystemTrayIcon> m_trayIcon;
     std::unique_ptr<QMenu> m_trayMenu;

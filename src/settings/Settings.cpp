@@ -85,7 +85,9 @@ void Settings::load()
     QJsonArray recentArr = obj.value("recentEmojis").toArray();
     m_recentEmojis.clear();
     for (const QJsonValue& v : recentArr) {
-        m_recentEmojis.append(v.toString());
+        if (m_recentEmojis.size() < MAX_RECENT) {
+            m_recentEmojis.append(v.toString());
+        }
     }
 
     // Frequent emojis

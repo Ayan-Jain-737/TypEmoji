@@ -110,6 +110,14 @@ else()
     target_compile_options(EmojiTyper PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
+# Auto-update installed binary so running daemon hot-reloads without manual restart
+if(EXISTS "$ENV{HOME}/.local/bin/EmojiTyper")
+    add_custom_command(TARGET EmojiTyper POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:EmojiTyper> $ENV{HOME}/.local/bin/EmojiTyper
+        COMMENT "Auto-updating ~/.local/bin/EmojiTyper for instant daemon reload"
+    )
+endif()
+
 # Install target
 install(TARGETS EmojiTyper
     RUNTIME DESTINATION bin

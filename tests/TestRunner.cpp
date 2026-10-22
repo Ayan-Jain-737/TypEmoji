@@ -143,6 +143,17 @@ void TestSettings::testRecentFrequent()
     QCOMPARE(s.recentEmojis().size(), 2);
     QCOMPARE(s.recentEmojis().first(), QString("😃"));  // Most recent first
 
+    // Test FIFO capacity limit (max 20)
+    for (int i = 1; i <= 25; ++i) {
+        s.addRecentEmoji(QString("emoji_%1").arg(i));
+    }
+    // Should be capped at 20
+    QCOMPARE(s.recentEmojis().size(), 20);
+    // Most recent is emoji_25 (entered last)
+    QCOMPARE(s.recentEmojis().first(), QString("emoji_25"));
+    // Oldest surviving is emoji_6 (emoji_1 through emoji_5 were evicted via FIFO)
+    QCOMPARE(s.recentEmojis().last(), QString("emoji_6"));
+
     s.incrementFrequency("😀");
     s.incrementFrequency("😀");
     s.incrementFrequency("😃");
@@ -157,7 +168,9 @@ class TestEmojiModel : public QObject
 private slots:
     void testModelLoad();
     void testCategoryFilter();
+    void testRecentCategory();
     void testSearchFilter();
+    void testPurposeSearch();
     void testClearFilters();
 };
 
@@ -198,6 +211,24 @@ void TestEmojiModel::testCategoryFilter()
     }
 }
 
+void TestEmojiModel::testRecentCategory()
+{
+    EmojiDatabase db;
+    QVERIFY(db.load());
+
+    EmojiModel model(&db);
+    QVector<EmojiEntry> recents = db.recentEmojis({"😀", "🔥", "🙏"});
+    QCOMPARE(recents.size(), 3);
+
+    model.setShowRecent(recents);
+    model.setCategoryFilter("Recent");
+
+    QCOMPARE(model.rowCount(), 3);
+    QCOMPARE(model.index(0, 0).data(EmojiModel::EmojiCharRole).toString(), QString("😀"));
+    QCOMPARE(model.index(1, 0).data(EmojiModel::EmojiCharRole).toString(), QString("🔥"));
+    QCOMPARE(model.index(2, 0).data(EmojiModel::EmojiCharRole).toString(), QString("🙏"));
+}
+
 void TestEmojiModel::testSearchFilter()
 {
     EmojiDatabase db;
@@ -221,6 +252,33 @@ void TestEmojiModel::testSearchFilter()
         }
     }
     QVERIFY(found);
+}
+
+void TestEmojiModel::testPurposeSearch()
+{
+    EmojiDatabase db;
+    QVERIFY(db.load());
+
+    // Purpose search: "pray" should rank folded hands at the top
+    QVector<EmojiEntry> prayResults = db.search("pray");
+    QVERIFY(!prayResults.isEmpty());
+    QVERIFY(prayResults.first().name.toLower().contains("folded hands") || prayResults.first().emojiChar == "🙏");
+
+    // Purpose search: "fire" should return fire emoji as #1
+    QVector<EmojiEntry> fireResults = db.search("fire");
+    QVERIFY(!fireResults.isEmpty());
+    QCOMPARE(fireResults.first().emojiChar, QString("🔥"));
+
+    // Purpose search: "laugh" should return tears of joy or rolling on the floor laughing
+    QVector<EmojiEntry> laughResults = db.search("laugh");
+    QVERIFY(!laughResults.isEmpty());
+    QString topEmoji = laughResults.first().emojiChar;
+    QVERIFY(topEmoji == "😂" || topEmoji == "🤣" || topEmoji == "😆");
+
+    // Multi-term search: "red heart" should return red heart as #1
+    QVector<EmojiEntry> redHeartResults = db.search("red heart");
+    QVERIFY(!redHeartResults.isEmpty());
+    QVERIFY(redHeartResults.first().emojiChar == "❤️" || redHeartResults.first().name.toLower() == "red heart");
 }
 
 void TestEmojiModel::testClearFilters()

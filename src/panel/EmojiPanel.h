@@ -23,9 +23,7 @@
 #include "TargetState.h"
 #include "EmojiInjector.h"
 #include "EmojiSearchProxy.h"
-#include "Settings.h"
 #include <vector>
-#include <string>
 
 // Category definition for tab-to-category mapping
 struct CategoryDef {
@@ -59,6 +57,7 @@ protected:
     void closeEvent(QCloseEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
+    void changeEvent(QEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private slots:
@@ -89,6 +88,8 @@ private:
     QWidget* m_containerWidget = nullptr;
     QWidget* m_headerWidget = nullptr;
     QPushButton* m_closeBtn = nullptr;
+    QWidget* m_footerWidget = nullptr;
+    QLabel* m_previewLabel = nullptr;
 
     std::vector<CategoryDef> m_categoryDefs;
     QPoint m_lastCaretPos;

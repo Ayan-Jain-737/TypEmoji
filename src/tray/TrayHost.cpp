@@ -18,11 +18,39 @@
 #include <QtWidgets/QStyle>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
-#include <QtCore/QFile>
-#include <QtGui/QGuiApplication>
-#include <iostream>
+#include <QtCore/QFileSystemWatcher>
+#include <QtCore/QFileInfo>
+#include <QtCore/QDateTime>
+#include <QtCore/QTimer>
+#include <unistd.h>
 
-TrayHost::TrayHost(QObject* parent) : QObject(parent) {}
+TrayHost::TrayHost(QObject* parent) : QObject(parent)
+{
+    QString appPath = QCoreApplication::applicationFilePath();
+    QFileInfo fi(appPath);
+    if (fi.exists()) {
+        m_binaryModTimeMs = fi.lastModified().toMSecsSinceEpoch();
+    }
+
+    m_reloadDebounceTimer = new QTimer(this);
+    m_reloadDebounceTimer->setSingleShot(true);
+    m_reloadDebounceTimer->setInterval(400);
+    connect(m_reloadDebounceTimer, &QTimer::timeout, this, [this]() {
+        reexecSelf();
+    });
+
+    m_fileWatcher = std::make_unique<QFileSystemWatcher>(this);
+    if (QFile::exists(appPath)) {
+        m_fileWatcher->addPath(appPath);
+        connect(m_fileWatcher.get(), &QFileSystemWatcher::fileChanged, this, [this, appPath](const QString&) {
+            qDebug() << "TrayHost: Executable modified on disk, scheduling re-exec...";
+            if (QFile::exists(appPath)) {
+                m_fileWatcher->addPath(appPath);
+            }
+            m_reloadDebounceTimer->start();
+        });
+    }
+}
 TrayHost::~TrayHost() {}
 
 bool TrayHost::initialize()
@@ -180,8 +208,57 @@ void TrayHost::createPanel()
     }
 }
 
+bool TrayHost::isBinaryUpdated() const
+{
+    // Check if Linux kernel marked /proc/self/exe as deleted (binary replaced on disk)
+    if (QFile::symLinkTarget("/proc/self/exe").endsWith(" (deleted)")) {
+        return true;
+    }
+    QString appPath = QCoreApplication::applicationFilePath();
+    QFileInfo fi(appPath);
+    if (fi.exists() && m_binaryModTimeMs > 0 && fi.lastModified().toMSecsSinceEpoch() > m_binaryModTimeMs) {
+        return true;
+    }
+    return false;
+}
+
+void TrayHost::reexecSelf(const QPoint& pos)
+{
+    qDebug() << "TrayHost: Seamlessly reloading updated binary...";
+    if (m_useKdeHotkey && m_kdeHotkey) {
+        m_kdeHotkey->uninstall();
+    } else if (m_x11Hotkey) {
+        m_x11Hotkey->uninstall();
+    }
+    if (m_trayIcon) {
+        m_trayIcon->hide();
+    }
+    if (m_panel) {
+        m_panel->hide();
+    }
+
+    QString appPath = QCoreApplication::applicationFilePath();
+    QByteArray appPathBytes = appPath.toLocal8Bit();
+
+    QByteArray showArg = (pos.x() >= 0 || pos.y() >= 0 || (m_panel && m_panel->isVisible())) ? "--show" : "";
+    char* argv[3];
+    argv[0] = appPathBytes.data();
+    if (!showArg.isEmpty()) {
+        argv[1] = showArg.data();
+        argv[2] = nullptr;
+    } else {
+        argv[1] = nullptr;
+    }
+
+    ::execv(appPathBytes.constData(), argv);
+}
+
 void TrayHost::showPanel(const QPoint& pos)
 {
+    if (isBinaryUpdated()) {
+        reexecSelf(pos);
+        return;
+    }
     qDebug() << "TrayHost::showPanel called with pos:" << pos;
     createPanel();
     if (m_panel) {

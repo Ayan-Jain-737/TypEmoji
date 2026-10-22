@@ -95,7 +95,7 @@ private:
     QPoint m_panelPos;
     QSize m_panelSize;
 
-    static const int MAX_RECENT = 50;
+    static const int MAX_RECENT = 20;
     static const int MAX_FREQUENT = 100;
 
     class QTimer* m_saveTimer = nullptr;

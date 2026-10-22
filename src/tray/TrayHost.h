@@ -27,6 +27,8 @@ public:
     void showPanel(const QPoint& pos = QPoint(-1, -1));
     void showSettings();
     void quit();
+    bool isBinaryUpdated() const;
+    void reexecSelf(const QPoint& pos = QPoint(-1, -1));
 
 signals:
     void panelClosed();
@@ -53,4 +55,8 @@ private:
     std::unique_ptr<KGlobalAccelHotkey> m_kdeHotkey;
     std::unique_ptr<EmojiPanel> m_panel;
     bool m_useKdeHotkey = false;
+
+    qint64 m_binaryModTimeMs = 0;
+    std::unique_ptr<class QFileSystemWatcher> m_fileWatcher;
+    class QTimer* m_reloadDebounceTimer = nullptr;
 };

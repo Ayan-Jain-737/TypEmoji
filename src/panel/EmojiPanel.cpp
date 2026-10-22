@@ -3,6 +3,7 @@
  */
 #include "EmojiPanel.h"
 #include "EmojiSearchProxy.h"
+#include "Settings.h"
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QListView>
 #include <QtWidgets/QLineEdit>
@@ -91,10 +92,13 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
     setFocusPolicy(Qt::StrongFocus);
 
     m_clickOutsideTimer = new QTimer(this);
-    m_clickOutsideTimer->setInterval(60);
+    m_clickOutsideTimer->setInterval(80);
     connect(m_clickOutsideTimer, &QTimer::timeout, this, [this]() {
-        if (!isVisible()) return;
-        if (m_isInjecting) return;
+        if (!isVisible() || m_isInjecting || !m_wasActivated) return;
+        if (!isActiveWindow()) {
+            hidePanel();
+            return;
+        }
         if (QGuiApplication::mouseButtons() != Qt::NoButton) {
             if (!rect().contains(mapFromGlobal(QCursor::pos()))) {
                 hidePanel();
@@ -145,6 +149,7 @@ void EmojiPanel::setupUi()
     m_searchEdit->setObjectName("searchEdit");
     m_searchEdit->setStyleSheet("#searchEdit { border-radius: 16px; }");
     m_searchEdit->setFocusPolicy(Qt::StrongFocus);
+    m_searchEdit->installEventFilter(this);
     connect(m_searchEdit, &QLineEdit::returnPressed, this, [this]() {
         if (m_proxyModel->rowCount() > 0) {
             QModelIndex firstIdx = m_proxyModel->index(0, 0);
@@ -175,6 +180,7 @@ void EmojiPanel::setupUi()
     m_categoryTabBar->setUsesScrollButtons(true);
     m_categoryTabBar->setMovable(false);
     m_categoryTabBar->setFocusPolicy(Qt::NoFocus);
+    m_categoryTabBar->installEventFilter(this);
     connect(m_categoryTabBar, &QTabBar::currentChanged, this, &EmojiPanel::onCategoryChanged);
 
     // Stacked widget for category pages
@@ -193,10 +199,23 @@ void EmojiPanel::setupUi()
     // Create list views for each category
     createCategoryViews();
 
+    // Footer with preview label
+    m_footerWidget = new QWidget(m_containerWidget);
+    m_footerWidget->setObjectName("footerWidget");
+    m_footerWidget->setFixedHeight(32);
+    QHBoxLayout* footerLayout = new QHBoxLayout(m_footerWidget);
+    footerLayout->setContentsMargins(16, 4, 16, 4);
+    footerLayout->setSpacing(8);
+    m_previewLabel = new QLabel(m_footerWidget);
+    m_previewLabel->setObjectName("previewLabel");
+    m_previewLabel->setText("Select an emoji");
+    footerLayout->addWidget(m_previewLabel, 1);
+
     // Assemble
     containerLayout->addWidget(m_headerWidget);
     containerLayout->addWidget(m_categoryTabBar);
     containerLayout->addWidget(m_stackedWidget, 1);
+    containerLayout->addWidget(m_footerWidget);
 
     m_mainLayout->addWidget(m_containerWidget);
 
@@ -213,13 +232,10 @@ void EmojiPanel::populateCategories()
         m_categoryTabBar->removeTab(0);
     }
 
-    // Standard Unicode Emoji category order (matches emoji-test.txt group order).
-    // Each tab maps to a specific category name from the database.
-    // This order is hardcoded to match the standard and avoid depending on
-    // alphabetical sort order from EmojiDatabase::categories().
+    // Standard Unicode Emoji category order with Recently used as the first tab.
     m_categoryDefs.clear();
     m_categoryDefs = {
-        {"🔍", "All emojis",           "All"},
+        {"🕒", "Recently used",        "Recent"},
         {"😀", "Smileys & Emotion",     "Smileys & Emotion"},
         {"👋", "People & Body",         "People & Body"},
         {"🐶", "Animals & Nature",      "Animals & Nature"},
@@ -229,7 +245,7 @@ void EmojiPanel::populateCategories()
         {"💡", "Objects",               "Objects"},
         {"🔣", "Symbols",              "Symbols"},
         {"🏁", "Flags",                "Flags"},
-        {"⏱",  "Recent & Frequent",    "Recent"}
+        {"🌐", "All emojis",           "All"}
     };
 
     for (int i = 0; i < static_cast<int>(m_categoryDefs.size()); ++i) {
@@ -240,8 +256,7 @@ void EmojiPanel::populateCategories()
 
 void EmojiPanel::createCategoryViews()
 {
-    // Create one list view per tab (matching m_categoryDefs from populateCategories).
-    // All views share the same model — category filtering happens in onCategoryChanged().
+    // Create one list view per tab
     for (int i = 0; i < static_cast<int>(m_categoryDefs.size()); ++i) {
         QListView* listView = new QListView(m_stackedWidget);
         listView->setModel(m_proxyModel);
@@ -257,6 +272,7 @@ void EmojiPanel::createCategoryViews()
         listView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         listView->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
         listView->setUniformItemSizes(true);
+        listView->setMouseTracking(true);
         listView->setObjectName(QString("listView_%1").arg(i));
         QFont f = listView->font();
         f.setPointSize(28);
@@ -264,14 +280,34 @@ void EmojiPanel::createCategoryViews()
         listView->setFont(f);
         listView->setStyleSheet("QListView { outline: none; border: none; } QListView::item { padding: 4px; }");
         listView->setItemDelegate(new EmojiDelegate(listView));
+        listView->installEventFilter(this);
         connect(listView, &QListView::clicked, this, &EmojiPanel::onEmojiClicked);
+
+        // Preview on hover / selection
+        connect(listView, &QListView::entered, this, [this](const QModelIndex& idx) {
+            if (idx.isValid() && m_previewLabel) {
+                QString name = idx.data(EmojiModel::NameRole).toString();
+                QString emojiChar = idx.data(EmojiModel::EmojiCharRole).toString();
+                m_previewLabel->setText(QString("%1  %2").arg(emojiChar, name));
+            }
+        });
+        if (listView->selectionModel()) {
+            connect(listView->selectionModel(), &QItemSelectionModel::currentChanged, this, [this](const QModelIndex& current, const QModelIndex&) {
+                if (current.isValid() && m_previewLabel) {
+                    QString name = current.data(EmojiModel::NameRole).toString();
+                    QString emojiChar = current.data(EmojiModel::EmojiCharRole).toString();
+                    m_previewLabel->setText(QString("%1  %2").arg(emojiChar, name));
+                }
+            });
+        }
+
         m_listViews.append(listView);
         m_stackedWidget->addWidget(listView);
     }
 
-    // Start on "All" tab (index 0)
-    m_categoryTabBar->setCurrentIndex(0);
-    m_stackedWidget->setCurrentIndex(0);
+    // Default start tab: Smileys & Emotion (index 1) or Recent (index 0)
+    m_categoryTabBar->setCurrentIndex(1);
+    m_stackedWidget->setCurrentIndex(1);
 }
 
 void EmojiPanel::applyTheme()
@@ -381,6 +417,17 @@ void EmojiPanel::applyTheme()
             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
                 background: none;
             }
+            #footerWidget {
+                background-color: #1a1a1a;
+                border-top: 1px solid #2d2d2d;
+                border-bottom-left-radius: 12px;
+                border-bottom-right-radius: 12px;
+            }
+            #previewLabel {
+                color: #888888;
+                font-size: 13px;
+                font-weight: 500;
+            }
         )");
     } else {
         setStyleSheet(R"(
@@ -485,6 +532,17 @@ void EmojiPanel::applyTheme()
             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
                 background: none;
             }
+            #footerWidget {
+                background-color: #f8f8f8;
+                border-top: 1px solid #ebebeb;
+                border-bottom-left-radius: 12px;
+                border-bottom-right-radius: 12px;
+            }
+            #previewLabel {
+                color: #666666;
+                font-size: 13px;
+                font-weight: 500;
+            }
         )");
     }
 }
@@ -506,15 +564,15 @@ void EmojiPanel::showAt(const QPoint& pos)
         positionAtCaret(cursorPos);
     }
 
-    // Restore recent/frequent from settings
+    // Restore recent from settings
     Settings& settings = Settings::instance();
     QStringList recentCodes = settings.recentEmojis();
     QVector<EmojiEntry> recent = m_database ? m_database->recentEmojis(recentCodes) : QVector<EmojiEntry>();
     m_model->setShowRecent(recent);
 
-    QVariantMap frequentMap = settings.frequentEmojis();
-    QVector<EmojiEntry> frequent = m_database ? m_database->frequentEmojis(frequentMap) : QVector<EmojiEntry>();
-    m_model->setShowFrequent(frequent);
+    int initialTab = !recent.isEmpty() ? 0 : 1;
+    m_categoryTabBar->setCurrentIndex(initialTab);
+    onCategoryChanged(initialTab);
 
     m_wasActivated = false;
     m_isInjecting = false;
@@ -532,18 +590,29 @@ void EmojiPanel::showAt(const QPoint& pos)
         m_targetState->ensurePanelAbove();
     }
 
+    // Direct keyboard focus to search edit so the user can immediately type
+    if (m_searchEdit) {
+        m_searchEdit->setFocus();
+    }
+
     int curIdx = m_stackedWidget->currentIndex();
     if (curIdx >= 0 && curIdx < m_listViews.size()) {
         QListView* curList = m_listViews[curIdx];
         if (m_proxyModel->rowCount() > 0) {
             curList->setCurrentIndex(m_proxyModel->index(0, 0));
         }
-        curList->setFocus();
     }
 
     if (m_clickOutsideTimer) {
         m_clickOutsideTimer->start();
     }
+
+    // Arm auto-close on window deactivation after window manager finishes mapping
+    QTimer::singleShot(200, this, [this]() {
+        if (isVisible()) {
+            m_wasActivated = true;
+        }
+    });
 
     qDebug() << "EmojiPanel shown at" << geometry().topLeft();
 }
@@ -610,10 +679,15 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
     QString emoji = data.toString();
     if (emoji.isEmpty()) return;
 
-    // Update recent/frequent tracking
+    // Update recent/frequent tracking (FIFO up to 20)
     Settings& settings = Settings::instance();
     settings.addRecentEmoji(emoji);
     settings.incrementFrequency(emoji);
+
+    // Update recent list in model in real-time
+    QStringList recentCodes = settings.recentEmojis();
+    QVector<EmojiEntry> recent = m_database ? m_database->recentEmojis(recentCodes) : QVector<EmojiEntry>();
+    m_model->setShowRecent(recent);
 
     // Direct injection into the target application text box.
     // The panel stays open so the user can select multiple emojis in sequence!
@@ -660,11 +734,42 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
 
 void EmojiPanel::onSearchTextChanged(const QString& text)
 {
-    m_proxyModel->setFilterRegularExpression(QRegularExpression(text, QRegularExpression::CaseInsensitiveOption));
-    // Switch to "All" category when searching
-    if (!text.isEmpty()) {
-        m_categoryTabBar->setCurrentIndex(0);
-        m_stackedWidget->setCurrentIndex(0);
+    QString query = text.trimmed();
+    m_proxyModel->setFilterRegularExpression(QRegularExpression());
+    m_model->setSearchQuery(query);
+
+    int curIdx = m_categoryTabBar->currentIndex();
+    QListView* curList = (curIdx >= 0 && curIdx < m_listViews.size()) ? m_listViews[curIdx] : nullptr;
+
+    if (!query.isEmpty()) {
+        if (m_previewLabel) {
+            int count = m_proxyModel->rowCount();
+            m_previewLabel->setText(QString("Search results for \"%1\" (%2 found)").arg(query).arg(count));
+        }
+        if (curList && m_proxyModel->rowCount() > 0) {
+            curList->setCurrentIndex(m_proxyModel->index(0, 0));
+        }
+    } else {
+        if (curIdx >= 0 && curIdx < static_cast<int>(m_categoryDefs.size())) {
+            const QString& category = m_categoryDefs[curIdx].categoryName;
+            if (category == "Recent") {
+                Settings& settings = Settings::instance();
+                QStringList recentCodes = settings.recentEmojis();
+                QVector<EmojiEntry> recent = m_database ? m_database->recentEmojis(recentCodes) : QVector<EmojiEntry>();
+                m_model->setShowRecent(recent);
+                m_model->setCategoryFilter("Recent");
+            } else if (category == "All") {
+                m_model->clearFilters();
+            } else {
+                m_model->setCategoryFilter(category);
+            }
+            if (m_previewLabel) {
+                m_previewLabel->setText(m_categoryDefs[curIdx].tooltip);
+            }
+        }
+        if (curList && m_proxyModel->rowCount() > 0) {
+            curList->setCurrentIndex(m_proxyModel->index(0, 0));
+        }
     }
 }
 
@@ -675,8 +780,12 @@ void EmojiPanel::onCategoryChanged(int index)
 
     m_stackedWidget->setCurrentIndex(index);
 
-    // Look up the category name directly from m_categoryDefs — no reliance on
-    // database ordering. This guarantees tab→category mapping is always correct.
+    if (!m_searchEdit->text().isEmpty()) {
+        QSignalBlocker blocker(m_searchEdit);
+        m_searchEdit->clear();
+    }
+    m_model->setSearchQuery(QString());
+
     const QString& category = m_categoryDefs[index].categoryName;
 
     if (category == "All") {
@@ -686,15 +795,26 @@ void EmojiPanel::onCategoryChanged(int index)
         QStringList recentCodes = settings.recentEmojis();
         QVector<EmojiEntry> recent = m_database ? m_database->recentEmojis(recentCodes) : QVector<EmojiEntry>();
         m_model->setShowRecent(recent);
-
-        QVariantMap frequentMap = settings.frequentEmojis();
-        QVector<EmojiEntry> frequent = m_database ? m_database->frequentEmojis(frequentMap) : QVector<EmojiEntry>();
-        m_model->setShowFrequent(frequent);
-        m_model->showOnlySpecialSections();
+        m_model->setCategoryFilter("Recent");
     } else {
         m_model->setCategoryFilter(category);
     }
-    m_searchEdit->clear();
+
+    if (index < m_listViews.size()) {
+        QListView* listView = m_listViews[index];
+        if (m_proxyModel->rowCount() > 0) {
+            listView->setCurrentIndex(m_proxyModel->index(0, 0));
+        }
+        listView->scrollToTop();
+    }
+
+    if (m_previewLabel) {
+        if (category == "Recent" && m_proxyModel->rowCount() == 0) {
+            m_previewLabel->setText("No recently used emojis yet. Pick an emoji to get started!");
+        } else {
+            m_previewLabel->setText(m_categoryDefs[index].tooltip);
+        }
+    }
 }
 
 void EmojiPanel::onSkinToneRequested(const QModelIndex&)
@@ -846,6 +966,19 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
     }
 }
 
+void EmojiPanel::changeEvent(QEvent* event)
+{
+    if (event->type() == QEvent::ActivationChange) {
+        if (isActiveWindow()) {
+            m_wasActivated = true;
+        } else if (m_wasActivated && !m_isInjecting && isVisible()) {
+            qDebug() << "EmojiPanel: Lost window activation, closing panel";
+            hidePanel();
+        }
+    }
+    QWidget::changeEvent(event);
+}
+
 void EmojiPanel::focusOutEvent(QFocusEvent* event)
 {
     QWidget::focusOutEvent(event);
@@ -853,6 +986,80 @@ void EmojiPanel::focusOutEvent(QFocusEvent* event)
 
 bool EmojiPanel::eventFilter(QObject* watched, QEvent* event)
 {
+    // Handle keyboard events globally across child widgets
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+        int key = keyEvent->key();
+        int curIdx = m_stackedWidget->currentIndex();
+        QListView* curList = (curIdx >= 0 && curIdx < m_listViews.size()) ? m_listViews[curIdx] : nullptr;
+
+        // Escape: clear search if non-empty, otherwise close panel
+        if (key == Qt::Key_Escape) {
+            if (m_searchEdit && !m_searchEdit->text().isEmpty()) {
+                m_searchEdit->clear();
+                if (curList) curList->setFocus();
+            } else {
+                hidePanel();
+            }
+            return true;
+        }
+
+        // Return / Enter: Inject emoji
+        if (key == Qt::Key_Return || key == Qt::Key_Enter) {
+            if (!keyEvent->isAutoRepeat()) {
+                if (curList && curList->currentIndex().isValid()) {
+                    onEmojiClicked(curList->currentIndex());
+                } else if (m_proxyModel->rowCount() > 0) {
+                    onEmojiClicked(m_proxyModel->index(0, 0));
+                }
+            }
+            return true;
+        }
+
+        // Down arrow from search edit moves focus into grid
+        if (watched == m_searchEdit && key == Qt::Key_Down) {
+            if (curList) {
+                curList->setFocus();
+                if (!curList->currentIndex().isValid() && m_proxyModel->rowCount() > 0) {
+                    curList->setCurrentIndex(m_proxyModel->index(0, 0));
+                }
+            }
+            return true;
+        }
+
+        // Up arrow from top row of grid moves focus back into search edit
+        if (watched != m_searchEdit && key == Qt::Key_Up) {
+            if (curList && curList->currentIndex().row() < 6) {
+                if (m_searchEdit) {
+                    m_searchEdit->setFocus();
+                    m_searchEdit->setCursorPosition(m_searchEdit->text().length());
+                    return true;
+                }
+            }
+        }
+
+        // Backspace when not in searchEdit -> chop last char from searchEdit
+        if (watched != m_searchEdit && key == Qt::Key_Backspace) {
+            if (m_searchEdit && !m_searchEdit->text().isEmpty()) {
+                QString t = m_searchEdit->text();
+                t.chop(1);
+                m_searchEdit->setText(t);
+                return true;
+            }
+        }
+
+        // Printable text when focused on grid or tabs -> redirect to searchEdit
+        if (watched != m_searchEdit && !keyEvent->text().isEmpty() && keyEvent->text()[0].isPrint()) {
+            Qt::KeyboardModifiers mods = keyEvent->modifiers();
+            if (!(mods & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))) {
+                if (m_searchEdit) {
+                    m_searchEdit->setText(m_searchEdit->text() + keyEvent->text());
+                    return true;
+                }
+            }
+        }
+    }
+
     // Detect mouse clicks outside the panel to close it (Plasma/Windows behavior)
     if (event->type() == QEvent::MouseButtonPress) {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);

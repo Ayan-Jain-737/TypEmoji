@@ -39,8 +39,14 @@ int main(int argc, char *argv[])
     instance.setMessageHandler([&trayHost](const QString& msg) {
         if (msg == "show") {
             trayHost.showPanel();
+        } else if (msg == "reload") {
+            trayHost.reexecSelf();
         }
     });
+
+    if (app.arguments().contains("--show")) {
+        trayHost.showPanel();
+    }
 
     return app.exec();
 }

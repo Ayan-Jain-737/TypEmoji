@@ -56,6 +56,7 @@ private:
     QString m_currentCategory;
     QString m_searchQuery;
     bool m_showSpecialSections = true;
+    bool m_isRecentCategory = false;
 
     void rebuildFilter();
 };

@@ -41,13 +41,22 @@ public:
     // Get unique categories
     QStringList categories() const { return m_categories; }
 
-    // Search emojis by keyword/name
+    // Search emojis by keyword/name (returns entries sorted by relevance)
     QVector<EmojiEntry> search(const QString& query) const;
 
-    // Get emoji by codepoints
+    // Search emojis returning indices directly (sorted by relevance)
+    QVector<int> searchIndices(const QString& query) const;
+
+    // Get emoji by codepoints (e.g. "1F600")
     const EmojiEntry* findByCodepoints(const QString& codepoints) const;
 
-    // Get recent emojis (from settings)
+    // Get emoji by character (e.g. "😀")
+    const EmojiEntry* findByChar(const QString& emojiChar) const;
+
+    // Get emoji by either character or codepoints
+    const EmojiEntry* findEmoji(const QString& codeOrChar) const;
+
+    // Get recent emojis (from settings codes or chars)
     QVector<EmojiEntry> recentEmojis(const QStringList& recentCodes) const;
 
     // Get frequent emojis (from settings)
@@ -68,6 +77,8 @@ private:
     QStringList m_categories;
     QMap<QString, QVector<int>> m_categoryIndex;   // category -> indices
     QMap<QString, QVector<int>> m_keywordIndex;    // keyword -> indices
+    QHash<QString, int> m_codepointsIndex;         // codepoints -> index
+    QHash<QString, int> m_charIndex;               // emojiChar -> index
 
     // Parse emoji-test.txt format
     bool parseEmojiTest(const QString& data);
@@ -77,6 +88,9 @@ private:
 
     // Build search indexes
     void buildIndexes();
+
+    // Attach purpose keywords
+    void attachPurposeKeywords(EmojiEntry& entry);
 
     // Generate emoji character from codepoints
     QString codepointsToChar(const QString& codepoints) const;

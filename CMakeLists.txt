@@ -68,6 +68,7 @@ add_executable(EmojiTyper
     src/ipc/SingleInstance.h
     src/TargetState.cpp
     src/TargetState.h
+    resources/resources.qrc
 )
 
 # Make EmojiTyper depend on copy_data
@@ -114,7 +115,9 @@ endif()
 if(EXISTS "$ENV{HOME}/.local/bin/EmojiTyper")
     add_custom_command(TARGET EmojiTyper POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:EmojiTyper> $ENV{HOME}/.local/bin/EmojiTyper
-        COMMENT "Auto-updating ~/.local/bin/EmojiTyper for instant daemon reload"
+        COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.local/share/icons/hicolor/scalable/apps
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/emojityper.svg $ENV{HOME}/.local/share/icons/hicolor/scalable/apps/emojityper.svg
+        COMMENT "Auto-updating ~/.local/bin/EmojiTyper and system icon cache for instant daemon reload"
     )
 endif()
 

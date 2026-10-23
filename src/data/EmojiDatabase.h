@@ -92,6 +92,9 @@ private:
     // Attach purpose keywords
     void attachPurposeKeywords(EmojiEntry& entry);
 
+    // Load universal kaomoji collection
+    void loadKaomoji();
+
     // Generate emoji character from codepoints
     QString codepointsToChar(const QString& codepoints) const;
 };

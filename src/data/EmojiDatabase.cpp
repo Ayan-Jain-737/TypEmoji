@@ -60,6 +60,7 @@ bool EmojiDatabase::load()
         parseZwjSequences(zwjData);
     }
 
+    loadKaomoji();
     buildIndexes();
 
     qDebug() << "Loaded" << m_emojis.size() << "emojis in" << m_categories.size() << "categories";
@@ -762,4 +763,72 @@ QVector<EmojiEntry> EmojiDatabase::skinToneVariants(const EmojiEntry& base) cons
     }
 
     return variants;
+}
+
+void EmojiDatabase::loadKaomoji()
+{
+    if (!m_categories.contains("Kaomoji")) {
+        m_categories.append("Kaomoji");
+    }
+
+    struct KaomojiDef {
+        const char* charText;
+        const char* name;
+        const char* keywords;
+    };
+
+    static const KaomojiDef kaomojiList[] = {
+        {"(•‿•)", "Happy Face", "happy smile cute joyful face"},
+        {"(◕‿◕✿)", "Flower Girl", "flower girl cheerful cute anime happy"},
+        {"(╯°□°)╯︵ ┻━┻", "Table Flip", "table flip rage angry smash tableflip"},
+        {"┬─┬ノ( º _ ºノ)", "Put Table Back", "calm respect put table back unflip"},
+        {"¯\\_(ツ)_/¯", "Shrug", "shrug whatever idk don't know care"},
+        {"( ͡° ͜ʖ ͡°)", "Lenny Face", "lenny face smirk mischief naughty eyes"},
+        {"(｡♥‿♥｡)", "Heart Eyes", "heart eyes love crush inlove romance"},
+        {"ʕ•ᴥ•ʔ", "Little Bear", "bear animal cute kawaii teddy"},
+        {"(>_<)", "Troubled", "troubled annoyed frustrated ouch"},
+        {"(づ｡◕‿‿◕｡)づ", "Hugs", "hug hugs embrace love cute warm"},
+        {"(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧", "Magic Sparkles", "magic sparkle glitter happy cheer excited"},
+        {"ಠ_ಠ", "Look of Disapproval", "disapproval stare glare angry judging suspicious"},
+        {"(☞ﾟヮﾟ)☞", "Finger Guns", "finger guns you got it nice hey bro"},
+        {"(T_T)", "Crying Face", "cry crying tears sad weep upset"},
+        {"(¬_¬)", "Side Glance", "glance side eye suspicious unimpressed whatever"},
+        {"(づ￣ ³￣)づ", "Blowing Kiss", "kiss kissing love affection sweetheart"},
+        {"(ง'̀-'́)ง", "Ready to Fight", "fight boxer punch challenge angry tough"},
+        {"(・_・;)", "Nervous Sweat", "nervous sweat sweatdrop anxious worried"},
+        {"(・ω・)", "Cat Face", "cat face kitty pet cute mouth"},
+        {"(=^･ω･^=)", "Cat with Ears", "cat kitten ears whiskers meow"},
+        {"(｡•́︿•̀｡)", "Sad Pout", "sad pout crying lonely hurt"},
+        {"(✿◠‿◠)", "Blushing Flower", "blush shy gentle sweet pretty"},
+        {"(¬‿¬)", "Smug Grin", "smug grin knowing evil smile"},
+        {"(；一_一)", "Doubtful", "doubt skeptical squint suspect annoyed"},
+        {"(★‿★)", "Star Struck", "star eyes wow amazing dazzle"},
+        {"(•_•) ( •_•)>⌐■-■ (⌐■_■)", "Deal With It", "deal with it sunglasses cool boss"},
+        {"(°ロ°) !", "Shocked", "shocked gasp surprise startled what"},
+        {"(ノಠ益ಠ)ノ彡┻━┻", "Rage Table Flip", "rage flip fury table furious crazy"}
+    };
+
+    for (const auto& k : kaomojiList) {
+        EmojiEntry entry;
+        entry.emojiChar = QString::fromUtf8(k.charText);
+        entry.name = QString::fromUtf8(k.name);
+        entry.category = "Kaomoji";
+        entry.subcategory = "kaomoji";
+        entry.codepoints = QString("KAO_%1").arg(qHash(entry.emojiChar), 8, 16, QChar('0')).toUpper();
+
+        QStringList kw = QString::fromUtf8(k.keywords).split(' ', Qt::SkipEmptyParts);
+        kw.append(entry.name.toLower().split(' ', Qt::SkipEmptyParts));
+        kw.append("kaomoji");
+        kw.removeDuplicates();
+        entry.keywords = kw;
+
+        int index = m_emojis.size();
+        m_emojis.append(entry);
+        m_categoryIndex["Kaomoji"].append(index);
+        m_codepointsIndex.insert(entry.codepoints, index);
+        m_charIndex.insert(entry.emojiChar, index);
+        for (const QString& w : kw) {
+            m_keywordIndex[w.toLower()].append(index);
+        }
+    }
 }

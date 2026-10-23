@@ -72,6 +72,7 @@ private slots:
     void testLoadFallback();
     void testSearchIndex();
     void testCategories();
+    void testKaomoji();
 };
 
 void TestEmojiDatabase::testLoadFallback()
@@ -96,7 +97,28 @@ void TestEmojiDatabase::testCategories()
     EmojiDatabase db;
     if (db.load()) {
         QStringList cats = db.categories();
-        QVERIFY(cats.size() > 0 || cats.size() == 0);  // No crash
+        QVERIFY(cats.contains("Kaomoji"));
+        QVERIFY(cats.contains("Smileys & Emotion"));
+    }
+}
+
+void TestEmojiDatabase::testKaomoji()
+{
+    EmojiDatabase db;
+    if (db.load()) {
+        QVector<EmojiEntry> kaomojis = db.emojisByCategory("Kaomoji");
+        QVERIFY(kaomojis.size() >= 20);
+
+        QVector<EmojiEntry> shrugResults = db.search("shrug");
+        QVERIFY(!shrugResults.isEmpty());
+        bool foundShrug = false;
+        for (const auto& entry : shrugResults) {
+            if (entry.emojiChar.contains("ツ")) {
+                foundShrug = true;
+                break;
+            }
+        }
+        QVERIFY(foundShrug);
     }
 }
 

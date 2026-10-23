@@ -24,6 +24,8 @@
 #include <QtGui/QFocusEvent>
 #include <QtGui/QScreen>
 #include <QtWidgets/QStyledItemDelegate>
+#include <QtWidgets/QMenu>
+#include <QtWidgets/QWidgetAction>
 #include <QtGui/QPainter>
 
 class EmojiDelegate : public QStyledItemDelegate {
@@ -32,30 +34,58 @@ public:
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
         QStyleOptionViewItem opt = option;
         initStyleOption(&opt, index);
-        QString emoji = index.data(Qt::UserRole + 6).toString();
+        QString emoji = index.data(EmojiModel::EmojiCharRole).toString();
         if (!emoji.isEmpty()) {
             painter->save();
+            painter->setRenderHint(QPainter::Antialiasing);
             painter->setRenderHint(QPainter::TextAntialiasing);
 
-            QRect r = opt.rect.adjusted(3, 3, -3, -3);
+            QRect r = opt.rect.adjusted(1, 1, -1, -1);
 
             // Draw selection background / border
             if (option.state & QStyle::State_Selected) {
                 painter->setPen(QPen(QColor(0, 120, 212), 2));
-                painter->setBrush(QColor(0, 120, 212, 50));
+                painter->setBrush(QColor(0, 120, 212, 45));
                 painter->drawRoundedRect(r, 8, 8);
             } else if (option.state & QStyle::State_MouseOver) {
-                painter->setPen(QPen(QColor(128, 128, 128, 60), 1));
-                painter->setBrush(QColor(128, 128, 128, 30));
+                painter->setPen(Qt::NoPen);
+                painter->setBrush(QColor(255, 255, 255, 22));
                 painter->drawRoundedRect(r, 8, 8);
             }
 
             QFont f = opt.font;
-            f.setPointSize(28);
-            f.setFamilies({"Segoe UI Emoji","Noto Color Emoji","Apple Color Emoji","Symbola","DejaVu Sans"});
+            QString subcat = index.data(EmojiModel::SubcategoryRole).toString();
+            QString cat = index.data(EmojiModel::CategoryRole).toString();
+            QString codepoints = index.data(EmojiModel::CodepointsRole).toString();
+            bool isKaomoji = (subcat == "kaomoji" || cat == "Kaomoji" || codepoints.startsWith("KAO_") ||
+                              emoji.contains('(') || emoji.contains(')') || emoji.contains('\\') ||
+                              emoji.contains(QChar(0x30c4)) /* ツ */ || emoji.contains(QChar(0x30ce)) /* ノ */);
+
+            if (isKaomoji) {
+                f.setPointSize(8);
+                f.setFamily("JetBrains Mono, monospace, sans-serif");
+            } else {
+                f.setPointSize(21);
+                f.setFamilies({"Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji", "Symbola", "DejaVu Sans"});
+            }
+
             painter->setFont(f);
             painter->setPen(opt.palette.text().color());
-            painter->drawText(opt.rect, Qt::AlignCenter, emoji);
+
+            QRect drawRect = opt.rect;
+            if (option.state & QStyle::State_MouseOver) {
+                drawRect.adjust(-1, -1, 1, 1);
+            }
+
+            painter->drawText(drawRect, Qt::AlignCenter, emoji);
+
+            // Subtle skin-tone indicator dot in bottom-right corner
+            if (index.data(EmojiModel::HasSkinTonesRole).toBool()) {
+                painter->setPen(Qt::NoPen);
+                painter->setBrush(QColor(154, 154, 162, 175));
+                painter->drawEllipse(r.right() - 5, r.bottom() - 5, 3, 3);
+            }
+
             painter->restore();
             return;
         }
@@ -64,7 +94,7 @@ public:
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
         Q_UNUSED(option);
         Q_UNUSED(index);
-        return QSize(64, 64);
+        return QSize(40, 40);
     }
 };
 
@@ -78,16 +108,13 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
     setAttribute(Qt::WA_TranslucentBackground, true);
     setWindowTitle("EmojiTyper");
 
-    // Load geometry from settings
+    // Load position from settings
     Settings& settings = Settings::instance();
     QPoint savedPos = settings.panelPos();
     if (savedPos.x() >= 0 && savedPos.y() >= 0) {
         move(savedPos);
     }
-    QSize savedSize = settings.panelSize();
-    if (savedSize.width() > 0 && savedSize.height() > 0) {
-        resize(savedSize);
-    }
+    setFixedSize(360, 440);
 
     setFocusPolicy(Qt::StrongFocus);
 
@@ -128,26 +155,25 @@ void EmojiPanel::setupUi()
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(0);
 
-    // Header with search and close button
+    // Header with search and close button (Stitch UI 36px search field)
     m_headerWidget = new QWidget(m_containerWidget);
     m_headerWidget->setObjectName("headerWidget");
-    m_headerWidget->setFixedHeight(48);
+    m_headerWidget->setFixedHeight(50);
     QHBoxLayout* headerLayout = new QHBoxLayout(m_headerWidget);
-    headerLayout->setContentsMargins(12, 8, 12, 8);
+    headerLayout->setContentsMargins(12, 10, 12, 6);
     headerLayout->setSpacing(8);
 
     // Search icon label
     QLabel* searchIcon = new QLabel(m_headerWidget);
     searchIcon->setText("🔍");
-    searchIcon->setFixedSize(20, 20);
+    searchIcon->setFixedSize(18, 18);
     searchIcon->setAlignment(Qt::AlignCenter);
 
     m_searchEdit = new QLineEdit(m_headerWidget);
-    m_searchEdit->setPlaceholderText("Search");
+    m_searchEdit->setPlaceholderText("Search emoji");
     m_searchEdit->setClearButtonEnabled(true);
-    m_searchEdit->setFixedHeight(32);
+    m_searchEdit->setFixedHeight(36);
     m_searchEdit->setObjectName("searchEdit");
-    m_searchEdit->setStyleSheet("#searchEdit { border-radius: 16px; }");
     m_searchEdit->setFocusPolicy(Qt::StrongFocus);
     m_searchEdit->installEventFilter(this);
     connect(m_searchEdit, &QLineEdit::returnPressed, this, [this]() {
@@ -160,8 +186,8 @@ void EmojiPanel::setupUi()
     });
 
     // Close button
-    m_closeBtn = new QPushButton("×", m_headerWidget);
-    m_closeBtn->setFixedSize(28, 28);
+    m_closeBtn = new QPushButton("✕", m_headerWidget);
+    m_closeBtn->setFixedSize(26, 26);
     m_closeBtn->setObjectName("closeBtn");
     m_closeBtn->setToolTip("Close (Esc)");
     m_closeBtn->setFocusPolicy(Qt::NoFocus);
@@ -174,10 +200,11 @@ void EmojiPanel::setupUi()
     // Category tab bar (Windows-style emoji category tabs)
     m_categoryTabBar = new QTabBar(m_containerWidget);
     m_categoryTabBar->setObjectName("categoryTabBar");
+    m_categoryTabBar->setFixedHeight(34);
     m_categoryTabBar->setExpanding(true);
     m_categoryTabBar->setDrawBase(false);
-    m_categoryTabBar->setElideMode(Qt::ElideRight);
-    m_categoryTabBar->setUsesScrollButtons(true);
+    m_categoryTabBar->setElideMode(Qt::ElideNone);
+    m_categoryTabBar->setUsesScrollButtons(false);
     m_categoryTabBar->setMovable(false);
     m_categoryTabBar->setFocusPolicy(Qt::NoFocus);
     m_categoryTabBar->installEventFilter(this);
@@ -199,17 +226,58 @@ void EmojiPanel::setupUi()
     // Create list views for each category
     createCategoryViews();
 
-    // Footer with preview label
+    // Footer with preview bar (Stitch UI 44px height)
     m_footerWidget = new QWidget(m_containerWidget);
     m_footerWidget->setObjectName("footerWidget");
-    m_footerWidget->setFixedHeight(32);
+    m_footerWidget->setFixedHeight(44);
     QHBoxLayout* footerLayout = new QHBoxLayout(m_footerWidget);
-    footerLayout->setContentsMargins(16, 4, 16, 4);
+    footerLayout->setContentsMargins(12, 4, 12, 4);
     footerLayout->setSpacing(8);
-    m_previewLabel = new QLabel(m_footerWidget);
-    m_previewLabel->setObjectName("previewLabel");
-    m_previewLabel->setText("Select an emoji");
-    footerLayout->addWidget(m_previewLabel, 1);
+
+    m_previewEmoji = new QLabel(m_footerWidget);
+    m_previewEmoji->setObjectName("previewEmoji");
+    m_previewEmoji->setText("✨");
+    QFont peFont = m_previewEmoji->font();
+    peFont.setPointSize(20);
+    m_previewEmoji->setFont(peFont);
+    m_previewEmoji->setFixedWidth(30);
+    m_previewEmoji->setAlignment(Qt::AlignCenter);
+
+    QVBoxLayout* textCol = new QVBoxLayout();
+    textCol->setContentsMargins(0, 2, 0, 2);
+    textCol->setSpacing(0);
+
+    m_previewName = new QLabel(m_footerWidget);
+    m_previewName->setObjectName("previewName");
+    m_previewName->setText("Sparkles");
+    QFont pnFont = m_previewName->font();
+    pnFont.setPointSize(10);
+    pnFont.setWeight(QFont::DemiBold);
+    m_previewName->setFont(pnFont);
+
+    m_previewShortcode = new QLabel(m_footerWidget);
+    m_previewShortcode->setObjectName("previewShortcode");
+    m_previewShortcode->setText(":sparkles:");
+    QFont psFont = m_previewShortcode->font();
+    psFont.setPointSize(9);
+    psFont.setFamily("JetBrains Mono, monospace");
+    m_previewShortcode->setFont(psFont);
+
+    textCol->addWidget(m_previewName);
+    textCol->addWidget(m_previewShortcode);
+
+    m_previewHints = new QLabel(m_footerWidget);
+    m_previewHints->setObjectName("previewHints");
+    m_previewHints->setText("↵ Insert   ⇧↵ Keep");
+    QFont phFont = m_previewHints->font();
+    phFont.setPointSize(8);
+    phFont.setFamily("JetBrains Mono, monospace");
+    m_previewHints->setFont(phFont);
+    m_previewHints->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+    footerLayout->addWidget(m_previewEmoji);
+    footerLayout->addLayout(textCol, 1);
+    footerLayout->addWidget(m_previewHints);
 
     // Assemble
     containerLayout->addWidget(m_headerWidget);
@@ -219,8 +287,7 @@ void EmojiPanel::setupUi()
 
     m_mainLayout->addWidget(m_containerWidget);
 
-    setMinimumSize(440, 520);
-    setMaximumSize(560, 720);
+    setFixedSize(360, 440);
 
     connect(m_searchEdit, &QLineEdit::textChanged, this, &EmojiPanel::onSearchTextChanged);
 }
@@ -232,20 +299,20 @@ void EmojiPanel::populateCategories()
         m_categoryTabBar->removeTab(0);
     }
 
-    // Standard Unicode Emoji category order with Recently used as the first tab.
+    // Standard Unicode Emoji & Kaomoji categories matching Stitch UI specification
     m_categoryDefs.clear();
     m_categoryDefs = {
         {"🕒", "Recently used",        "Recent"},
         {"😀", "Smileys & Emotion",     "Smileys & Emotion"},
         {"👋", "People & Body",         "People & Body"},
-        {"🐶", "Animals & Nature",      "Animals & Nature"},
+        {"🐱", "Animals & Nature",      "Animals & Nature"},
         {"🍕", "Food & Drink",          "Food & Drink"},
-        {"🚗", "Travel & Places",       "Travel & Places"},
         {"⚽", "Activities",            "Activities"},
+        {"✈️", "Travel & Places",       "Travel & Places"},
         {"💡", "Objects",               "Objects"},
-        {"🔣", "Symbols",              "Symbols"},
-        {"🏁", "Flags",                "Flags"},
-        {"🌐", "All emojis",           "All"}
+        {"❤️", "Symbols",              "Symbols"},
+        {"🚩", "Flags",                "Flags"},
+        {"(•‿•)", "Kaomoji",           "Kaomoji"}
     };
 
     for (int i = 0; i < static_cast<int>(m_categoryDefs.size()); ++i) {
@@ -256,14 +323,15 @@ void EmojiPanel::populateCategories()
 
 void EmojiPanel::createCategoryViews()
 {
-    // Create one list view per tab
+    // Create one list view per tab matching Stitch 8-column layout
     for (int i = 0; i < static_cast<int>(m_categoryDefs.size()); ++i) {
         QListView* listView = new QListView(m_stackedWidget);
         listView->setModel(m_proxyModel);
         listView->setViewMode(QListView::IconMode);
-        listView->setIconSize(QSize(44, 44));
-        listView->setGridSize(QSize(68, 68));
-        listView->setSpacing(6);
+        listView->setIconSize(QSize(36, 36));
+        listView->setGridSize(QSize(40, 40));
+        listView->setSpacing(2);
+        listView->setContentsMargins(6, 4, 6, 4);
         listView->setResizeMode(QListView::Adjust);
         listView->setFlow(QListView::LeftToRight);
         listView->setWrapping(true);
@@ -275,28 +343,37 @@ void EmojiPanel::createCategoryViews()
         listView->setMouseTracking(true);
         listView->setObjectName(QString("listView_%1").arg(i));
         QFont f = listView->font();
-        f.setPointSize(28);
-        f.setFamilies({"Segoe UI Emoji","Noto Color Emoji","Apple Color Emoji","Symbola","DejaVu Sans"});
+        f.setPointSize(20);
+        f.setFamilies({"Noto Color Emoji","Segoe UI Emoji","Apple Color Emoji","Symbola","DejaVu Sans"});
         listView->setFont(f);
-        listView->setStyleSheet("QListView { outline: none; border: none; } QListView::item { padding: 4px; }");
+        listView->setStyleSheet("QListView { outline: none; border: none; } QListView::item { padding: 0px; }");
         listView->setItemDelegate(new EmojiDelegate(listView));
         listView->installEventFilter(this);
         connect(listView, &QListView::clicked, this, &EmojiPanel::onEmojiClicked);
 
+        // Right-click custom context menu for skin tone picker
+        listView->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(listView, &QListView::customContextMenuRequested, this, [this, listView](const QPoint& pos) {
+            QModelIndex idx = listView->indexAt(pos);
+            if (idx.isValid()) {
+                onSkinToneRequested(idx);
+            }
+        });
+
         // Preview on hover / selection
         connect(listView, &QListView::entered, this, [this](const QModelIndex& idx) {
-            if (idx.isValid() && m_previewLabel) {
+            if (idx.isValid()) {
                 QString name = idx.data(EmojiModel::NameRole).toString();
                 QString emojiChar = idx.data(EmojiModel::EmojiCharRole).toString();
-                m_previewLabel->setText(QString("%1  %2").arg(emojiChar, name));
+                updatePreview(emojiChar, name, QString());
             }
         });
         if (listView->selectionModel()) {
             connect(listView->selectionModel(), &QItemSelectionModel::currentChanged, this, [this](const QModelIndex& current, const QModelIndex&) {
-                if (current.isValid() && m_previewLabel) {
+                if (current.isValid()) {
                     QString name = current.data(EmojiModel::NameRole).toString();
                     QString emojiChar = current.data(EmojiModel::EmojiCharRole).toString();
-                    m_previewLabel->setText(QString("%1  %2").arg(emojiChar, name));
+                    updatePreview(emojiChar, name, QString());
                 }
             });
         }
@@ -321,59 +398,62 @@ void EmojiPanel::applyTheme()
                 background-color: transparent;
             }
             #containerWidget {
-                background-color: #1f1f1f;
+                background-color: #2A2A2E;
                 border-radius: 12px;
-                border: 1px solid #333;
+                border: 1px solid rgba(255, 255, 255, 0.08);
             }
             #headerWidget {
                 background-color: transparent;
             }
             #searchEdit {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border: 1px solid #444;
-                border-radius: 20px;
-                padding: 0 16px;
-                font-size: 14px;
-                selection-background-color: #0078d4;
+                background-color: rgba(255, 255, 255, 0.07);
+                color: #F2F2F4;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 8px;
+                padding: 0 12px;
+                font-size: 13px;
+                selection-background-color: #0078D4;
             }
             #searchEdit:focus {
-                border: 1px solid #0078d4;
+                border: 2px solid #0078D4;
+                background-color: rgba(255, 255, 255, 0.1);
             }
             #closeBtn {
                 background-color: transparent;
-                color: #cccccc;
+                color: #9A9AA2;
                 border: none;
-                border-radius: 16px;
-                font-size: 14px;
+                border-radius: 6px;
+                font-size: 12px;
                 font-weight: bold;
             }
             #closeBtn:hover {
-                background-color: #333;
-                color: #ffffff;
+                background-color: rgba(255, 255, 255, 0.1);
+                color: #F2F2F4;
             }
             #categoryTabBar {
                 background-color: transparent;
                 border: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             }
             #categoryTabBar::tab {
                 background-color: transparent;
-                color: #aaaaaa;
+                color: #9A9AA2;
                 border: none;
-                border-radius: 8px;
-                padding: 8px 12px;
-                margin: 2px;
-                font-size: 20px;
-                min-width: 40px;
-                max-width: 48px;
+                border-bottom: 2px solid transparent;
+                border-radius: 6px;
+                padding: 3px 5px;
+                margin: 1px 2px;
+                font-size: 15px;
+                min-width: 24px;
             }
             #categoryTabBar::tab:selected {
-                background-color: #2d2d2d;
-                color: #ffffff;
+                color: #F2F2F4;
+                border-bottom: 2px solid #0078D4;
+                background-color: rgba(255, 255, 255, 0.06);
             }
             #categoryTabBar::tab:hover:!selected {
-                background-color: #333;
-                color: #cccccc;
+                background-color: rgba(255, 255, 255, 0.08);
+                color: #F2F2F4;
             }
             #stackedWidget {
                 background-color: transparent;
@@ -384,49 +464,53 @@ void EmojiPanel::applyTheme()
                 alternate-background-color: transparent;
                 border: none;
                 outline: none;
-                padding: 8px;
-            }
-            QListView::item {
-                background-color: transparent;
-                border-radius: 8px;
                 padding: 4px;
-            }
-            QListView::item:hover {
-                background-color: #333;
-            }
-            QListView::item:selected {
-                background-color: #0078d4;
-                color: #ffffff;
             }
             QScrollBar:vertical {
                 background-color: transparent;
-                width: 8px;
+                width: 4px;
                 border: none;
+                margin: 0px;
             }
             QScrollBar::handle:vertical {
-                background-color: #444;
-                border-radius: 4px;
-                min-height: 30px;
+                background-color: rgba(120, 120, 130, 0.35);
+                border-radius: 2px;
+                min-height: 24px;
             }
             QScrollBar::handle:vertical:hover {
-                background-color: #666;
+                background-color: rgba(120, 120, 130, 0.6);
             }
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0;
+                height: 0px;
             }
             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
                 background: none;
             }
             #footerWidget {
-                background-color: #1a1a1a;
-                border-top: 1px solid #2d2d2d;
+                background-color: rgba(0, 0, 0, 0.2);
+                border-top: 1px solid rgba(255, 255, 255, 0.06);
                 border-bottom-left-radius: 12px;
                 border-bottom-right-radius: 12px;
             }
-            #previewLabel {
-                color: #888888;
-                font-size: 13px;
-                font-weight: 500;
+            #previewEmoji {
+                color: #F2F2F4;
+            }
+            #previewName {
+                color: #F2F2F4;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            #previewShortcode {
+                color: #9A9AA2;
+                font-size: 11px;
+            }
+            #previewHints {
+                color: #9A9AA2;
+                font-size: 10px;
+                background-color: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 4px;
+                padding: 2px 6px;
             }
         )");
     } else {
@@ -435,60 +519,62 @@ void EmojiPanel::applyTheme()
                 background-color: transparent;
             }
             #containerWidget {
-                background-color: #ffffff;
+                background-color: #F6F6F8;
                 border-radius: 12px;
-                border: 1px solid #e0e0e0;
+                border: 1px solid rgba(0, 0, 0, 0.08);
             }
             #headerWidget {
                 background-color: transparent;
             }
             #searchEdit {
-                background-color: #f3f3f3;
-                color: #000000;
-                border: 1px solid #e0e0e0;
-                border-radius: 20px;
-                padding: 0 16px;
-                font-size: 14px;
-                selection-background-color: #0078d4;
+                background-color: rgba(0, 0, 0, 0.05);
+                color: #1C1C1E;
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                border-radius: 8px;
+                padding: 0 12px;
+                font-size: 13px;
+                selection-background-color: #0078D4;
             }
             #searchEdit:focus {
-                border: 1px solid #0078d4;
-                background-color: #ffffff;
+                border: 2px solid #0078D4;
+                background-color: #FFFFFF;
             }
             #closeBtn {
                 background-color: transparent;
-                color: #666666;
+                color: #6B6B72;
                 border: none;
-                border-radius: 16px;
-                font-size: 14px;
+                border-radius: 6px;
+                font-size: 12px;
                 font-weight: bold;
             }
             #closeBtn:hover {
-                background-color: #f0f0f0;
-                color: #000000;
+                background-color: rgba(0, 0, 0, 0.08);
+                color: #1C1C1E;
             }
             #categoryTabBar {
                 background-color: transparent;
                 border: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
             }
             #categoryTabBar::tab {
                 background-color: transparent;
-                color: #666666;
+                color: #6B6B72;
                 border: none;
-                border-radius: 8px;
-                padding: 8px 12px;
-                margin: 2px;
-                font-size: 20px;
-                min-width: 40px;
-                max-width: 48px;
+                border-bottom: 2px solid transparent;
+                border-radius: 6px;
+                padding: 3px 5px;
+                margin: 1px 2px;
+                font-size: 15px;
+                min-width: 24px;
             }
             #categoryTabBar::tab:selected {
-                background-color: #f0f0f0;
-                color: #000000;
+                color: #1C1C1E;
+                border-bottom: 2px solid #0078D4;
+                background-color: rgba(0, 0, 0, 0.05);
             }
             #categoryTabBar::tab:hover:!selected {
-                background-color: #f5f5f5;
-                color: #333333;
+                background-color: rgba(0, 0, 0, 0.06);
+                color: #1C1C1E;
             }
             #stackedWidget {
                 background-color: transparent;
@@ -499,49 +585,53 @@ void EmojiPanel::applyTheme()
                 alternate-background-color: transparent;
                 border: none;
                 outline: none;
-                padding: 8px;
-            }
-            QListView::item {
-                background-color: transparent;
-                border-radius: 8px;
                 padding: 4px;
-            }
-            QListView::item:hover {
-                background-color: #f0f0f0;
-            }
-            QListView::item:selected {
-                background-color: #0078d4;
-                color: #ffffff;
             }
             QScrollBar:vertical {
                 background-color: transparent;
-                width: 8px;
+                width: 4px;
                 border: none;
+                margin: 0px;
             }
             QScrollBar::handle:vertical {
-                background-color: #ccc;
-                border-radius: 4px;
-                min-height: 30px;
+                background-color: rgba(0, 0, 0, 0.2);
+                border-radius: 2px;
+                min-height: 24px;
             }
             QScrollBar::handle:vertical:hover {
-                background-color: #aaa;
+                background-color: rgba(0, 0, 0, 0.35);
             }
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0;
+                height: 0px;
             }
             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
                 background: none;
             }
             #footerWidget {
-                background-color: #f8f8f8;
-                border-top: 1px solid #ebebeb;
+                background-color: rgba(0, 0, 0, 0.03);
+                border-top: 1px solid rgba(0, 0, 0, 0.06);
                 border-bottom-left-radius: 12px;
                 border-bottom-right-radius: 12px;
             }
-            #previewLabel {
-                color: #666666;
-                font-size: 13px;
-                font-weight: 500;
+            #previewEmoji {
+                color: #1C1C1E;
+            }
+            #previewName {
+                color: #1C1C1E;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            #previewShortcode {
+                color: #6B6B72;
+                font-size: 11px;
+            }
+            #previewHints {
+                color: #6B6B72;
+                font-size: 10px;
+                background-color: rgba(0, 0, 0, 0.04);
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                border-radius: 4px;
+                padding: 2px 6px;
             }
         )");
     }
@@ -577,7 +667,7 @@ void EmojiPanel::showAt(const QPoint& pos)
     m_wasActivated = false;
     m_isInjecting = false;
     m_hasPendingInjection = false;
-    m_pendingIndex = QModelIndex();
+    m_pendingEmoji.clear();
     m_searchEdit->clear();
 
     qDebug() << "EmojiPanel: Calling show()";
@@ -599,7 +689,11 @@ void EmojiPanel::showAt(const QPoint& pos)
     if (curIdx >= 0 && curIdx < m_listViews.size()) {
         QListView* curList = m_listViews[curIdx];
         if (m_proxyModel->rowCount() > 0) {
-            curList->setCurrentIndex(m_proxyModel->index(0, 0));
+            QModelIndex firstIdx = m_proxyModel->index(0, 0);
+            curList->setCurrentIndex(firstIdx);
+            if (curList->selectionModel()) {
+                curList->selectionModel()->select(firstIdx, QItemSelectionModel::ClearAndSelect);
+            }
         }
     }
 
@@ -664,33 +758,66 @@ void EmojiPanel::hidePanel()
     }
 }
 
+void EmojiPanel::updatePreview(const QString& emoji, const QString& name, const QString& shortcode)
+{
+    if (m_previewEmoji) {
+        m_previewEmoji->setText(emoji.isEmpty() ? "✨" : emoji);
+        QFont peFont = m_previewEmoji->font();
+        bool isKaomoji = (emoji.contains('(') || emoji.contains(')') || emoji.contains('\\') ||
+                          emoji.contains(QChar(0x30c4)) /* ツ */ || emoji.contains(QChar(0x30ce)) /* ノ */);
+        if (isKaomoji) {
+            peFont.setPointSize(10);
+            peFont.setFamily("JetBrains Mono, monospace");
+        } else {
+            peFont.setPointSize(22);
+            peFont.setFamilies({"Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji"});
+        }
+        m_previewEmoji->setFont(peFont);
+    }
+    if (m_previewName) {
+        m_previewName->setText(name.isEmpty() ? "Sparkles" : name);
+    }
+    if (m_previewShortcode) {
+        QString sc = shortcode;
+        if (sc.isEmpty() && !name.isEmpty()) {
+            QString clean = name.toLower();
+            clean.replace(QRegularExpression("[^a-z0-9]+"), "_");
+            while (clean.startsWith('_')) clean.remove(0, 1);
+            while (clean.endsWith('_')) clean.chop(1);
+            sc = QString(":%1:").arg(clean);
+        }
+        m_previewShortcode->setText(sc);
+    }
+}
+
 void EmojiPanel::onEmojiClicked(const QModelIndex& index)
 {
     if (!index.isValid()) return;
 
+    // Extract emoji and name immediately before anything else
+    QString emoji = m_proxyModel->data(index, EmojiModel::EmojiCharRole).toString();
+    QString name = m_proxyModel->data(index, EmojiModel::NameRole).toString();
+    if (emoji.isEmpty()) return;
+
     if (m_isInjecting) {
-        // Queue this emoji so fast clicks are never dropped!
-        m_pendingIndex = index;
+        // Queue this emoji so rapid keystrokes/clicks are not dropped
+        m_pendingEmoji = emoji;
         return;
     }
 
-    // Get emoji character from model
-    QVariant data = m_proxyModel->data(index, EmojiModel::EmojiCharRole);
-    QString emoji = data.toString();
-    if (emoji.isEmpty()) return;
+    // Check shift modifier: Shift+Click or Shift+Enter keeps the panel open!
+    bool keepOpen = (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier);
 
     // Update recent/frequent tracking (FIFO up to 20)
     Settings& settings = Settings::instance();
     settings.addRecentEmoji(emoji);
     settings.incrementFrequency(emoji);
+    settings.save();
 
-    // Update recent list in model in real-time
-    QStringList recentCodes = settings.recentEmojis();
-    QVector<EmojiEntry> recent = m_database ? m_database->recentEmojis(recentCodes) : QVector<EmojiEntry>();
-    m_model->setShowRecent(recent);
+    // Update preview bar
+    updatePreview(emoji, name, QString());
 
-    // Direct injection into the target application text box.
-    // The panel stays open so the user can select multiple emojis in sequence!
+    // Direct injection into the target application text box while targetState is valid
     if (m_injector) {
         m_isInjecting = true;
         bool success = m_injector->insertEmoji(emoji, m_targetState);
@@ -699,35 +826,45 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
         } else {
             emit emojiInserted(emoji);
         }
-
-        // Return focus immediately to EmojiPanel so the user can continue multi-typing with zero lag!
-        if (isVisible()) {
-            if (m_targetState) {
-                m_targetState->activateEmojiPanel();
-            }
-            raise();
-            activateWindow();
-            int curIdx = m_stackedWidget->currentIndex();
-            if (curIdx >= 0 && curIdx < m_listViews.size()) {
-                m_listViews[curIdx]->setFocus();
-            }
-        }
         m_isInjecting = false;
 
-        // Immediately handle any pending injection that was queued during the ~20ms injection
-        if (m_hasPendingInjection) {
-            m_hasPendingInjection = false;
-            int curIdx = m_stackedWidget->currentIndex();
-            QListView* curList = (curIdx >= 0 && curIdx < m_listViews.size()) ? m_listViews[curIdx] : nullptr;
-            if (curList && curList->currentIndex().isValid()) {
-                onEmojiClicked(curList->currentIndex());
-            } else if (m_proxyModel->rowCount() > 0) {
-                onEmojiClicked(m_proxyModel->index(0, 0));
+        // Immediately handle any pending injection that was queued during injection
+        if (!m_pendingEmoji.isEmpty()) {
+            QString nextEmoji = m_pendingEmoji;
+            m_pendingEmoji.clear();
+            if (m_injector) {
+                m_isInjecting = true;
+                m_injector->insertEmoji(nextEmoji, m_targetState);
+                emit emojiInserted(nextEmoji);
+                m_isInjecting = false;
             }
-        } else if (m_pendingIndex.isValid()) {
-            QModelIndex nextIdx = m_pendingIndex;
-            m_pendingIndex = QModelIndex();
-            onEmojiClicked(nextIdx);
+        }
+    }
+
+    if (!keepOpen) {
+        hidePanel();
+    } else if (isVisible()) {
+        // If Shift was held, return active focus to EmojiPanel for continuous typing
+        if (m_targetState) {
+            m_targetState->activateEmojiPanel();
+        }
+        raise();
+        activateWindow();
+        int curIdx = m_stackedWidget->currentIndex();
+        if (curIdx >= 0 && curIdx < m_listViews.size()) {
+            m_listViews[curIdx]->setFocus();
+        }
+
+        // If currently viewing the Recent tab, refresh it safely on next event loop tick
+        if (curIdx == 0) {
+            QTimer::singleShot(50, this, [this]() {
+                if (isVisible() && m_stackedWidget->currentIndex() == 0) {
+                    Settings& s = Settings::instance();
+                    QStringList recentCodes = s.recentEmojis();
+                    QVector<EmojiEntry> recent = m_database ? m_database->recentEmojis(recentCodes) : QVector<EmojiEntry>();
+                    m_model->setShowRecent(recent);
+                }
+            });
         }
     }
 }
@@ -742,12 +879,18 @@ void EmojiPanel::onSearchTextChanged(const QString& text)
     QListView* curList = (curIdx >= 0 && curIdx < m_listViews.size()) ? m_listViews[curIdx] : nullptr;
 
     if (!query.isEmpty()) {
-        if (m_previewLabel) {
-            int count = m_proxyModel->rowCount();
-            m_previewLabel->setText(QString("Search results for \"%1\" (%2 found)").arg(query).arg(count));
-        }
-        if (curList && m_proxyModel->rowCount() > 0) {
-            curList->setCurrentIndex(m_proxyModel->index(0, 0));
+        if (m_proxyModel->rowCount() > 0) {
+            QModelIndex firstIdx = m_proxyModel->index(0, 0);
+            updatePreview(firstIdx.data(EmojiModel::EmojiCharRole).toString(),
+                          firstIdx.data(EmojiModel::NameRole).toString(), QString());
+            if (curList) {
+                curList->setCurrentIndex(firstIdx);
+                if (curList->selectionModel()) {
+                    curList->selectionModel()->select(firstIdx, QItemSelectionModel::ClearAndSelect);
+                }
+            }
+        } else {
+            updatePreview("🔍", "No emoji found", ":not_found:");
         }
     } else {
         if (curIdx >= 0 && curIdx < static_cast<int>(m_categoryDefs.size())) {
@@ -763,12 +906,19 @@ void EmojiPanel::onSearchTextChanged(const QString& text)
             } else {
                 m_model->setCategoryFilter(category);
             }
-            if (m_previewLabel) {
-                m_previewLabel->setText(m_categoryDefs[curIdx].tooltip);
-            }
         }
-        if (curList && m_proxyModel->rowCount() > 0) {
-            curList->setCurrentIndex(m_proxyModel->index(0, 0));
+        if (m_proxyModel->rowCount() > 0) {
+            QModelIndex firstIdx = m_proxyModel->index(0, 0);
+            updatePreview(firstIdx.data(EmojiModel::EmojiCharRole).toString(),
+                          firstIdx.data(EmojiModel::NameRole).toString(), QString());
+            if (curList) {
+                curList->setCurrentIndex(firstIdx);
+                if (curList->selectionModel()) {
+                    curList->selectionModel()->select(firstIdx, QItemSelectionModel::ClearAndSelect);
+                }
+            }
+        } else {
+            updatePreview("✨", "Emoji Picker", ":picker:");
         }
     }
 }
@@ -803,23 +953,112 @@ void EmojiPanel::onCategoryChanged(int index)
     if (index < m_listViews.size()) {
         QListView* listView = m_listViews[index];
         if (m_proxyModel->rowCount() > 0) {
-            listView->setCurrentIndex(m_proxyModel->index(0, 0));
+            QModelIndex firstIdx = m_proxyModel->index(0, 0);
+            listView->setCurrentIndex(firstIdx);
+            if (listView->selectionModel()) {
+                listView->selectionModel()->select(firstIdx, QItemSelectionModel::ClearAndSelect);
+            }
         }
         listView->scrollToTop();
     }
 
-    if (m_previewLabel) {
-        if (category == "Recent" && m_proxyModel->rowCount() == 0) {
-            m_previewLabel->setText("No recently used emojis yet. Pick an emoji to get started!");
-        } else {
-            m_previewLabel->setText(m_categoryDefs[index].tooltip);
-        }
+    if (m_proxyModel->rowCount() > 0) {
+        QModelIndex firstIdx = m_proxyModel->index(0, 0);
+        updatePreview(firstIdx.data(EmojiModel::EmojiCharRole).toString(),
+                      firstIdx.data(EmojiModel::NameRole).toString(), QString());
+    } else if (category == "Recent") {
+        updatePreview("🕒", "No recent emojis", ":recent:");
+    } else {
+        updatePreview(m_categoryDefs[index].emoji, m_categoryDefs[index].tooltip, QString());
     }
 }
 
-void EmojiPanel::onSkinToneRequested(const QModelIndex&)
+void EmojiPanel::onSkinToneRequested(const QModelIndex& index)
 {
-    // TODO: Implement skin tone picker
+    if (!index.isValid()) return;
+    QVariantList variants = index.data(EmojiModel::SkinToneVariantsRole).toList();
+    if (variants.isEmpty()) return;
+
+    QMenu* menu = new QMenu(this);
+    menu->setAttribute(Qt::WA_DeleteOnClose);
+    menu->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    menu->setAttribute(Qt::WA_TranslucentBackground);
+
+    QWidget* container = new QWidget(menu);
+    container->setObjectName("skinToneContainer");
+    container->setStyleSheet(
+        "#skinToneContainer {"
+        "  background-color: #202024;"
+        "  border: 1px solid rgba(255, 255, 255, 0.15);"
+        "  border-radius: 8px;"
+        "}"
+    );
+    QHBoxLayout* hlayout = new QHBoxLayout(container);
+    hlayout->setContentsMargins(6, 4, 6, 4);
+    hlayout->setSpacing(4);
+
+    for (const QVariant& v : variants) {
+        QVariantMap map = v.toMap();
+        QString toneEmoji = map["emojiChar"].toString();
+        QString toneName = map["name"].toString();
+        QPushButton* btn = new QPushButton(toneEmoji, container);
+        btn->setFixedSize(32, 32);
+        btn->setToolTip(toneName);
+        QFont tf = btn->font();
+        tf.setPointSize(16);
+        tf.setFamilies({"Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji"});
+        btn->setFont(tf);
+        btn->setCursor(Qt::PointingHandCursor);
+        btn->setStyleSheet(
+            "QPushButton { background: transparent; border: none; border-radius: 6px; }"
+            "QPushButton:hover { background: rgba(255, 255, 255, 0.15); }"
+        );
+        connect(btn, &QPushButton::clicked, menu, [menu, this, toneEmoji, toneName]() {
+            menu->close();
+            bool keepOpen = (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier);
+            Settings& settings = Settings::instance();
+            settings.addRecentEmoji(toneEmoji);
+            settings.incrementFrequency(toneEmoji);
+            settings.save();
+
+            updatePreview(toneEmoji, toneName, QString());
+
+            if (m_injector) {
+                m_isInjecting = true;
+                bool success = m_injector->insertEmoji(toneEmoji, m_targetState);
+                if (success) {
+                    emit emojiInserted(toneEmoji);
+                }
+                m_isInjecting = false;
+            }
+
+            if (!keepOpen) {
+                hidePanel();
+            } else if (isVisible()) {
+                if (m_targetState) {
+                    m_targetState->activateEmojiPanel();
+                }
+                raise();
+                activateWindow();
+            }
+        });
+        hlayout->addWidget(btn);
+    }
+
+    QWidgetAction* action = new QWidgetAction(menu);
+    action->setDefaultWidget(container);
+    menu->addAction(action);
+
+    int curIdx = m_stackedWidget->currentIndex();
+    QListView* curList = (curIdx >= 0 && curIdx < m_listViews.size()) ? m_listViews[curIdx] : nullptr;
+    QPoint globalPos;
+    if (curList) {
+        QRect cellRect = curList->visualRect(index);
+        globalPos = curList->mapToGlobal(cellRect.topLeft() - QPoint(10, 44));
+    } else {
+        globalPos = QCursor::pos();
+    }
+    menu->popup(globalPos);
 }
 
 void EmojiPanel::saveGeometry()
@@ -835,6 +1074,149 @@ void EmojiPanel::closeEvent(QCloseEvent* event)
     event->ignore();
 }
 
+
+bool EmojiPanel::navigateGrid(int key)
+{
+    int curIdx = m_stackedWidget->currentIndex();
+    QListView* curList = (curIdx >= 0 && curIdx < m_listViews.size()) ? m_listViews[curIdx] : nullptr;
+    if (!curList) return false;
+
+    int totalCount = m_proxyModel->rowCount();
+    if (totalCount == 0) {
+        if (key == Qt::Key_Up && m_searchEdit) {
+            m_searchEdit->setFocus();
+        }
+        return true;
+    }
+
+    // Determine number of columns dynamically, fallback to 8
+    int cols = 8;
+    if (curList->viewport() && curList->gridSize().width() > 0) {
+        int vpWidth = curList->viewport()->width();
+        if (vpWidth > 0) {
+            cols = qMax(1, vpWidth / curList->gridSize().width());
+        }
+    }
+    if (totalCount >= 2) {
+        QRect r0 = curList->visualRect(m_proxyModel->index(0, 0));
+        if (r0.isValid() && r0.height() > 0) {
+            for (int i = 1; i < qMin(totalCount, 16); ++i) {
+                QRect ri = curList->visualRect(m_proxyModel->index(i, 0));
+                if (ri.isValid() && ri.y() > r0.y()) {
+                    cols = i;
+                    break;
+                }
+            }
+        }
+    }
+
+    QModelIndex curModelIdx = curList->currentIndex();
+    int currentRow = curModelIdx.isValid() ? curModelIdx.row() : -1;
+    int nextRow = -1;
+
+    switch (key) {
+    case Qt::Key_Right:
+        if (currentRow < 0) {
+            nextRow = 0;
+        } else if (currentRow + 1 < totalCount) {
+            nextRow = currentRow + 1;
+        } else {
+            nextRow = currentRow;
+        }
+        break;
+
+    case Qt::Key_Left:
+        if (currentRow < 0) {
+            nextRow = 0;
+        } else if (currentRow > 0) {
+            nextRow = currentRow - 1;
+        } else {
+            nextRow = 0;
+        }
+        break;
+
+    case Qt::Key_Down:
+        if (currentRow < 0) {
+            nextRow = 0;
+        } else if (currentRow + cols < totalCount) {
+            nextRow = currentRow + cols;
+        } else if (currentRow < totalCount - 1) {
+            nextRow = totalCount - 1;
+        } else {
+            nextRow = currentRow;
+        }
+        break;
+
+    case Qt::Key_Up:
+        if (currentRow < 0 || currentRow < cols) {
+            // Reached top row: move focus back into search edit
+            if (m_searchEdit) {
+                m_searchEdit->setFocus();
+                m_searchEdit->setCursorPosition(m_searchEdit->text().length());
+            }
+            return true;
+        } else {
+            nextRow = currentRow - cols;
+        }
+        break;
+
+    case Qt::Key_PageDown: {
+        int jump = cols * 5;
+        if (currentRow < 0) {
+            nextRow = qMin(jump, totalCount - 1);
+        } else {
+            nextRow = qMin(currentRow + jump, totalCount - 1);
+        }
+        break;
+    }
+
+    case Qt::Key_PageUp: {
+        int jump = cols * 5;
+        if (currentRow < cols) {
+            if (m_searchEdit) {
+                m_searchEdit->setFocus();
+                m_searchEdit->setCursorPosition(m_searchEdit->text().length());
+            }
+            return true;
+        } else {
+            nextRow = qMax(0, currentRow - jump);
+        }
+        break;
+    }
+
+    case Qt::Key_Home:
+        nextRow = 0;
+        break;
+
+    case Qt::Key_End:
+        nextRow = totalCount - 1;
+        break;
+
+    default:
+        return false;
+    }
+
+    if (nextRow >= 0 && nextRow < totalCount) {
+        if (!curList->hasFocus()) {
+            curList->setFocus();
+        }
+        QModelIndex newIdx = m_proxyModel->index(nextRow, 0);
+        if (newIdx.isValid()) {
+            curList->setCurrentIndex(newIdx);
+            if (curList->selectionModel()) {
+                curList->selectionModel()->select(newIdx, QItemSelectionModel::ClearAndSelect);
+            }
+            curList->scrollTo(newIdx, QAbstractItemView::EnsureVisible);
+
+            QString name = newIdx.data(EmojiModel::NameRole).toString();
+            QString emojiChar = newIdx.data(EmojiModel::EmojiCharRole).toString();
+            updatePreview(emojiChar, name, QString());
+            return true;
+        }
+    }
+
+    return true;
+}
 
 void EmojiPanel::keyPressEvent(QKeyEvent* event)
 {
@@ -909,47 +1291,15 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
         break;
 
     case Qt::Key_Down:
-        if (m_searchEdit && m_searchEdit->hasFocus()) {
-            if (curList) {
-                curList->setFocus();
-                if (!curList->currentIndex().isValid() && m_proxyModel->rowCount() > 0) {
-                    curList->setCurrentIndex(m_proxyModel->index(0, 0));
-                }
-            }
-            break;
-        }
-        if (curList) {
-            QApplication::sendEvent(curList, event);
-        }
-        break;
-
     case Qt::Key_Up:
-        if (curList && curList->hasFocus()) {
-            if (curList->currentIndex().row() < 6 && m_searchEdit) {
-                m_searchEdit->setFocus();
-                break;
-            }
-        }
-        if (curList) {
-            QApplication::sendEvent(curList, event);
-        }
-        break;
-
     case Qt::Key_Left:
     case Qt::Key_Right:
     case Qt::Key_PageUp:
     case Qt::Key_PageDown:
     case Qt::Key_Home:
     case Qt::Key_End:
-        if (curList) {
-            if (!curList->hasFocus()) {
-                curList->setFocus();
-            }
-            if (!curList->currentIndex().isValid() && m_proxyModel->rowCount() > 0) {
-                curList->setCurrentIndex(m_proxyModel->index(0, 0));
-            }
-            QApplication::sendEvent(curList, event);
-        }
+        event->accept();
+        navigateGrid(event->key());
         break;
 
     default:
@@ -958,6 +1308,7 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
             if (m_searchEdit) {
                 m_searchEdit->setFocus();
                 m_searchEdit->setText(m_searchEdit->text() + event->text());
+                m_searchEdit->setCursorPosition(m_searchEdit->text().length());
             }
         } else {
             QWidget::keyPressEvent(event);
@@ -1004,6 +1355,28 @@ bool EmojiPanel::eventFilter(QObject* watched, QEvent* event)
             return true;
         }
 
+        // Tab / Shift+Tab cycling
+        if (key == Qt::Key_Tab) {
+            if (m_searchEdit && m_searchEdit->hasFocus()) {
+                m_categoryTabBar->setFocus();
+            } else if (m_categoryTabBar->hasFocus()) {
+                if (curList) curList->setFocus();
+            } else {
+                if (m_searchEdit) m_searchEdit->setFocus();
+            }
+            return true;
+        }
+        if (key == Qt::Key_Backtab) {
+            if (m_searchEdit && m_searchEdit->hasFocus()) {
+                if (curList) curList->setFocus();
+            } else if (m_categoryTabBar->hasFocus()) {
+                if (m_searchEdit) m_searchEdit->setFocus();
+            } else {
+                m_categoryTabBar->setFocus();
+            }
+            return true;
+        }
+
         // Return / Enter: Inject emoji
         if (key == Qt::Key_Return || key == Qt::Key_Enter) {
             if (!keyEvent->isAutoRepeat()) {
@@ -1016,25 +1389,66 @@ bool EmojiPanel::eventFilter(QObject* watched, QEvent* event)
             return true;
         }
 
-        // Down arrow from search edit moves focus into grid
-        if (watched == m_searchEdit && key == Qt::Key_Down) {
-            if (curList) {
-                curList->setFocus();
-                if (!curList->currentIndex().isValid() && m_proxyModel->rowCount() > 0) {
-                    curList->setCurrentIndex(m_proxyModel->index(0, 0));
+        // When focused on search edit:
+        if (watched == m_searchEdit) {
+            if (key == Qt::Key_Down) {
+                if (curList) {
+                    curList->setFocus();
+                    if (m_proxyModel->rowCount() > 0) {
+                        QModelIndex idx = curList->currentIndex().isValid() ? curList->currentIndex() : m_proxyModel->index(0, 0);
+                        curList->setCurrentIndex(idx);
+                        if (curList->selectionModel()) {
+                            curList->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect);
+                        }
+                        curList->scrollTo(idx, QAbstractItemView::EnsureVisible);
+                        QString name = idx.data(EmojiModel::NameRole).toString();
+                        QString emojiChar = idx.data(EmojiModel::EmojiCharRole).toString();
+                        updatePreview(emojiChar, name, QString());
+                    }
                 }
+                return true;
             }
-            return true;
+            // Let search edit handle its own Left/Right/Backspace/Text
+            return QWidget::eventFilter(watched, event);
         }
 
-        // Up arrow from top row of grid moves focus back into search edit
-        if (watched != m_searchEdit && key == Qt::Key_Up) {
-            if (curList && curList->currentIndex().row() < 6) {
+        // When focused on category tab bar:
+        if (watched == m_categoryTabBar) {
+            if (key == Qt::Key_Down) {
+                if (curList) {
+                    curList->setFocus();
+                    if (m_proxyModel->rowCount() > 0) {
+                        QModelIndex idx = curList->currentIndex().isValid() ? curList->currentIndex() : m_proxyModel->index(0, 0);
+                        curList->setCurrentIndex(idx);
+                        if (curList->selectionModel()) {
+                            curList->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect);
+                        }
+                        curList->scrollTo(idx, QAbstractItemView::EnsureVisible);
+                        QString name = idx.data(EmojiModel::NameRole).toString();
+                        QString emojiChar = idx.data(EmojiModel::EmojiCharRole).toString();
+                        updatePreview(emojiChar, name, QString());
+                    }
+                }
+                return true;
+            }
+            if (key == Qt::Key_Up) {
                 if (m_searchEdit) {
                     m_searchEdit->setFocus();
                     m_searchEdit->setCursorPosition(m_searchEdit->text().length());
-                    return true;
                 }
+                return true;
+            }
+            // Left/Right handled by QTabBar itself
+            return QWidget::eventFilter(watched, event);
+        }
+
+        // Grid navigation keys (Up, Down, Left, Right, PageUp, PageDown, Home, End)
+        if (key == Qt::Key_Down || key == Qt::Key_Up ||
+            key == Qt::Key_Left || key == Qt::Key_Right ||
+            key == Qt::Key_PageUp || key == Qt::Key_PageDown ||
+            key == Qt::Key_Home || key == Qt::Key_End) {
+            if (navigateGrid(key)) {
+                return true;
             }
         }
 
@@ -1053,7 +1467,9 @@ bool EmojiPanel::eventFilter(QObject* watched, QEvent* event)
             Qt::KeyboardModifiers mods = keyEvent->modifiers();
             if (!(mods & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))) {
                 if (m_searchEdit) {
+                    m_searchEdit->setFocus();
                     m_searchEdit->setText(m_searchEdit->text() + keyEvent->text());
+                    m_searchEdit->setCursorPosition(m_searchEdit->text().length());
                     return true;
                 }
             }

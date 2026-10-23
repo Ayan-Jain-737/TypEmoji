@@ -49,3 +49,12 @@ Testing/
 *.log
 .DS_Store
 Thumbs.db
+
+# Antigravity agent & local configs (secrets/API keys)
+.agents/
+.agent/
+_agents/
+_agent/
+*mcp_config*.json
+.env*
+

@@ -21,6 +21,11 @@ int main(int argc, char *argv[])
     app.setApplicationVersion("1.0.0");
     app.setOrganizationName("EmojiTyper");
 
+    QIcon appIcon(":/icons/emojityper.svg");
+    if (!appIcon.isNull()) {
+        app.setWindowIcon(appIcon);
+    }
+
     SingleInstance instance("EmojiTyperInstance");
     if (instance.isAnotherRunning()) {
         qDebug() << "Another instance running, sending show message";

@@ -73,6 +73,7 @@ private:
     void positionAtCaret(const QPoint& caretPos);
     void populateCategories();
     void createCategoryViews();
+    bool navigateGrid(int key);
 
     EmojiDatabase* m_database = nullptr;
     EmojiInjector* m_injector = nullptr;
@@ -90,13 +91,18 @@ private:
     QPushButton* m_closeBtn = nullptr;
     QWidget* m_footerWidget = nullptr;
     QLabel* m_previewLabel = nullptr;
+    QLabel* m_previewEmoji = nullptr;
+    QLabel* m_previewName = nullptr;
+    QLabel* m_previewShortcode = nullptr;
+    QLabel* m_previewHints = nullptr;
+    void updatePreview(const QString& emoji, const QString& name, const QString& shortcode);
 
     std::vector<CategoryDef> m_categoryDefs;
     QPoint m_lastCaretPos;
     bool m_isClosing = false;
     bool m_isInjecting = false;
     bool m_hasPendingInjection = false;
-    QModelIndex m_pendingIndex;
+    QString m_pendingEmoji;
     bool m_wasActivated = false;
     QTimer* m_clickOutsideTimer = nullptr;
 };

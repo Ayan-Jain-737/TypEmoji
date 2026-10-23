@@ -166,20 +166,72 @@ void TrayHost::setupAutostart()
 
 void TrayHost::setupTray()
 {
-    m_trayMenu = std::make_unique<QMenu>();
-    QAction* showAction = m_trayMenu->addAction("Show Emoji Panel");
-    connect(showAction, &QAction::triggered, this, [this](){ showPanel(); });
-    m_trayMenu->addSeparator();
-    QAction* quitAction = m_trayMenu->addAction("Exit");
-    connect(quitAction, &QAction::triggered, this, &TrayHost::onQuit);
-    m_trayIcon = std::make_unique<QSystemTrayIcon>();
-    QIcon icon = QIcon::fromTheme("emojityper", QIcon("assets/icons/emojityper.svg"));
+    // High-resolution SVG logo loading with Qt resource fallback
+    QIcon icon(":/icons/emojityper.svg");
+    if (icon.isNull()) {
+        icon = QIcon::fromTheme("emojityper");
+    }
+    if (icon.isNull()) {
+        QStringList paths = {
+            QDir::homePath() + "/.local/share/icons/hicolor/scalable/apps/emojityper.svg",
+            "/usr/share/icons/hicolor/scalable/apps/emojityper.svg",
+            "/usr/local/share/icons/hicolor/scalable/apps/emojityper.svg",
+            "assets/icons/emojityper.svg"
+        };
+        for (const QString& p : paths) {
+            if (QFile::exists(p)) {
+                icon = QIcon(p);
+                break;
+            }
+        }
+    }
     if (icon.isNull()) {
         icon = QIcon::fromTheme("face-smile", QApplication::style()->standardIcon(QStyle::SP_ComputerIcon));
     }
+
+    if (qApp) {
+        qApp->setWindowIcon(icon);
+    }
+
+    m_trayMenu = std::make_unique<QMenu>();
+    m_trayMenu->setObjectName("trayMenu");
+
+    QAction* showAction = m_trayMenu->addAction(icon, "Show Emoji Picker\tWin + .");
+    connect(showAction, &QAction::triggered, this, [this](){ showPanel(); });
+
+    m_trayMenu->addSeparator();
+
+    QAction* quitAction = m_trayMenu->addAction("Exit");
+    connect(quitAction, &QAction::triggered, this, &TrayHost::onQuit);
+
+    m_trayMenu->setStyleSheet(
+        "QMenu {"
+        "  background-color: #2A2A2E;"
+        "  color: #F2F2F4;"
+        "  border: 1px solid rgba(255, 255, 255, 0.1);"
+        "  border-radius: 8px;"
+        "  padding: 4px;"
+        "}"
+        "QMenu::item {"
+        "  padding: 6px 18px 6px 20px;"
+        "  border-radius: 6px;"
+        "  font-size: 13px;"
+        "}"
+        "QMenu::item:selected {"
+        "  background-color: #0078D4;"
+        "  color: #FFFFFF;"
+        "}"
+        "QMenu::separator {"
+        "  height: 1px;"
+        "  background: rgba(255, 255, 255, 0.08);"
+        "  margin: 4px 6px;"
+        "}"
+    );
+
+    m_trayIcon = std::make_unique<QSystemTrayIcon>();
     m_trayIcon->setIcon(icon);
     m_trayIcon->setContextMenu(m_trayMenu.get());
-    m_trayIcon->setToolTip("EmojiTyper — Press Meta+. for emoji panel");
+    m_trayIcon->setToolTip("EmojiTyper — Press Win + . for emoji picker");
     m_trayIcon->show();
 
     // Open panel on left-click (Trigger) of the tray icon

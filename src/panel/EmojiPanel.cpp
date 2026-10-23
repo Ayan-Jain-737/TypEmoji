@@ -66,7 +66,7 @@ public:
                 f.setFamily("JetBrains Mono, monospace, sans-serif");
             } else {
                 f.setPointSize(21);
-                f.setFamilies({"Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji", "Symbola", "DejaVu Sans"});
+                f.setFamilies({"Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji"});
             }
 
             painter->setFont(f);
@@ -240,7 +240,9 @@ void EmojiPanel::setupUi()
     QFont peFont = m_previewEmoji->font();
     peFont.setPointSize(20);
     m_previewEmoji->setFont(peFont);
-    m_previewEmoji->setFixedWidth(30);
+    m_previewEmoji->setMinimumWidth(32);
+    m_previewEmoji->setMaximumWidth(120);
+    m_previewEmoji->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     m_previewEmoji->setAlignment(Qt::AlignCenter);
 
     QVBoxLayout* textCol = new QVBoxLayout();
@@ -344,7 +346,7 @@ void EmojiPanel::createCategoryViews()
         listView->setObjectName(QString("listView_%1").arg(i));
         QFont f = listView->font();
         f.setPointSize(20);
-        f.setFamilies({"Noto Color Emoji","Segoe UI Emoji","Apple Color Emoji","Symbola","DejaVu Sans"});
+        f.setFamilies({"Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji"});
         listView->setFont(f);
         listView->setStyleSheet("QListView { outline: none; border: none; } QListView::item { padding: 0px; }");
         listView->setItemDelegate(new EmojiDelegate(listView));
@@ -763,10 +765,13 @@ void EmojiPanel::updatePreview(const QString& emoji, const QString& name, const 
     if (m_previewEmoji) {
         m_previewEmoji->setText(emoji.isEmpty() ? "✨" : emoji);
         QFont peFont = m_previewEmoji->font();
-        bool isKaomoji = (emoji.contains('(') || emoji.contains(')') || emoji.contains('\\') ||
-                          emoji.contains(QChar(0x30c4)) /* ツ */ || emoji.contains(QChar(0x30ce)) /* ノ */);
+        const EmojiEntry* entry = m_database ? m_database->findEmoji(emoji) : nullptr;
+        bool isKaomoji = entry ? (entry->category == "Kaomoji" || entry->subcategory == "kaomoji") :
+                                 (emoji.contains('(') || emoji.contains(')') || emoji.contains('\\') ||
+                                  emoji.contains(QChar(0x30c4)) /* ツ */ || emoji.contains(QChar(0x30ce)) /* ノ */ ||
+                                  emoji.contains(QChar(0x0CA0)) /* ಠ */);
         if (isKaomoji) {
-            peFont.setPointSize(10);
+            peFont.setPointSize(11);
             peFont.setFamily("JetBrains Mono, monospace");
         } else {
             peFont.setPointSize(22);

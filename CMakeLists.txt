@@ -117,7 +117,10 @@ if(EXISTS "$ENV{HOME}/.local/bin/EmojiTyper")
         COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:EmojiTyper> $ENV{HOME}/.local/bin/EmojiTyper
         COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.local/share/icons/hicolor/scalable/apps
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/emojityper.svg $ENV{HOME}/.local/share/icons/hicolor/scalable/apps/emojityper.svg
-        COMMENT "Auto-updating ~/.local/bin/EmojiTyper and system icon cache for instant daemon reload"
+        COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.local/share/emojityper/data
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/data/emoji-test.txt $ENV{HOME}/.local/share/emojityper/data/emoji-test.txt
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/data/emoji-zwj-sequences.txt $ENV{HOME}/.local/share/emojityper/data/emoji-zwj-sequences.txt
+        COMMENT "Auto-updating ~/.local/bin/EmojiTyper and system data files for instant daemon reload"
     )
 endif()
 

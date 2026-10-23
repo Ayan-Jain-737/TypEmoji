@@ -48,7 +48,6 @@
 1F642                                                  ; fully-qualified     # 🙂 E1.0 slightly smiling face
 1F643                                                  ; fully-qualified     # 🙃 E1.0 upside-down face
 1FAE0                                                  ; fully-qualified     # 🫠 E14.0 melting face
-1FAEB                                                  ; fully-qualified     # 🫫 E18.0 cracking face
 1F609                                                  ; fully-qualified     # 😉 E0.6 winking face
 1F60A                                                  ; fully-qualified     # 😊 E0.6 smiling face with smiling eyes
 1F607                                                  ; fully-qualified     # 😇 E1.0 smiling face with halo
@@ -445,18 +444,6 @@
 1F44E 1F3FD                                            ; fully-qualified     # 👎🏽 E1.0 thumbs down: medium skin tone
 1F44E 1F3FE                                            ; fully-qualified     # 👎🏾 E1.0 thumbs down: medium-dark skin tone
 1F44E 1F3FF                                            ; fully-qualified     # 👎🏿 E1.0 thumbs down: dark skin tone
-1FAF9                                                  ; fully-qualified     # 🫹 E18.0 leftwards thumb sign
-1FAF9 1F3FB                                            ; fully-qualified     # 🫹🏻 E18.0 leftwards thumb sign: light skin tone
-1FAF9 1F3FC                                            ; fully-qualified     # 🫹🏼 E18.0 leftwards thumb sign: medium-light skin tone
-1FAF9 1F3FD                                            ; fully-qualified     # 🫹🏽 E18.0 leftwards thumb sign: medium skin tone
-1FAF9 1F3FE                                            ; fully-qualified     # 🫹🏾 E18.0 leftwards thumb sign: medium-dark skin tone
-1FAF9 1F3FF                                            ; fully-qualified     # 🫹🏿 E18.0 leftwards thumb sign: dark skin tone
-1FAFA                                                  ; fully-qualified     # 🫺 E18.0 rightwards thumb sign
-1FAFA 1F3FB                                            ; fully-qualified     # 🫺🏻 E18.0 rightwards thumb sign: light skin tone
-1FAFA 1F3FC                                            ; fully-qualified     # 🫺🏼 E18.0 rightwards thumb sign: medium-light skin tone
-1FAFA 1F3FD                                            ; fully-qualified     # 🫺🏽 E18.0 rightwards thumb sign: medium skin tone
-1FAFA 1F3FE                                            ; fully-qualified     # 🫺🏾 E18.0 rightwards thumb sign: medium-dark skin tone
-1FAFA 1F3FF                                            ; fully-qualified     # 🫺🏿 E18.0 rightwards thumb sign: dark skin tone
 270A                                                   ; fully-qualified     # ✊ E0.6 raised fist
 270A 1F3FB                                             ; fully-qualified     # ✊🏻 E1.0 raised fist: light skin tone
 270A 1F3FC                                             ; fully-qualified     # ✊🏼 E1.0 raised fist: medium-light skin tone
@@ -3927,7 +3914,6 @@
 # subgroup: animal-bug
 1F40C                                                  ; fully-qualified     # 🐌 E0.6 snail
 1F98B                                                  ; fully-qualified     # 🦋 E3.0 butterfly
-1FACC                                                  ; fully-qualified     # 🫌 E18.0 monarch butterfly
 1F41B                                                  ; fully-qualified     # 🐛 E0.6 bug
 1F41C                                                  ; fully-qualified     # 🐜 E0.6 ant
 1F41D                                                  ; fully-qualified     # 🐝 E0.6 honeybee
@@ -4017,7 +4003,6 @@
 1F336                                                  ; unqualified         # 🌶 E0.7 hot pepper
 1FAD1                                                  ; fully-qualified     # 🫑 E13.0 bell pepper
 1F952                                                  ; fully-qualified     # 🥒 E3.0 cucumber
-1FADD                                                  ; fully-qualified     # 🫝 E18.0 pickle
 1F96C                                                  ; fully-qualified     # 🥬 E11.0 leafy green
 1F966                                                  ; fully-qualified     # 🥦 E5.0 broccoli
 1F9C4                                                  ; fully-qualified     # 🧄 E12.0 garlic
@@ -4289,7 +4274,6 @@
 1F6A7                                                  ; fully-qualified     # 🚧 E0.6 construction
 
 # subgroup: transport-water
-1F6D9                                                  ; fully-qualified     # 🛙 E18.0 lighthouse
 2693                                                   ; fully-qualified     # ⚓ E0.6 anchor
 1F6DF                                                  ; fully-qualified     # 🛟 E14.0 ring buoy
 26F5                                                   ; fully-qualified     # ⛵ E0.6 sailboat
@@ -4425,7 +4409,6 @@
 26C4                                                   ; fully-qualified     # ⛄ E0.6 snowman without snow
 2604 FE0F                                              ; fully-qualified     # ☄️ E1.0 comet
 2604                                                   ; unqualified         # ☄ E1.0 comet
-1FA8B                                                  ; fully-qualified     # 🪋 E18.0 meteor
 1F525                                                  ; fully-qualified     # 🔥 E0.6 fire
 1F4A7                                                  ; fully-qualified     # 💧 E0.6 droplet
 1F30A                                                  ; fully-qualified     # 🌊 E0.6 water wave
@@ -4754,7 +4737,6 @@
 1F58D FE0F                                             ; fully-qualified     # 🖍️ E0.7 crayon
 1F58D                                                  ; unqualified         # 🖍 E0.7 crayon
 1F4DD                                                  ; fully-qualified     # 📝 E0.6 memo
-1FA8C                                                  ; fully-qualified     # 🪌 E18.0 eraser
 
 # subgroup: office
 1F4BC                                                  ; fully-qualified     # 💼 E0.6 briefcase
@@ -4799,7 +4781,6 @@
 1F5DD                                                  ; unqualified         # 🗝 E0.7 old key
 
 # subgroup: tool
-1FA8D                                                  ; fully-qualified     # 🪍 E18.0 net with handle
 1F528                                                  ; fully-qualified     # 🔨 E0.6 hammer
 1FA93                                                  ; fully-qualified     # 🪓 E12.0 axe
 26CF FE0F                                              ; fully-qualified     # ⛏️ E0.7 pick

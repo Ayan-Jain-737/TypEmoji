@@ -106,10 +106,27 @@ bool EmojiDatabase::parseEmojiTest(const QString& data)
             continue;
         }
 
+        if (trimmed.contains("E18.") || trimmed.contains("E19.") || trimmed.contains("E20.")) {
+            continue;
+        }
+
         if ((match = emojiRe.match(trimmed)).hasMatch()) {
             QString codepoints = match.captured(1).trimmed().toUpper().simplified();
             QString emojiChar = match.captured(2).trimmed();
             QString name = match.captured(3).trimmed();
+
+            // Filter out unsupported future draft codepoints
+            static const QSet<QString> unsupportedCodepoints = {
+                "1FAEB", "1FAF9", "1FAFA", "1FACC", "1FADD", "1F6D9", "1FA8B", "1FA8C", "1FA8D"
+            };
+            bool hasBad = false;
+            for (const QString& bad : unsupportedCodepoints) {
+                if (codepoints.contains(bad)) {
+                    hasBad = true;
+                    break;
+                }
+            }
+            if (hasBad) continue;
 
             // Fallback generation if emojiChar was malformed
             if (emojiChar.isEmpty()) {
@@ -507,6 +524,23 @@ void EmojiDatabase::buildIndexes()
         }
     }
     m_categories = ordered;
+
+    // Mark base emojis that support skin tone variants
+    static const QStringList toneCodes = {"1F3FB", "1F3FC", "1F3FD", "1F3FE", "1F3FF"};
+    for (const auto& entry : m_emojis) {
+        if (entry.hasSkinTones) {
+            QStringList ep = entry.codepoints.split(' ', Qt::SkipEmptyParts);
+            QStringList eb;
+            for (const QString& p : ep) {
+                if (!toneCodes.contains(p)) eb.append(p);
+            }
+            QString baseCps = eb.join(' ');
+            auto it = m_codepointsIndex.find(baseCps);
+            if (it != m_codepointsIndex.end() && it.value() >= 0 && it.value() < m_emojis.size()) {
+                m_emojis[it.value()].hasSkinTones = true;
+            }
+        }
+    }
 }
 
 QString EmojiDatabase::codepointsToChar(const QString& codepoints) const
@@ -704,8 +738,23 @@ const EmojiEntry* EmojiDatabase::findByChar(const QString& emojiChar) const
         }
     }
 
+    // Try alternate variation selector (with or without FE0F)
+    QString altChar = emojiChar;
+    if (altChar.contains(QChar(0xFE0F))) {
+        altChar.remove(QChar(0xFE0F));
+    } else {
+        altChar.append(QChar(0xFE0F));
+    }
+    it = m_charIndex.constFind(altChar);
+    if (it != m_charIndex.constEnd()) {
+        int idx = it.value();
+        if (idx >= 0 && idx < m_emojis.size()) {
+            return &m_emojis[idx];
+        }
+    }
+
     for (const EmojiEntry& entry : m_emojis) {
-        if (entry.emojiChar == emojiChar) {
+        if (entry.emojiChar == emojiChar || entry.emojiChar == altChar) {
             return &entry;
         }
     }
@@ -753,12 +802,34 @@ QVector<EmojiEntry> EmojiDatabase::skinToneVariants(const EmojiEntry& base) cons
 {
     QVector<EmojiEntry> variants;
 
-    if (!base.hasSkinTones && !base.isZwjSequence) {
-        QString baseCodepoints = base.codepoints;
-        for (const EmojiEntry& entry : m_emojis) {
-            if (entry.codepoints.startsWith(baseCodepoints + " 1F3F") && entry.hasSkinTones) {
-                variants.append(entry);
+    static const QStringList toneCodes = {"1F3FB", "1F3FC", "1F3FD", "1F3FE", "1F3FF"};
+    QStringList parts = base.codepoints.split(' ', Qt::SkipEmptyParts);
+    QStringList baseParts;
+    for (const QString& p : parts) {
+        if (!toneCodes.contains(p)) {
+            baseParts.append(p);
+        }
+    }
+    QString baseCps = baseParts.join(' ');
+
+    // 1. Add neutral/yellow base entry if available
+    const EmojiEntry* baseEntry = findByCodepoints(baseCps);
+    if (baseEntry) {
+        variants.append(*baseEntry);
+    }
+
+    // 2. Add all corresponding skin tone variants
+    for (const EmojiEntry& entry : m_emojis) {
+        if (!entry.hasSkinTones) continue;
+        QStringList ep = entry.codepoints.split(' ', Qt::SkipEmptyParts);
+        QStringList eb;
+        for (const QString& p : ep) {
+            if (!toneCodes.contains(p)) {
+                eb.append(p);
             }
+        }
+        if (eb.join(' ') == baseCps && entry.codepoints != baseCps) {
+            variants.append(entry);
         }
     }
 
@@ -803,7 +874,7 @@ void EmojiDatabase::loadKaomoji()
         {"(¬‿¬)", "Smug Grin", "smug grin knowing evil smile"},
         {"(；一_一)", "Doubtful", "doubt skeptical squint suspect annoyed"},
         {"(★‿★)", "Star Struck", "star eyes wow amazing dazzle"},
-        {"(•_•) ( •_•)>⌐■-■ (⌐■_■)", "Deal With It", "deal with it sunglasses cool boss"},
+        {"(⌐■_■)", "Deal With It", "deal with it sunglasses cool boss"},
         {"(°ロ°) !", "Shocked", "shocked gasp surprise startled what"},
         {"(ノಠ益ಠ)ノ彡┻━┻", "Rage Table Flip", "rage flip fury table furious crazy"}
     };

@@ -73,6 +73,7 @@ private slots:
     void testSearchIndex();
     void testCategories();
     void testKaomoji();
+    void testSkinToneVariantsAndExclusions();
 };
 
 void TestEmojiDatabase::testLoadFallback()
@@ -119,6 +120,34 @@ void TestEmojiDatabase::testKaomoji()
             }
         }
         QVERIFY(foundShrug);
+    }
+}
+
+void TestEmojiDatabase::testSkinToneVariantsAndExclusions()
+{
+    EmojiDatabase db;
+    if (db.load()) {
+        // 1. Verify unreleased E18.0 emojis are properly excluded
+        QVERIFY(db.findByCodepoints("1FAEB") == nullptr);
+        QVERIFY(db.findByCodepoints("1FAF9") == nullptr);
+        QVERIFY(db.findByCodepoints("1FACC") == nullptr);
+
+        // 2. Verify base emoji with variants has hasSkinTones marked
+        const EmojiEntry* thumbsUp = db.findByCodepoints("1F44D");
+        QVERIFY(thumbsUp != nullptr);
+        QVERIFY(thumbsUp->hasSkinTones);
+
+        // 3. Verify skinToneVariants returns full palette (neutral + 5 modifier tones)
+        QVector<EmojiEntry> variants = db.skinToneVariants(*thumbsUp);
+        QCOMPARE(variants.size(), 6);
+        QCOMPARE(variants[0].codepoints, QString("1F44D"));
+        QVERIFY(variants[1].codepoints.contains("1F3FB"));
+
+        // 4. Verify right-clicking an existing variant also gives all 6 tones
+        const EmojiEntry* thumbsUpMedium = db.findByCodepoints("1F44D 1F3FD");
+        QVERIFY(thumbsUpMedium != nullptr);
+        QVector<EmojiEntry> variantsFromMed = db.skinToneVariants(*thumbsUpMedium);
+        QCOMPARE(variantsFromMed.size(), 6);
     }
 }
 

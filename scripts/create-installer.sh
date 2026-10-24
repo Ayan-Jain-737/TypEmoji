@@ -55,6 +55,40 @@ echo "  │      Direct Emoji Typing with Meta+. (Win+.) Hotkey      │"
 echo "  └──────────────────────────────────────────────────────────┘"
 echo -e "${NC}"
 
+# Check for --uninstall / -u flag or invoked as typemoji-uninstall
+if [[ "${1:-}" =~ ^(--uninstall|-u|uninstall)$ || "$(basename "$0")" == "typemoji-uninstall" ]]; then
+    echo -e "▶ ${BOLD}Uninstalling TypEmoji...${NC}"
+    pkill -x EmojiTyper 2>/dev/null || true
+    if command -v systemctl &>/dev/null; then
+        systemctl --user stop emojityper.service 2>/dev/null || true
+        systemctl --user disable emojityper.service 2>/dev/null || true
+    fi
+    for prefix in "/usr/local" "${HOME}/.local"; do
+        if [[ -f "$prefix/bin/EmojiTyper" || -f "$prefix/bin/typemoji-uninstall" ]]; then
+            if [[ "$prefix" == "/usr/local" && $EUID -ne 0 ]]; then
+                sudo rm -f "$prefix/bin/EmojiTyper" "$prefix/bin/typemoji-uninstall"
+                sudo rm -rf "$prefix/share/emojityper"
+                sudo rm -f "$prefix/share/applications/org.emojiboard.EmojiTyper.desktop"
+                sudo rm -f "$prefix/share/icons/hicolor/scalable/apps/emojityper.svg"
+                sudo rm -f "$prefix/share/metainfo/org.emojiboard.EmojiTyper.metainfo.xml"
+                sudo rm -f "$prefix/lib/systemd/user/emojityper.service"
+            else
+                rm -f "$prefix/bin/EmojiTyper" "$prefix/bin/typemoji-uninstall"
+                rm -rf "$prefix/share/emojityper"
+                rm -f "$prefix/share/applications/org.emojiboard.EmojiTyper.desktop"
+                rm -f "$prefix/share/icons/hicolor/scalable/apps/emojityper.svg"
+                rm -f "$prefix/share/metainfo/org.emojiboard.EmojiTyper.metainfo.xml"
+                rm -f "$prefix/lib/systemd/user/emojityper.service"
+            fi
+            echo -e "  ${GREEN}✔ Removed files from $prefix${NC}"
+        fi
+    done
+    rm -f "${HOME}/.config/autostart/org.emojiboard.EmojiTyper.desktop"
+    update-desktop-database "${HOME}/.local/share/applications" 2>/dev/null || true
+    echo -e "\n${GREEN}${BOLD}✔ TypEmoji successfully uninstalled!${NC}\n"
+    exit 0
+fi
+
 # Detect distribution
 DISTRO="unknown"
 DISTRO_LIKE=""
@@ -149,8 +183,18 @@ else
     BIN_RUN="${HOME}/.local/bin/EmojiTyper"
 fi
 
+# Install typemoji-uninstall CLI command
+if [[ -n "$SUDO" || $EUID -eq 0 ]]; then
+    $SUDO cp -f "$0" "$INSTALL_PREFIX/bin/typemoji-uninstall" 2>/dev/null || true
+    $SUDO chmod +x "$INSTALL_PREFIX/bin/typemoji-uninstall" 2>/dev/null || true
+else
+    cp -f "$0" "$INSTALL_PREFIX/bin/typemoji-uninstall" 2>/dev/null || true
+    chmod +x "$INSTALL_PREFIX/bin/typemoji-uninstall" 2>/dev/null || true
+fi
+
 echo -e "  ${GREEN}✔ Files installed to $INSTALL_PREFIX${NC}"
 echo -e "  ${GREEN}✔ Autostart configured for login sessions.${NC}"
+echo -e "  ${GREEN}✔ Uninstaller saved: run 'typemoji-uninstall' to remove anytime.${NC}"
 
 # 3. Launch Application
 echo -e "\n${BLUE}${BOLD}▶ 3. Launching EmojiTyper and registering hotkey...${NC}"

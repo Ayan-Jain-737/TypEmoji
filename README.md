@@ -120,6 +120,72 @@ curl -fsSL https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v1.0.0/Em
 
 ---
 
+## 🗑️ How to Uninstall
+
+You can cleanly uninstall TypEmoji at any time depending on how you installed it:
+
+### 🟠 Ubuntu / Debian / Linux Mint / Pop!_OS (`.deb`)
+* **Via Terminal**:
+  ```bash
+  sudo apt remove typemoji
+  ```
+  *(Or `sudo apt purge typemoji` to also remove settings and cache).*
+* **Via GUI**: Open **Ubuntu Software** or **App Center**, search for **TypEmoji**, and click **Uninstall**.
+
+---
+
+### 🔴 Fedora / RHEL / CentOS (`.rpm`)
+* **Via Terminal**:
+  ```bash
+  sudo dnf remove TypEmoji
+  ```
+* **Via GUI**: Open **GNOME Software** or **KDE Discover**, search for **TypEmoji**, and click **Uninstall**.
+
+---
+
+### 🔵 Arch Linux / Manjaro (`.pkg.tar.zst`)
+* **Via Terminal**:
+  ```bash
+  sudo pacman -R typemoji
+  ```
+  *(Or `sudo pacman -Rns typemoji` to also remove any unused dependencies).*
+* **Via GUI**: Open **Pamac (Add/Remove Software)**, search for **TypEmoji**, and click **Remove**.
+
+---
+
+### 🟢 openSUSE (`.rpm`)
+* **Via Terminal**:
+  ```bash
+  sudo zypper remove TypEmoji
+  ```
+
+---
+
+### 🌟 Universal Installer (`.run`) / Terminal Install
+If you installed via the Universal `.run` installer or script:
+* **Option 1 (Built-in Command)**:
+  ```bash
+  sudo typemoji-uninstall
+  ```
+* **Option 2 (Using the downloaded .run file)**:
+  ```bash
+  ./TypEmoji-1.0.0-Universal-Installer.run --uninstall
+  ```
+* **Option 3 (1-Command Web Uninstaller)**:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/Ayan-Jain-737/TypEmoji/main/scripts/uninstall.sh | bash
+  ```
+
+---
+
+### ⚪ Portable Archive (`.tar.gz`)
+Simply delete the extracted directory:
+```bash
+rm -rf EmojiTyper-1.0.0-Linux
+```
+
+---
+
 ## 🏗️ Architecture & How It Works
 
 ```

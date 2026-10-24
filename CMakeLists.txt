@@ -170,6 +170,24 @@ set(CPACK_PACKAGE_NAME "EmojiTyper")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Direct emoji typing tool for Linux (X11/Wayland)")
 set(CPACK_PACKAGE_VENDOR "EmojiTyper")
+set(CPACK_PACKAGE_CONTACT "Ayan Jain <contact@emojityper.org>")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/Ayan-Jain-737/TypEmoji")
+
+# Debian (.deb) package options
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ayan Jain <contact@emojityper.org>")
+set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt6core6 | qt6-base, libqt6gui6, libqt6widgets6, libqt6dbus6, libkf6globalaccel6 | kf6-kglobalaccel, libx11-6, libxtst6")
+set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/packaging/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/packaging/debian/prerm")
+
+# RPM (.rpm) package options
+set(CPACK_RPM_PACKAGE_LICENSE "MIT")
+set(CPACK_RPM_PACKAGE_GROUP "Applications/Utilities")
+set(CPACK_RPM_PACKAGE_AUTOREQPROV OFF)
+set(CPACK_RPM_PACKAGE_REQUIRES "qt6-qtbase, kf6-kglobalaccel, libX11, libXtst")
+set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
+
 set(CPACK_GENERATOR "TGZ;DEB;RPM")
 set(CPACK_SOURCE_GENERATOR "TGZ")
 set(CPACK_SOURCE_IGNORE_FILES

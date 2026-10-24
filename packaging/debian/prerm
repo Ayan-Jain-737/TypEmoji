@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|deconfigure)
+        if which systemctl >/dev/null 2>&1; then
+            systemctl --global disable emojityper.service >/dev/null 2>&1 || true
+        fi
+        ;;
+    upgrade|failed-upgrade)
+        ;;
+    *)
+        ;;
+esac
+
+exit 0

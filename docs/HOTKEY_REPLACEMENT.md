@@ -62,7 +62,7 @@ For full Wayland native support without Xwayland:
 ```bash
 # Register via DBus
 qdbus org.kde.kglobalaccel /kglobalaccel org.kde.kglobalaccel.setShortcut \
-    "EmojiTyper" "show-panel" "Meta+."
+    "TypEmoji" "show-panel" "Meta+."
 ```
 
 ### GNOME (media-keys)
@@ -72,7 +72,7 @@ gdbus call --session \
   --dest org.gnome.SettingsDaemon.MediaKeys \
   --object-path /org/gnome/SettingsDaemon/MediaKeys \
   --method org.gnome.SettingsDaemon.MediaKeys.SetCustomKeybinding \
-  "EmojiTyper" "Show Emoji Panel" "Super+." "/path/to/emojityper"
+  "TypEmoji" "Show Emoji Panel" "Super+." "/path/to/EmojiTyper"
 ```
 
 ### Generic (xdg-desktop-portal)

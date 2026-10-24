@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# EmojiTyper Uninstall Script (supports both user and sudo uninstallation)
+# TypEmoji Uninstall Script (supports both user and sudo uninstallation)
 set -euo pipefail
 
 if [[ $EUID -eq 0 ]]; then
@@ -22,7 +22,7 @@ else
     SYSTEMD_SERVICE="${HOME}/.config/systemd/user/emojityper.service"
 fi
 
-echo "Uninstalling EmojiTyper from $PREFIX..."
+echo "Uninstalling TypEmoji from $PREFIX..."
 
 # Stop running process
 if pgrep -x EmojiTyper > /dev/null 2>&1; then
@@ -56,4 +56,4 @@ else
 fi
 
 echo ""
-echo "  EmojiTyper uninstallation complete."
+echo "  TypEmoji uninstallation complete."

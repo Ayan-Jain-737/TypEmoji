@@ -1,11 +1,11 @@
 ## 1. Project Structure
 
 ```
-emojiboard/
+TypEmoji/
 ├── src/                    # Source code organized by feature
 │   ├── main.cpp           # Application entry point
 │   ├── TargetState.{h,cpp}# Window/control target capture
-│   ├── injector/          # Unicode injection (wtype, ydotool, XTest)
+│   ├── injector/          # Unicode injection (wtype, wl-clipboard, XTest)
 │   ├── panel/             # Floating emoji panel UI & models
 │   ├── tray/              # System tray host & orchestration
 │   ├── hotkey/            # Global hotkey (KGlobalAccel & XGrabKey)
@@ -15,12 +15,10 @@ emojiboard/
 ├── data/                  # Unicode emoji datasets (emoji-test, emoji-zwj)
 ├── assets/                # Application icons and branding
 ├── docs/                  # Project documentation & architecture guides
-│   └── dev/               # Development research & tracking notes
-├── packaging/             # Distro packaging (Arch, Fedora, Debian, Flatpak)
-├── installer/             # Systemd service unit & installer definitions
-├── scripts/               # Helper scripts (install.sh, uninstall.sh)
-├── tests/                 # Unit tests & verification
-├── tools/                 # Standalone tools & test daemons
+├── packaging/             # Distro packaging (Arch, Fedora, Debian, Flatpak, systemd)
+├── scripts/               # Helper scripts (install.sh, build-all-packages.sh)
+├── snap/                  # Canonical Snapcraft definition
+├── .github/workflows/     # CI/CD multi-distro build matrix
 ├── CMakeLists.txt         # CMake build configuration
 ├── README.md              # Project documentation
 └── LICENSE
@@ -200,7 +198,7 @@ git commit -m "Add .gitignore for Linux/Qt builds"
 ### Push to GitHub
 
 ```bash
-git remote add origin https://github.com/ayanjain737/EmojiTyper.git
+git remote add origin https://github.com/Ayan-Jain-737/TypEmoji.git
 git push -u origin main
 ```
 

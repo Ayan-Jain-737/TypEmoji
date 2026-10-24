@@ -23,4 +23,4 @@ Examples of unacceptable behavior:
 
 ## Enforcement
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project team at `contact@emojityper.org`.
+reported to the project maintainers via the GitHub repository issues or at `contact@typemoji.org`.

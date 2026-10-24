@@ -3,7 +3,7 @@ base: core24
 version: '1.0.0'
 summary: Direct emoji picker and typing utility for Linux
 description: |
-  EmojiTyper is a fast, lightweight emoji selector and direct typing tool for Linux.
+  TypEmoji is a fast, lightweight emoji selector and direct typing tool for Linux.
   Search and type Unicode emojis directly into any active application with global shortcut support.
 
 grade: stable

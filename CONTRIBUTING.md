@@ -1,6 +1,6 @@
-# Contributing to EmojiTyper
+# Contributing to TypEmoji
 
-Thank you for your interest in contributing to EmojiTyper! We welcome contributions from everyone.
+Thank you for your interest in contributing to TypEmoji! We welcome contributions from everyone.
 
 ## Development Setup
 
@@ -18,13 +18,13 @@ cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -G Ninja
 cmake --build build --parallel
 ```
 
-### Running Tests
+### Running Locally
 ```bash
-ctest --test-dir build --output-on-failure
+./build/bin/EmojiTyper
 ```
 
 ## Pull Request Guidelines
-1. Ensure all unit tests pass before submitting.
-2. Follow modern C++23 standards (use RAII, smart pointers, `std::string_view` where appropriate).
-3. Keep code clean and self-documenting; avoid committing debug logs to stdout/stderr.
-4. If modifying UI components, verify both Dark and Light desktop themes.
+1. Follow modern C++23 standards (use RAII, smart pointers, `std::string_view` where appropriate).
+2. Keep code clean and self-documenting; avoid committing debug logs to stdout/stderr.
+3. If modifying UI components, verify both Dark and Light desktop themes.
+4. Ensure code adheres to FreeDesktop standards for desktop integration.

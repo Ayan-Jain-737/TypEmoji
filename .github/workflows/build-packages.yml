@@ -45,9 +45,9 @@ jobs:
       - name: Rename Packages for Clarity
         run: |
           mkdir -p dist
-          cp build/EmojiTyper-*.deb dist/EmojiTyper-1.0.0-Ubuntu-Debian-x86_64.deb 2>/dev/null || true
-          cp build/EmojiTyper-*.run dist/EmojiTyper-1.0.0-Universal-Installer.run 2>/dev/null || true
-          cp build/EmojiTyper-*.tar.gz dist/EmojiTyper-1.0.0-Portable-Linux-x86_64.tar.gz 2>/dev/null || true
+          cp build/*-Linux.deb dist/TypEmoji-1.0.0-Ubuntu-Debian-x86_64.deb 2>/dev/null || cp build/*.deb dist/TypEmoji-1.0.0-Ubuntu-Debian-x86_64.deb 2>/dev/null || true
+          cp build/*-Installer.run dist/TypEmoji-1.0.0-Universal-Installer.run 2>/dev/null || cp build/*.run dist/TypEmoji-1.0.0-Universal-Installer.run 2>/dev/null || true
+          cp build/*-Linux.tar.gz dist/TypEmoji-1.0.0-Portable-Linux-x86_64.tar.gz 2>/dev/null || cp build/*.tar.gz dist/TypEmoji-1.0.0-Portable-Linux-x86_64.tar.gz 2>/dev/null || true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -78,7 +78,7 @@ jobs:
           cd build
           cpack -G RPM
           mkdir -p ../dist
-          cp EmojiTyper-*.rpm ../dist/EmojiTyper-1.0.0-Fedora-openSUSE-x86_64.rpm 2>/dev/null || true
+          cp *.rpm ../dist/TypEmoji-1.0.0-Fedora-openSUSE-x86_64.rpm 2>/dev/null || true
 
       - name: Upload RPM artifact
         uses: actions/upload-artifact@v4
@@ -113,7 +113,7 @@ jobs:
             sed -i 's|\$pkgname-\$pkgver|/tmp/pkgbuild|g' PKGBUILD
             makepkg -s --noconfirm
             mkdir -p \$GITHUB_WORKSPACE/dist
-            cp *.pkg.tar.zst \$GITHUB_WORKSPACE/dist/EmojiTyper-1.0.0-Arch-Linux-x86_64.pkg.tar.zst 2>/dev/null || true
+            cp *.pkg.tar.zst \$GITHUB_WORKSPACE/dist/TypEmoji-1.0.0-Arch-Linux-x86_64.pkg.tar.zst 2>/dev/null || true
           "
 
       - name: Upload Arch artifact

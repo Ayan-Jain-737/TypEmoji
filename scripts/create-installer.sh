@@ -8,8 +8,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build"
-TAR_FILE="$BUILD_DIR/EmojiTyper-1.0.0-Linux.tar.gz"
-OUTPUT_RUN="$BUILD_DIR/EmojiTyper-1.0.0-Installer.run"
+TAR_FILE="$BUILD_DIR/TypEmoji-1.0.0-Linux.tar.gz"
+if [[ ! -f "$TAR_FILE" && -f "$BUILD_DIR/EmojiTyper-1.0.0-Linux.tar.gz" ]]; then
+    TAR_FILE="$BUILD_DIR/EmojiTyper-1.0.0-Linux.tar.gz"
+fi
+OUTPUT_RUN="$BUILD_DIR/TypEmoji-1.0.0-Installer.run"
 
 mkdir -p "$BUILD_DIR"
 
@@ -47,7 +50,7 @@ NC='\033[0m'
 
 echo -e "${BOLD}${BLUE}"
 echo "  ┌──────────────────────────────────────────────────────────┐"
-echo "  │        EmojiTyper Universal Linux Auto-Installer         │"
+echo "  │        TypEmoji Universal Linux Auto-Installer           │"
 echo "  │      Direct Emoji Typing with Meta+. (Win+.) Hotkey      │"
 echo "  └──────────────────────────────────────────────────────────┘"
 echo -e "${NC}"
@@ -158,19 +161,19 @@ nohup "$BIN_RUN" > /dev/null 2>&1 &
 sleep 1
 
 if pgrep -x EmojiTyper >/dev/null 2>&1; then
-    echo -e "  ${GREEN}✔ EmojiTyper is running in the background!${NC}"
+    echo -e "  ${GREEN}✔ TypEmoji is running in the background!${NC}"
     if command -v notify-send &>/dev/null; then
-        notify-send "EmojiTyper Ready" "Press Meta+. (Win+.) anytime to open the emoji picker." -i emojityper 2>/dev/null || true
+        notify-send "TypEmoji Ready" "Press Meta+. (Win+.) anytime to open the emoji picker." -i emojityper 2>/dev/null || true
     fi
 else
-    echo -e "  ${YELLOW}⚠ EmojiTyper installed. Start it from your App Menu or run: EmojiTyper${NC}"
+    echo -e "  ${YELLOW}⚠ TypEmoji installed. Start it from your App Menu or run: EmojiTyper${NC}"
 fi
 
 echo -e "\n${GREEN}${BOLD}══════════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}${BOLD}  ✔ Installation Complete!${NC}"
 echo -e "  • Shortcut: Press ${BOLD}Meta + .${NC} (Win + .) to type emojis"
 echo -e "  • System Tray: Click the tray icon anytime"
-echo -e "  • EmojiTyper will now start automatically whenever you log in."
+echo -e "  • TypEmoji will now start automatically whenever you log in."
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════════════${NC}\n"
 
 exit 0

@@ -19,6 +19,6 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fonts-noto-color-emoji
 Recommends: wl-clipboard, wtype, xclip
 Description: Direct emoji picker and typing utility for Linux (X11 & Wayland)
- EmojiTyper is a fast, responsive emoji selector and typing helper that allows
+ TypEmoji is a fast, responsive emoji selector and typing helper that allows
  you to search and type Unicode emojis directly into any focused window with
  global hotkey support (Super+.).

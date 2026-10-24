@@ -1,82 +1,73 @@
-# EmojiTyper Build Guide (Linux)
+# TypEmoji Build Guide (Linux)
 
 ## Prerequisites
 
-- Linux (tested on Arch Linux)
+- Linux (tested on Arch Linux, Ubuntu, Fedora)
 - CMake 3.25+
-- Qt 6.5+ (Core, Gui, Widgets, Network, Concurrent)
+- Qt 6.5+ (Core, Gui, Widgets, Network, Concurrent, DBus)
 - GCC 12+ or Clang 15+ with C++23 support
-- X11 development headers
-- XTest library
+- X11 development headers (`libx11-dev`, `libxtst-dev`)
+- KDE Frameworks 6 (`KF6GlobalAccel`, `KF6XmlGui`)
 - wtype (optional, for Wayland native injection)
 - Noto Color Emoji font
 
-## Quick Install (Arch Linux)
+## Quick Install Dependencies
 
+**Arch Linux / Manjaro:**
 ```bash
-sudo pacman -S --needed \
-  cmake qt6-base qt6-tools gcc \
-  libxtst wtype noto-fonts-emoji
+sudo pacman -S --needed cmake ninja gcc qt6-base qt6-tools kglobalaccel kxmlgui libxtst libx11 noto-fonts-emoji
+```
+
+**Ubuntu / Debian:**
+```bash
+sudo apt install cmake ninja-build g++ qt6-base-dev qt6-tools-dev libkf6globalaccel-dev libkf6xmlgui-dev libx11-dev libxtst-dev fonts-noto-color-emoji
+```
+
+**Fedora:**
+```bash
+sudo dnf install cmake ninja-build gcc-c++ qt6-qtbase-devel qt6-qttools-devel kf6-kglobalaccel-devel kf6-kxmlgui-devel libX11-devel libXtst-devel google-noto-color-emoji-fonts
 ```
 
 ## Quick Build
 
 ```bash
-cd /home/furious/Projects/emojiboard
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -G Ninja
-cmake --build . --parallel
+git clone https://github.com/Ayan-Jain-737/TypEmoji.git
+cd TypEmoji
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
+cmake --build build --parallel
 ```
 
-## Running
+## Running Locally
 
 ```bash
 ./build/bin/EmojiTyper
 ```
 
-The app runs in system tray. Press **Super + .** to open emoji panel.
-
-## Run Tests
-
-```bash
-cd build
-ctest --output-on-failure
-```
+The app runs in the system tray. Press **Super + .** (Win + .) to open the emoji panel.
 
 ## Native Hotkey Replacement
 
-The native Super+. emoji panel is replaced by XGrabKey interception:
+The native Super+. emoji panel is replaced by native interception:
 1. App starts
-2. XGrabKey captures Super+Period on root window
-3. Event is swallowed (not passed to compositor/WM)
+2. Captures Super+Period on root window via KGlobalAccel / XGrabKey
+3. Event is handled directly
 4. Native panel never opens
-5. Our panel opens instead
+5. TypEmoji panel opens instead
 
 No system config changes needed for basic functionality.
 
-Optional: Disable native pickers via Settings UI (GNOME/KDE specific)
-
-## Project Stats
-
-- Files: 24 source files
-- Lines of code: ~5,000+
-- Structure: Modern C++23 + Qt6
-- Features: Direct typing, non-activating panel, single instance, settings persistence
-- Platform: Linux X11/Wayland (Xwayland)
-
 ## Packaging
 
-### CPack TGZ (Portable)
+### CPack TGZ / DEB / RPM
 
 ```bash
 cd build
-cmake --install . --prefix ../dist
-cpack -G TGZ
+cpack -G "DEB;TGZ"
 ```
 
-### AppImage (Future)
+### Universal Self-Resolving Installer
 
 ```bash
-# Using linuxdeployqt
-linuxdeployqt ./bin/EmojiTyper -appimage
+./scripts/create-installer.sh
 ```
+Outputs `build/EmojiTyper-1.0.0-Installer.run` which runs on any Linux distribution.

@@ -26,7 +26,7 @@ Recommends:     wtype
 Recommends:     xclip
 
 %description
-EmojiTyper is a lightweight, responsive emoji picker and direct typing tool for Linux.
+TypEmoji is a lightweight, responsive emoji picker and direct typing tool for Linux.
 It works natively on both X11 and Wayland (KDE Plasma, GNOME, Sway, and other compositors),
 allowing users to quickly insert emojis into any focused application.
 

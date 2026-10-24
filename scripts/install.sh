@@ -126,14 +126,14 @@ fi
 
 # ── DONE ─────────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${GREEN}${BOLD}  ✔ EmojiTyper installed successfully!${NC}"
+echo -e "${GREEN}${BOLD}  ✔ TypEmoji installed successfully!${NC}"
 echo ""
 echo "  ┌─────────────────────────────────────────────────────────┐"
-echo "  │  How to use EmojiTyper                                  │"
+echo "  │  How to use TypEmoji                                    │"
 echo "  │                                                         │"
 echo "  │  • Press  Meta + .  (Win+.)  to open the emoji panel   │"
 echo "  │  • Or click the tray icon in your system tray           │"
 echo "  │                                                         │"
-echo "  │  EmojiTyper will start automatically on next login.     │"
+echo "  │  TypEmoji will start automatically on next login.       │"
 echo "  └─────────────────────────────────────────────────────────┘"
 echo ""

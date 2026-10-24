@@ -1,7 +1,7 @@
-# EmojiTyper — Direct Emoji Typing Tool for Linux (X11 & Wayland)
+# TypEmoji — Direct Emoji Typing Tool for Linux (X11 & Wayland)
 
 <p align="center">
-  <img src="assets/icons/emojityper.svg" alt="EmojiTyper Logo" width="104" height="104">
+  <img src="assets/icons/emojityper.svg" alt="TypEmoji Logo" width="104" height="104">
 </p>
 
 <p align="center">
@@ -19,11 +19,11 @@
 
 ---
 
-## ⚡ Why EmojiTyper? (Comparison with Default Linux Pickers)
+## ⚡ Why TypEmoji? (Comparison with Default Linux Pickers)
 
-Most Linux desktop environments provide built-in emoji utilities, but they come with significant productivity hurdles. Here is how **EmojiTyper** solves them:
+Most Linux desktop environments provide built-in emoji utilities, but they come with significant productivity hurdles. Here is how **TypEmoji** solves them:
 
-| Feature | 🐧 GNOME Emoji (`Ctrl+.`) | 🔵 KDE Plasma (`plasma-emojier`) | 🐍 Emote / Python Tools | ✨ **EmojiTyper** |
+| Feature | 🐧 GNOME Emoji (`Ctrl+.`) | 🔵 KDE Plasma (`plasma-emojier`) | 🐍 Emote / Python Tools | ✨ **TypEmoji** |
 | :--- | :--- | :--- | :--- | :--- |
 | **Direct Keystroke Typing** | ⚠️ GTK apps only | ❌ No (Copies to clipboard) | ⚠️ Emulates Ctrl+V | ✅ **Yes (Direct injection)** |
 | **Preserves Clipboard** | ⚠️ Overwrites clipboard | ❌ Overwrites clipboard | ❌ Overwrites clipboard | ✅ **100% Preserved** |
@@ -34,9 +34,9 @@ Most Linux desktop environments provide built-in emoji utilities, but they come 
 | **Unicode 16.0 Completeness**| ⚠️ Partial / Distro-dependent | ⚠️ Distro-dependent | ⚠️ Outdated databases | ✅ **Full 3,900+ emojis & ZWJs** |
 
 ### Key Advantages:
-1. **Never Hijacks Your Clipboard**: The default KDE picker copies emojis to the clipboard, destroying whatever link, code snippet, or text you had copied. EmojiTyper types the character directly into your target app via native virtual input events.
-2. **True Focus-Free Floating Panel**: Other pickers steal focus, causing your web browser, VS Code, or terminal to drop the blinking cursor. EmojiTyper uses `WA_ShowWithoutActivating` and `X11 BypassWindowManagerHint` so your target app remains focused.
-3. **Works Everywhere**: Whether you are typing in Discord, VS Code, Google Chrome, Slack, Kitty, Alacritty, or LibreOffice, EmojiTyper seamlessly inputs emojis everywhere on both X11 and Wayland.
+1. **Never Hijacks Your Clipboard**: The default KDE picker copies emojis to the clipboard, destroying whatever link, code snippet, or text you had copied. TypEmoji types the character directly into your target app via native virtual input events.
+2. **True Focus-Free Floating Panel**: Other pickers steal focus, causing your web browser, VS Code, or terminal to drop the blinking cursor. TypEmoji uses `WA_ShowWithoutActivating` and `X11 BypassWindowManagerHint` so your target app remains focused.
+3. **Works Everywhere**: Whether you are typing in Discord, VS Code, Google Chrome, Slack, Kitty, Alacritty, or LibreOffice, TypEmoji seamlessly inputs emojis everywhere on both X11 and Wayland.
 4. **Instant Startup**: Written in modern C++23 and compiled to native machine code. It opens in sub-milliseconds without lag.
 
 ---
@@ -48,8 +48,8 @@ Download the package tailored for your distribution from the **[Latest GitHub Re
 ### 🌟 1. Universal Self-Resolving Installer (Recommended for Any Distro)
 *Works on **Ubuntu, Fedora, Arch, openSUSE, Linux Mint, Pop!_OS, Debian, and Manjaro**.*
 
-1. Download **`EmojiTyper-1.0.0-Universal-Installer.run`**.
-2. Right-click the file → **Properties** → check **"Allow executing file as program"** (or in terminal: `chmod +x EmojiTyper-*.run`).
+1. Download **`TypEmoji-1.0.0-Universal-Installer.run`** (or `EmojiTyper-1.0.0-Universal-Installer.run`).
+2. Right-click the file → **Properties** → check **"Allow executing file as program"** (or in terminal: `chmod +x *.run`).
 3. Double-click the file to run it.
 4. **Done!** The installer automatically:
    - Detects your Linux distribution.
@@ -60,7 +60,7 @@ Download the package tailored for your distribution from the **[Latest GitHub Re
 ---
 
 ### 🟠 2. Ubuntu / Debian / Linux Mint / Pop!_OS (`.deb`)
-1. Download **`EmojiTyper-1.0.0-Ubuntu-Debian-x86_64.deb`**.
+1. Download **`TypEmoji-1.0.0-Ubuntu-Debian-x86_64.deb`**.
 2. Double-click to install using **Ubuntu Software / App Center / GDebi**.
 3. Or install via terminal (which automatically resolves all dependencies):
    ```bash
@@ -70,7 +70,7 @@ Download the package tailored for your distribution from the **[Latest GitHub Re
 ---
 
 ### 🔵 3. Arch Linux / Manjaro (`.pkg.tar.zst`)
-1. Download **`EmojiTyper-1.0.0-Arch-Linux-x86_64.pkg.tar.zst`**.
+1. Download **`TypEmoji-1.0.0-Arch-Linux-x86_64.pkg.tar.zst`**.
 2. Install via `pacman`:
    ```bash
    sudo pacman -U EmojiTyper-1.0.0-Arch-Linux-x86_64.pkg.tar.zst
@@ -79,7 +79,7 @@ Download the package tailored for your distribution from the **[Latest GitHub Re
 ---
 
 ### 🔴 4. Fedora / RHEL / openSUSE (`.rpm`)
-1. Download **`EmojiTyper-1.0.0-Fedora-openSUSE-x86_64.rpm`**.
+1. Download **`TypEmoji-1.0.0-Fedora-openSUSE-x86_64.rpm`**.
 2. Double-click to install in **GNOME Software**, or run:
    ```bash
    sudo dnf install ./EmojiTyper-1.0.0-Fedora-openSUSE-x86_64.rpm
@@ -88,7 +88,7 @@ Download the package tailored for your distribution from the **[Latest GitHub Re
 ---
 
 ### ⚪ 5. Portable Archive (No Installation Required)
-1. Download **`EmojiTyper-1.0.0-Portable-Linux-x86_64.tar.gz`**.
+1. Download **`TypEmoji-1.0.0-Portable-Linux-x86_64.tar.gz`**.
 2. Extract the archive and launch directly:
    ```bash
    tar -xzf EmojiTyper-1.0.0-Portable-Linux-x86_64.tar.gz
@@ -98,7 +98,7 @@ Download the package tailored for your distribution from the **[Latest GitHub Re
 ---
 
 ### ⚡ 6. Instant 1-Command Web Install
-Paste this single command into any terminal to install EmojiTyper system-wide:
+Paste this single command into any terminal to install TypEmoji system-wide:
 ```bash
 curl -fsSL https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v1.0.0/EmojiTyper-1.0.0-Linux.tar.gz | sudo tar -xz -C /usr/local --strip-components=1 && sudo update-desktop-database
 ```
@@ -164,7 +164,7 @@ curl -fsSL https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v1.0.0/Em
 
 ## 🛠️ Building from Source
 
-If you prefer to compile EmojiTyper yourself:
+If you prefer to compile TypEmoji yourself:
 
 ### 1. Install Build Dependencies
 * **Ubuntu / Debian**:
@@ -207,5 +207,5 @@ For deep technical insights and design specifications, refer to:
 
 ## 📄 License
 
-EmojiTyper is licensed under the **[MIT License](LICENSE)**.  
+TypEmoji is licensed under the **[MIT License](LICENSE)**.  
 Unicode emoji datasets are provided according to the **[Unicode Terms of Use](https://www.unicode.org/copyright.html)**.

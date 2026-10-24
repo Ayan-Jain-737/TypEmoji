@@ -126,6 +126,12 @@ bool EmojiInjector::insertEmoji(const QString &emoji,
         return true;
       }
     }
+  } else {
+    // Direct typing on X11 via XTest
+    if (sendViaXTest(emoji)) {
+      qDebug() << "EmojiInjector: direct typing via XTest succeeded";
+      return true;
+    }
   }
 
   // Universal high-performance clipboard paste pipeline (works reliably across
@@ -133,20 +139,6 @@ bool EmojiInjector::insertEmoji(const QString &emoji,
   return clipboardFallback(emoji, targetState);
 }
 
-bool EmojiInjector::sendViaYdotool(const QString &str) {
-  // Note: ydotool type only works with standard keymapped ASCII characters.
-  // For non-ASCII Unicode emojis, clipboardFallback with pasteViaYdotool is
-  // used instead.
-  QProcess process;
-  process.start("ydotool", QStringList()
-                               << "type" << "--key-delay" << "0" << str);
-  if (!process.waitForStarted(200)) {
-    return false;
-  }
-  process.waitForFinished(1000);
-  return process.exitStatus() == QProcess::NormalExit &&
-         process.exitCode() == 0;
-}
 
 bool EmojiInjector::sendViaWtype(const QString &str) {
   QProcess process;
@@ -193,7 +185,10 @@ bool EmojiInjector::sendViaXTest(const QString &str) {
 
 bool EmojiInjector::clipboardFallback(const QString &emoji,
                                       TargetState *targetState) {
-  // 1. Set emoji to system clipboard via Qt's native clipboard interface
+  // 1. Save original clipboard content so user's clipboard is preserved
+  saveClipboard();
+
+  // 2. Set emoji to system clipboard via Qt's native clipboard interface
   // (in-memory 0ms) No subprocesses, no wl-copy races or crashes!
   QClipboard *clipboard = QApplication::clipboard();
   if (clipboard) {
@@ -204,7 +199,7 @@ bool EmojiInjector::clipboardFallback(const QString &emoji,
     QProcess::startDetached("wl-copy", QStringList() << emoji);
   }
 
-  // 2. Ensure target window has focus before simulating paste (Wayland KWin &
+  // 3. Ensure target window has focus before simulating paste (Wayland KWin &
   // X11)
   if (targetState && targetState->isValid()) {
     targetState->ensureForeground();
@@ -212,7 +207,7 @@ bool EmojiInjector::clipboardFallback(const QString &emoji,
     QThread::msleep(25);
   }
 
-  // 3. Simulate paste (Ctrl+V) using priority backends
+  // 4. Simulate paste (Ctrl+V) using priority backends
   bool pasteSimulated = false;
 
   // Backend 1: ydotool key (evdev hardware level, works in ~1ms on KDE Wayland,
@@ -275,6 +270,14 @@ bool EmojiInjector::clipboardFallback(const QString &emoji,
   if (!pasteSimulated) {
     qWarning() << "EmojiInjector: all paste simulation methods failed";
   }
+
+  // Schedule restoring original user clipboard after application has consumed the paste event
+  if (!m_restoreTimer) {
+    m_restoreTimer = new QTimer(this);
+    m_restoreTimer->setSingleShot(true);
+    connect(m_restoreTimer, &QTimer::timeout, this, &EmojiInjector::restoreClipboard);
+  }
+  m_restoreTimer->start(300);
 
   emit clipboardFallbackUsed(emoji);
   return pasteSimulated;

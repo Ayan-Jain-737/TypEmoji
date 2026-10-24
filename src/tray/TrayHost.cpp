@@ -201,6 +201,9 @@ void TrayHost::setupTray()
 
     m_trayMenu->addSeparator();
 
+    QAction* aboutAction = m_trayMenu->addAction("About TypEmoji");
+    connect(aboutAction, &QAction::triggered, this, &TrayHost::onAbout);
+
     QAction* quitAction = m_trayMenu->addAction("Exit");
     connect(quitAction, &QAction::triggered, this, &TrayHost::onQuit);
 
@@ -231,7 +234,7 @@ void TrayHost::setupTray()
     m_trayIcon = std::make_unique<QSystemTrayIcon>();
     m_trayIcon->setIcon(icon);
     m_trayIcon->setContextMenu(m_trayMenu.get());
-    m_trayIcon->setToolTip("EmojiTyper — Press Win + . for emoji picker");
+    m_trayIcon->setToolTip("TypEmoji — Press Win + . for emoji picker");
     m_trayIcon->show();
 
     // Open panel on left-click (Trigger) of the tray icon
@@ -337,8 +340,7 @@ void TrayHost::onHotkeyPressed(const QPoint& caretPos)
 }
 
 void TrayHost::onPanelClosed() { emit panelClosed(); }
-void TrayHost::showSettings() { QMessageBox::information(nullptr, "Settings", "Settings UI coming soon"); }
-void TrayHost::onAbout() { QMessageBox::about(nullptr, "EmojiTyper", "EmojiTyper v1.0.0\nPress Meta+. to open"); }
+void TrayHost::onAbout() { QMessageBox::about(nullptr, "TypEmoji", "TypEmoji v1.0.0\nDirect Emoji Typing Tool for Linux\nPress Meta + . to open"); }
 void TrayHost::onQuit() { quit(); }
 void TrayHost::quit()
 {

@@ -25,7 +25,6 @@ public:
 
     bool initialize();
     void showPanel(const QPoint& pos = QPoint(-1, -1));
-    void showSettings();
     void quit();
     bool isBinaryUpdated() const;
     void reexecSelf(const QPoint& pos = QPoint(-1, -1));

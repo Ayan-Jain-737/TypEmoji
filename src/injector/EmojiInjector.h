@@ -28,20 +28,11 @@ signals:
     void clipboardFallbackUsed(const QString& emoji);
 
 private:
-    // Send Unicode string via ydotool (Wayland native, no virtual keyboard needed)
-    bool sendViaYdotool(const QString& str);
-
     // Send Unicode string via XTest (X11 path through Xwayland)
     bool sendViaXTest(const QString& str);
 
     // Send Unicode string via wtype (Wayland native)
     bool sendViaWtype(const QString& str);
-
-    // Send Unicode string via XSendEvent (WM_UTF8_STRING)
-    bool sendViaXSendEvent(const QString& str);
-
-    // Find keycode for a keysym
-    int keycodeForKeysym(unsigned long keysym) const;
 
     // Ensure ydotoold daemon is running and socket is ready
     bool ensureYdotooldRunning();

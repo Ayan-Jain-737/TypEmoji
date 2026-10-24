@@ -35,9 +35,7 @@ public:
     void setCategoryFilter(const QString& category);
     void setSearchQuery(const QString& query);
     void setShowRecent(const QVector<EmojiEntry>& recent);
-    void setShowFrequent(const QVector<EmojiEntry>& frequent);
     void clearFilters();
-    void showOnlySpecialSections();  // Show only Recent/Frequent sections, no filtered emojis
 
     // Get entry at index
     const EmojiEntry* entryAt(int row) const;
@@ -52,21 +50,9 @@ private:
     EmojiDatabase* m_database = nullptr;
     QVector<int> m_filteredIndices;  // Indices into m_database->allEmojis() - no dangling pointers
     QVector<EmojiEntry> m_recentEntries;
-    QVector<EmojiEntry> m_frequentEntries;
     QString m_currentCategory;
     QString m_searchQuery;
-    bool m_showSpecialSections = true;
     bool m_isRecentCategory = false;
 
     void rebuildFilter();
-};
-
-class EmojiSortFilterProxyModel : public QSortFilterProxyModel
-{
-    Q_OBJECT
-public:
-    explicit EmojiSortFilterProxyModel(QObject* parent = nullptr);
-
-protected:
-    bool lessThan(const QModelIndex& left, const QModelIndex& right) const override;
 };

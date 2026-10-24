@@ -57,3 +57,9 @@ _agents/
 _agent/
 *mcp_config*.json
 .env*
+
+# Packaging artifacts
+packaging/src/
+packaging/pkg/
+*.pkg.tar.zst
+

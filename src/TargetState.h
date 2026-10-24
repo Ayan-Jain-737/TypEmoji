@@ -26,9 +26,6 @@ public:
     QString targetUuid() const { return m_targetUuid; }
     QPoint caretScreenPos() const { return m_caretScreenPos; }
 
-    // Check if target requires special fallback handling
-    bool isTargetElevated() const { return false; }
-
     // Ensure target has focus before injection
     bool ensureForeground();
 

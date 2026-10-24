@@ -116,28 +116,12 @@ void EmojiModel::setShowRecent(const QVector<EmojiEntry>& recent)
     }
 }
 
-void EmojiModel::setShowFrequent(const QVector<EmojiEntry>& frequent)
-{
-    m_frequentEntries = frequent;
-}
-
 void EmojiModel::clearFilters()
 {
     m_currentCategory.clear();
     m_searchQuery.clear();
     m_isRecentCategory = false;
     rebuildFilter();
-    emit filterChanged();
-}
-
-void EmojiModel::showOnlySpecialSections()
-{
-    m_currentCategory = "Recent";
-    m_searchQuery.clear();
-    m_isRecentCategory = true;
-    m_filteredIndices.clear();
-    beginResetModel();
-    endResetModel();
     emit filterChanged();
 }
 
@@ -211,26 +195,4 @@ void EmojiModel::rebuildFilter()
     }
 
     endResetModel();
-}
-
-EmojiSortFilterProxyModel::EmojiSortFilterProxyModel(QObject* parent)
-    : QSortFilterProxyModel(parent)
-{
-    setDynamicSortFilter(true);
-    setSortCaseSensitivity(Qt::CaseInsensitive);
-}
-
-bool EmojiSortFilterProxyModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
-{
-    // Sort by category first, then by name
-    QString leftCat = left.data(EmojiModel::CategoryRole).toString();
-    QString rightCat = right.data(EmojiModel::CategoryRole).toString();
-
-    if (leftCat != rightCat) {
-        return leftCat < rightCat;
-    }
-
-    QString leftName = left.data(EmojiModel::NameRole).toString();
-    QString rightName = right.data(EmojiModel::NameRole).toString();
-    return leftName < rightName;
 }

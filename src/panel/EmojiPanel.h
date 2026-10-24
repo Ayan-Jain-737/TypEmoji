@@ -90,7 +90,6 @@ private:
     QWidget* m_headerWidget = nullptr;
     QPushButton* m_closeBtn = nullptr;
     QWidget* m_footerWidget = nullptr;
-    QLabel* m_previewLabel = nullptr;
     QLabel* m_previewEmoji = nullptr;
     QLabel* m_previewName = nullptr;
     QLabel* m_previewShortcode = nullptr;
@@ -98,10 +97,7 @@ private:
     void updatePreview(const QString& emoji, const QString& name, const QString& shortcode);
 
     std::vector<CategoryDef> m_categoryDefs;
-    QPoint m_lastCaretPos;
-    bool m_isClosing = false;
     bool m_isInjecting = false;
-    bool m_hasPendingInjection = false;
     QString m_pendingEmoji;
     bool m_wasActivated = false;
     QTimer* m_clickOutsideTimer = nullptr;

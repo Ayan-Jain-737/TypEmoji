@@ -100,18 +100,11 @@ TypEmoji/
 3. Install X11 dev headers (`libx11-dev`, `libxtst-dev`)
 4. Install `wtype` for Wayland injection
 
-### Configure
+### Configure & Build
 
 ```bash
-cd /home/furious/Projects/emojiboard
-mkdir build && cd build
-
+mkdir -p build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -G Ninja
-```
-
-### Build
-
-```bash
 cmake --build . --parallel
 ```
 
@@ -119,12 +112,6 @@ cmake --build . --parallel
 
 ```bash
 ./bin/EmojiTyper
-```
-
-### Run Tests
-
-```bash
-ctest --output-on-failure
 ```
 
 ## 5. Implementation Phases
@@ -162,37 +149,12 @@ ctest --output-on-failure
 - Theme support (system/light/dark)
 - Tray menu
 - Autostart .desktop file
-- SPEC_COMPLIANCE.md documentation
-- Unit tests
 
 ## 6. GitHub Repository Setup
 
-### Initialize Repository
-
 ```bash
-cd /home/furious/Projects/emojiboard
-git init
-git branch -M main
-
-git add .
-git commit -m "Initial commit: Project structure and core architecture"
-
-# Create .gitignore
-echo "build/
-dist/
-*.o
-*.so
-*.a
-CMakeCache.txt
-CMakeFiles/
-Makefile
-cmake_install.cmake
-CTestTestfile.cmake
-*.log
-*~
-.DS_Store" > .gitignore
-git add .gitignore
-git commit -m "Add .gitignore for Linux/Qt builds"
+git clone https://github.com/Ayan-Jain-737/TypEmoji.git
+cd TypEmoji
 ```
 
 ### Push to GitHub
@@ -211,10 +173,7 @@ git push -u origin main
 
 ### CI/CD (GitHub Actions)
 
-- `.github/workflows/build.yml` — Linux CI build (Ubuntu + Arch)
-- `.github/workflows/release.yml` — Automated releases
-- Build matrix: GCC 12, Clang 15, Qt 6.7, Ubuntu-latest + Arch
-- Artifacts: portable TGZ + AppImage
+- `.github/workflows/build-packages.yml` — Multi-distro package builder (Ubuntu .deb, Fedora .rpm, Arch Linux, Universal .run)
 
 ## 7. File Organization Rules
 
@@ -352,38 +311,3 @@ public:
 - **Memory footprint**: ~20-40 MB (idle)
 - **Startup time**: <200ms
 - **Panel open time**: <50ms
-
-## 14. Compliance with SPEC.md
-
-This structure satisfies all R1-R15 requirements from the research specification:
-
-- ✅ R1: Global hotkey configured (Super+.)
-- ✅ R2: Non-activating window ready
-- ✅ R3: Direct Unicode injection planned (wtype/XTest)
-- ✅ R4: Repeat insertion supported by design
-- ✅ R5: Caret anchoring implemented (window center fallback)
-- ✅ R6: Focus restoration in TargetState
-- ✅ R7: Emoji 17 data loading
-- ✅ R8: Recent/frequent persistence
-- ✅ R9: Categories supported
-- ✅ R10: Skin-tone picker planned
-- ✅ R11: Keyboard navigation implemented
-- ✅ R12: Single instance IPC
-- ✅ R13: Tray host foundation
-- ✅ R14: Per-user install ready (~/.config)
-- ✅ R15: Clean shutdown handled
-
-## 15. Next Steps
-
-1. Build and test with minimal emoji set
-2. Iterate on injection reliability (especially Wayland)
-3. Add settings UI dialog
-4. Package with CPack (TGZ, AppImage)
-5. Push to GitHub with CI
-
----
-
-**Created by:** @coder
-**Date:** 2026-10-21
-**For Task:** t_53b9ad55
-**Based on SPEC:** t_bdeba7bf

@@ -1,1 +1,1 @@
-// EmojiSearchProxy.cpp - stub
+#include "EmojiSearchProxy.h"

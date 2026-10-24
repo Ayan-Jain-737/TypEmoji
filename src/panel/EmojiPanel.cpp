@@ -668,7 +668,6 @@ void EmojiPanel::showAt(const QPoint& pos)
 
     m_wasActivated = false;
     m_isInjecting = false;
-    m_hasPendingInjection = false;
     m_pendingEmoji.clear();
     m_searchEdit->clear();
 
@@ -1228,9 +1227,6 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
     // If injection is currently occurring (within that tiny ~25ms window)
     if (m_isInjecting) {
         event->accept(); // CRITICAL: Always accept so it NEVER leaks to the target app!
-        if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && !event->isAutoRepeat()) {
-            m_hasPendingInjection = true;
-        }
         return;
     }
 

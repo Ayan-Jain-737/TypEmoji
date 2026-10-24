@@ -196,12 +196,9 @@ sudo cmake --install build
 
 ## 📚 Documentation Reference
 
-For deep technical insights and design specifications, refer to:
+For deep technical insights and desktop integration details, refer to:
 * [Architecture Deep Dive](docs/ARCHITECTURE.md)
-* [Build Guide & Flags](docs/BUILD.md)
 * [Global Hotkey & Desktop Integration](docs/HOTKEY_REPLACEMENT.md)
-* [Unicode 16.0 Specification Compliance](docs/SPEC_COMPLIANCE.md)
-* [Test & Validation Matrix](docs/validation.md)
 
 ---
 

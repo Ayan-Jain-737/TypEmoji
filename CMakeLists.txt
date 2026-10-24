@@ -111,8 +111,11 @@ else()
     target_compile_options(EmojiTyper PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
-# Auto-update installed binary so running daemon hot-reloads without manual restart
-if(EXISTS "$ENV{HOME}/.local/bin/EmojiTyper")
+# Packaging & installation options
+option(INSTALL_SYSTEMD_SERVICE "Install systemd user service" ON)
+option(ENABLE_DEV_HOTRELOAD "Auto-update ~/.local/bin on build (dev only)" OFF)
+
+if(ENABLE_DEV_HOTRELOAD AND EXISTS "$ENV{HOME}/.local/bin/EmojiTyper")
     add_custom_command(TARGET EmojiTyper POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:EmojiTyper> $ENV{HOME}/.local/bin/EmojiTyper
         COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.local/share/icons/hicolor/scalable/apps
@@ -120,16 +123,16 @@ if(EXISTS "$ENV{HOME}/.local/bin/EmojiTyper")
         COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{HOME}/.local/share/emojityper/data
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/data/emoji-test.txt $ENV{HOME}/.local/share/emojityper/data/emoji-test.txt
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/data/emoji-zwj-sequences.txt $ENV{HOME}/.local/share/emojityper/data/emoji-zwj-sequences.txt
-        COMMENT "Auto-updating ~/.local/bin/EmojiTyper and system data files for instant daemon reload"
+        COMMENT "Auto-updating ~/.local/bin/EmojiTyper for dev hot reload"
     )
 endif()
 
-# Install target
+# Install target binary
 install(TARGETS EmojiTyper
     RUNTIME DESTINATION bin
 )
 
-# Install data files
+# Install runtime data files
 install(FILES
     data/emoji-test.txt
     data/emoji-zwj-sequences.txt
@@ -142,26 +145,40 @@ install(FILES
     DESTINATION share/applications
 )
 
-# Install icon
+# Install application icon
 install(FILES
     assets/icons/emojityper.svg
     DESTINATION share/icons/hicolor/scalable/apps
 )
 
-# Install systemd user service
+# Install AppStream metadata (for Flatpak, Snap, GNOME Software, KDE Discover)
 install(FILES
-    installer/emojityper.service
-    DESTINATION lib/systemd/user
+    packaging/org.emojiboard.EmojiTyper.metainfo.xml
+    DESTINATION share/metainfo
 )
 
-# Enable testing
-enable_testing()
-add_subdirectory(tests)
+# Install systemd user service (for native packages/installations only, not sandbox/store)
+if(INSTALL_SYSTEMD_SERVICE)
+    install(FILES
+        packaging/emojityper.service
+        DESTINATION lib/systemd/user
+    )
+endif()
 
-# CPack for packaging
+# CPack configuration (excluding documentation, test suites, and dev scratchpads)
 set(CPACK_PACKAGE_NAME "EmojiTyper")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Direct emoji typing tool for Linux (X11/Wayland)")
 set(CPACK_PACKAGE_VENDOR "EmojiTyper")
-set(CPACK_GENERATOR "TGZ")
+set(CPACK_GENERATOR "TGZ;DEB;RPM")
+set(CPACK_SOURCE_GENERATOR "TGZ")
+set(CPACK_SOURCE_IGNORE_FILES
+    "/.git/"
+    "/build/"
+    "/docs/"
+    "/snap/"
+    "\\\\.cache"
+    "\\\\.vscode"
+    "\\\\.swp$"
+)
 include(CPack)

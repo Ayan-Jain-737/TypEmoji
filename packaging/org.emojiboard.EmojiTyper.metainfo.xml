@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.emojiboard.EmojiTyper</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>EmojiTyper</name>
+  <summary>Direct emoji picker and typing utility for Linux</summary>
+  <description>
+    <p>
+      EmojiTyper is a fast, lightweight emoji selector and direct typing tool for Linux.
+      It allows you to search and insert Unicode emojis directly into any focused window
+      across both X11 and Wayland (KDE Plasma, GNOME, Sway, and other compositors).
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Global hotkey trigger (Meta+. / Win+.)</li>
+      <li>Instant search by keyword, name, and category</li>
+      <li>Recent emojis memory for quick access</li>
+      <li>Direct keyboard typing injection into target applications</li>
+      <li>System tray integration for quick access and background daemon support</li>
+      <li>Support for both X11 and Wayland environments</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">org.emojiboard.EmojiTyper.desktop</launchable>
+  <provides>
+    <id>org.emojiboard.EmojiTyper.desktop</id>
+  </provides>
+  <icon type="stock">emojityper</icon>
+  <categories>
+    <category>Utility</category>
+    <category>Accessibility</category>
+  </categories>
+  <url type="homepage">https://github.com/Ayan-Jain-737/TypEmoji</url>
+  <url type="bugtracker">https://github.com/Ayan-Jain-737/TypEmoji/issues</url>
+  <developer id="org.emojiboard">
+    <name>Ayan Jain</name>
+  </developer>
+  <releases>
+    <release version="1.0.0" date="2026-10-24">
+      <description>
+        <p>Initial release with full Unicode 16.0 support, Wayland and X11 hotkey injection, search, and categorization.</p>
+      </description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1" />
+</component>

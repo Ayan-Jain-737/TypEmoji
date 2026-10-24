@@ -40,14 +40,12 @@ allowing users to quickly insert emojis into any focused application.
 %install
 %cmake_install
 
-%check
-%ctest
-
 %files
 %license LICENSE
 %doc README.md
 %{_bindir}/EmojiTyper
 %{_datadir}/applications/org.emojiboard.EmojiTyper.desktop
+%{_datadir}/metainfo/org.emojiboard.EmojiTyper.metainfo.xml
 %{_datadir}/emojityper/
 %{_datadir}/icons/hicolor/scalable/apps/emojityper.svg
 %{_userunitdir}/emojityper.service

@@ -1,0 +1,45 @@
+name: emojityper
+base: core24
+version: '1.0.0'
+summary: Direct emoji picker and typing utility for Linux
+description: |
+  EmojiTyper is a fast, lightweight emoji selector and direct typing tool for Linux.
+  Search and type Unicode emojis directly into any active application with global shortcut support.
+
+grade: stable
+confinement: strict
+
+apps:
+  emojityper:
+    command: bin/EmojiTyper
+    extensions: [kde-neon-6]
+    plugs:
+      - x11
+      - wayland
+      - desktop
+      - desktop-legacy
+      - unity7
+    environment:
+      QT_QPA_PLATFORM: "wayland;xcb"
+
+parts:
+  emojityper:
+    plugin: cmake
+    source: .
+    cmake-parameters:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_INSTALL_PREFIX=/usr
+      - -DINSTALL_SYSTEMD_SERVICE=OFF
+    build-packages:
+      - cmake
+      - ninja-build
+      - g++
+      - qt6-base-dev
+      - libkf6globalaccel-dev
+      - libkf6xmlgui-dev
+      - libx11-dev
+      - libxtst-dev
+    prime:
+      - -usr/include
+      - -usr/lib/cmake
+      - -usr/lib/systemd

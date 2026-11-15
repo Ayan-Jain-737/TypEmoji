@@ -31,6 +31,13 @@ if(ENABLE_KDE)
     endif()
 endif()
 
+# Optional Wayland Layer-Shell support
+find_package(LayerShellQt QUIET)
+if(LayerShellQt_FOUND)
+    message(STATUS "LayerShellQt found: Wayland Layer-Shell support enabled")
+    add_compile_definitions(HAVE_LAYER_SHELL_QT)
+endif()
+
 # Output directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -46,7 +53,10 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy
         ${CMAKE_CURRENT_SOURCE_DIR}/data/emoji-zwj-sequences.txt
         ${CMAKE_BINARY_DIR}/bin/data/emoji-zwj-sequences.txt
-    COMMENT "Copying emoji data files to build directory"
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/data/symbols.json
+        ${CMAKE_BINARY_DIR}/bin/data/symbols.json
+    COMMENT "Copying emoji and symbol data files to build directory"
 )
 add_custom_target(copy_data DEPENDS ${CMAKE_BINARY_DIR}/bin/data/emoji-test.txt)
 
@@ -75,6 +85,8 @@ add_executable(EmojiTyper
     src/data/EmojiDatabase.h
     src/settings/Settings.cpp
     src/settings/Settings.h
+    src/settings/SettingsDialog.cpp
+    src/settings/SettingsDialog.h
     src/ipc/SingleInstance.cpp
     src/ipc/SingleInstance.h
     src/TargetState.cpp
@@ -111,6 +123,12 @@ if(TARGET KF6::GlobalAccel AND TARGET KF6::XmlGui)
     target_link_libraries(EmojiTyper PRIVATE
         KF6::GlobalAccel
         KF6::XmlGui
+    )
+endif()
+
+if(TARGET LayerShellQt::Interface)
+    target_link_libraries(EmojiTyper PRIVATE
+        LayerShellQt::Interface
     )
 endif()
 
@@ -152,6 +170,7 @@ install(TARGETS EmojiTyper
 install(FILES
     data/emoji-test.txt
     data/emoji-zwj-sequences.txt
+    data/symbols.json
     DESTINATION share/emojityper/data
 )
 

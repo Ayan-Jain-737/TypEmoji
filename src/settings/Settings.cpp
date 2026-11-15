@@ -10,6 +10,9 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonArray>
 #include <QtCore/QTimer>
+#include <QtGui/QKeySequence>
+#include <QtCore/QKeyCombination>
+#include <algorithm>
 
 Settings::Settings(QObject* parent) : QObject(parent)
 {
@@ -38,12 +41,31 @@ QString Settings::settingsFilePath() const
 void Settings::applyDefaults()
 {
     m_hotkeyModifiers = 8;  // Super/Win key
-    m_hotkeyKey = 0x2e;  // '.' key (XK_period decimal)
+    m_hotkeyKey = 0x2e;     // '.' key (XK_period decimal / Qt::Key_Period)
+    m_hotkeySequence = "Meta+.";
     m_autostart = false;
     m_theme = "system";
     m_showRecentFirst = true;
+    m_defaultSkinTone = 0;
+    m_injectionMode = "auto";
+    m_typingDelay = 12;
+    m_panelScale = 100;
     m_panelPos = QPoint(-1, -1);  // Invalid = auto-position
     m_panelSize = QSize(400, 300);
+}
+
+void Settings::resetToDefaults()
+{
+    applyDefaults();
+    save();
+    emit hotkeyChanged();
+    emit autostartChanged();
+    emit themeChanged();
+    emit showRecentFirstChanged();
+    emit defaultSkinToneChanged(m_defaultSkinTone);
+    emit injectionModeChanged(m_injectionMode);
+    emit typingDelayChanged(m_typingDelay);
+    emit panelScaleChanged(m_panelScale);
 }
 
 void Settings::load()
@@ -77,9 +99,17 @@ void Settings::load()
 
     m_hotkeyModifiers = obj.value("hotkeyModifiers").toInt(8);
     m_hotkeyKey = obj.value("hotkeyKey").toInt(0x2e);
+    m_hotkeySequence = obj.value("hotkeySequence").toString();
+    if (m_hotkeySequence.isEmpty()) {
+        m_hotkeySequence = hotkeySequence();
+    }
     m_autostart = obj.value("autostart").toBool(false);
     m_theme = obj.value("theme").toString("system");
     m_showRecentFirst = obj.value("showRecentFirst").toBool(true);
+    m_defaultSkinTone = obj.value("defaultSkinTone").toInt(0);
+    m_injectionMode = obj.value("injectionMode").toString("auto");
+    m_typingDelay = obj.value("typingDelay").toInt(12);
+    m_panelScale = obj.value("panelScale").toInt(100);
 
     // Recent emojis
     QJsonArray recentArr = obj.value("recentEmojis").toArray();
@@ -116,9 +146,14 @@ void Settings::save()
 
     obj["hotkeyModifiers"] = m_hotkeyModifiers;
     obj["hotkeyKey"] = m_hotkeyKey;
+    obj["hotkeySequence"] = hotkeySequence();
     obj["autostart"] = m_autostart;
     obj["theme"] = m_theme;
     obj["showRecentFirst"] = m_showRecentFirst;
+    obj["defaultSkinTone"] = m_defaultSkinTone;
+    obj["injectionMode"] = m_injectionMode;
+    obj["typingDelay"] = m_typingDelay;
+    obj["panelScale"] = m_panelScale;
 
     // Recent emojis
     QJsonArray recentArr;
@@ -174,10 +209,69 @@ void Settings::saveLater()
     m_saveTimer->start(1000);
 }
 
+QString Settings::hotkeySequence() const
+{
+    if (!m_hotkeySequence.isEmpty()) {
+        return m_hotkeySequence;
+    }
+    QStringList parts;
+    if (m_hotkeyModifiers & 0x08) parts << "Meta";
+    if (m_hotkeyModifiers & 0x02) parts << "Ctrl";
+    if (m_hotkeyModifiers & 0x04) parts << "Alt";
+    if (m_hotkeyModifiers & 0x01) parts << "Shift";
+
+    Qt::Key k = static_cast<Qt::Key>(m_hotkeyKey);
+    QKeySequence ks(k);
+    QString keyStr = ks.toString(QKeySequence::PortableText);
+    if (keyStr.isEmpty()) {
+        if (m_hotkeyKey == 0x2e) {
+            keyStr = ".";
+        } else {
+            keyStr = QString::number(m_hotkeyKey, 16);
+        }
+    }
+    parts << keyStr;
+    return parts.join("+");
+}
+
+void Settings::setHotkeySequence(const QString& sequence)
+{
+    if (sequence.isEmpty()) return;
+    if (m_hotkeySequence != sequence) {
+        m_hotkeySequence = sequence;
+
+        QString normalized = sequence;
+        normalized.replace("Super", "Meta", Qt::CaseInsensitive);
+        normalized.replace("Win", "Meta", Qt::CaseInsensitive);
+
+        QKeySequence ks(normalized, QKeySequence::PortableText);
+        if (ks.isEmpty()) {
+            ks = QKeySequence(normalized, QKeySequence::NativeText);
+        }
+        if (!ks.isEmpty()) {
+            QKeyCombination comb = ks[0];
+            Qt::KeyboardModifiers mods = comb.keyboardModifiers();
+            int modMask = 0;
+            if (mods & Qt::ShiftModifier) modMask |= 1;
+            if (mods & Qt::ControlModifier) modMask |= 2;
+            if (mods & Qt::AltModifier) modMask |= 4;
+            if (mods & Qt::MetaModifier) modMask |= 8;
+
+            m_hotkeyModifiers = modMask;
+            m_hotkeyKey = static_cast<int>(comb.key());
+        }
+
+        save();
+        emit hotkeyChanged();
+    }
+}
+
 void Settings::setHotkeyModifiers(int modifiers)
 {
     if (m_hotkeyModifiers != modifiers) {
         m_hotkeyModifiers = modifiers;
+        m_hotkeySequence.clear();
+        m_hotkeySequence = hotkeySequence();
         save();
         emit hotkeyChanged();
     }
@@ -187,6 +281,8 @@ void Settings::setHotkeyKey(int key)
 {
     if (m_hotkeyKey != key) {
         m_hotkeyKey = key;
+        m_hotkeySequence.clear();
+        m_hotkeySequence = hotkeySequence();
         save();
         emit hotkeyChanged();
     }
@@ -203,7 +299,8 @@ void Settings::setAutostart(bool enabled)
         if (!dir.exists()) {
             dir.mkpath(".");
         }
-        QString desktopFile = autostartDir + "/EmojiTyper.desktop";
+        QString desktopFile = autostartDir + "/org.emojiboard.EmojiTyper.desktop";
+        QString legacyDesktopFile = autostartDir + "/EmojiTyper.desktop";
 
         if (enabled) {
             QString exePath = QCoreApplication::applicationFilePath();
@@ -211,18 +308,27 @@ void Settings::setAutostart(bool enabled)
                 "[Desktop Entry]\n"
                 "Type=Application\n"
                 "Name=EmojiTyper\n"
+                "GenericName=Emoji Picker\n"
+                "Comment=Direct emoji typing tool for Linux (X11 & Wayland)\n"
                 "Exec=%1\n"
-                "Hidden=false\n"
-                "NoDisplay=false\n"
+                "Icon=emojityper\n"
+                "Terminal=false\n"
+                "Categories=Utility;Accessibility;Qt;\n"
+                "Keywords=emoji;emoticon;picker;symbols;unicode;typing;\n"
+                "StartupNotify=false\n"
                 "X-GNOME-Autostart-enabled=true\n"
+                "X-KDE-autostart-after=panel\n"
+                "X-KDE-GlobalAccel-Target=true\n"
+                "X-KDE-Shortcuts=Meta+.\n"
             ).arg(exePath);
             QFile file(desktopFile);
-            if (file.open(QIODevice::WriteOnly)) {
+            if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
                 file.write(content.toUtf8());
                 file.close();
             }
         } else {
             QFile::remove(desktopFile);
+            QFile::remove(legacyDesktopFile);
         }
 
         save();
@@ -245,6 +351,45 @@ void Settings::setShowRecentFirst(bool show)
         m_showRecentFirst = show;
         save();
         emit showRecentFirstChanged();
+    }
+}
+
+void Settings::setDefaultSkinTone(int tone)
+{
+    tone = std::clamp(tone, 0, 5);
+    if (m_defaultSkinTone != tone) {
+        m_defaultSkinTone = tone;
+        save();
+        emit defaultSkinToneChanged(m_defaultSkinTone);
+    }
+}
+
+void Settings::setInjectionMode(const QString& mode)
+{
+    if (m_injectionMode != mode) {
+        m_injectionMode = mode;
+        save();
+        emit injectionModeChanged(m_injectionMode);
+    }
+}
+
+void Settings::setTypingDelay(int delayMs)
+{
+    delayMs = std::clamp(delayMs, 5, 50);
+    if (m_typingDelay != delayMs) {
+        m_typingDelay = delayMs;
+        save();
+        emit typingDelayChanged(m_typingDelay);
+    }
+}
+
+void Settings::setPanelScale(int percent)
+{
+    percent = std::clamp(percent, 75, 200);
+    if (m_panelScale != percent) {
+        m_panelScale = percent;
+        save();
+        emit panelScaleChanged(m_panelScale);
     }
 }
 

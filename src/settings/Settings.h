@@ -5,6 +5,7 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 #include <QtCore/QJsonObject>
 #include <QtCore/QVariantMap>
 #include <QtCore/QPoint>
@@ -16,9 +17,14 @@ class Settings : public QObject
     Q_OBJECT
     Q_PROPERTY(int hotkeyModifiers READ hotkeyModifiers WRITE setHotkeyModifiers NOTIFY hotkeyChanged)
     Q_PROPERTY(int hotkeyKey READ hotkeyKey WRITE setHotkeyKey NOTIFY hotkeyChanged)
+    Q_PROPERTY(QString hotkeySequence READ hotkeySequence WRITE setHotkeySequence NOTIFY hotkeyChanged)
     Q_PROPERTY(bool autostart READ autostart WRITE setAutostart NOTIFY autostartChanged)
     Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
     Q_PROPERTY(bool showRecentFirst READ showRecentFirst WRITE setShowRecentFirst NOTIFY showRecentFirstChanged)
+    Q_PROPERTY(int defaultSkinTone READ defaultSkinTone WRITE setDefaultSkinTone NOTIFY defaultSkinToneChanged)
+    Q_PROPERTY(QString injectionMode READ injectionMode WRITE setInjectionMode NOTIFY injectionModeChanged)
+    Q_PROPERTY(int typingDelay READ typingDelay WRITE setTypingDelay NOTIFY typingDelayChanged)
+    Q_PROPERTY(int panelScale READ panelScale WRITE setPanelScale NOTIFY panelScaleChanged)
 
 public:
     static Settings& instance();
@@ -31,6 +37,9 @@ public:
     // Save settings to disk
     void save();
 
+    // Reset settings to factory defaults
+    void resetToDefaults();
+
     // Hotkey (modifiers: bitmask for Shift=1, Ctrl=2, Alt=4, Super=8)
     int hotkeyModifiers() const { return m_hotkeyModifiers; }
     void setHotkeyModifiers(int modifiers);
@@ -38,17 +47,37 @@ public:
     int hotkeyKey() const { return m_hotkeyKey; }
     void setHotkeyKey(int key);
 
+    // Hotkey as human-readable string (e.g. "Meta+.", "Ctrl+Shift+Space")
+    QString hotkeySequence() const;
+    void setHotkeySequence(const QString& sequence);
+
     // Autostart with desktop session
     bool autostart() const { return m_autostart; }
     void setAutostart(bool enabled);
 
-    // Theme
+    // Theme (system, dark, light, black)
     QString theme() const { return m_theme; }
     void setTheme(const QString& theme);
 
     // Show recent emojis first
     bool showRecentFirst() const { return m_showRecentFirst; }
     void setShowRecentFirst(bool show);
+
+    // Default skin tone: 0 (default/yellow), 1 (light), 2 (medium-light), 3 (medium), 4 (medium-dark), 5 (dark)
+    int defaultSkinTone() const { return m_defaultSkinTone; }
+    void setDefaultSkinTone(int tone);
+
+    // Injection mode: "auto", "ydotool", "wtype", "clipboard"
+    QString injectionMode() const { return m_injectionMode; }
+    void setInjectionMode(const QString& mode);
+
+    // Typing delay / debounce in milliseconds (5ms - 50ms)
+    int typingDelay() const { return m_typingDelay; }
+    void setTypingDelay(int delayMs);
+
+    // Panel UI scaling percentage (75% - 200%, default 100%)
+    int panelScale() const { return m_panelScale; }
+    void setPanelScale(int percent);
 
     // Recent emojis (max 50)
     QStringList recentEmojis() const { return m_recentEmojis; }
@@ -76,6 +105,10 @@ signals:
     void showRecentFirstChanged();
     void recentEmojisChanged();
     void frequentEmojisChanged();
+    void defaultSkinToneChanged(int tone);
+    void injectionModeChanged(const QString& mode);
+    void typingDelayChanged(int delayMs);
+    void panelScaleChanged(int scalePercent);
 
 private:
     explicit Settings(QObject* parent = nullptr);
@@ -84,11 +117,16 @@ private:
     Settings& operator=(const Settings&) = delete;
 
     // Defaults
-        int m_hotkeyModifiers = 8;      // Super/Win key
-        int m_hotkeyKey = 0x2e;          // . key (XK_period decimal)
+    int m_hotkeyModifiers = 8;          // Super/Win key
+    int m_hotkeyKey = 0x2e;             // . key (XK_period decimal)
+    QString m_hotkeySequence = "Meta+.";
     bool m_autostart = false;
-    QString m_theme = "system";          // system, light, dark
+    QString m_theme = "system";          // system, dark, light, black
     bool m_showRecentFirst = true;
+    int m_defaultSkinTone = 0;           // 0: default, 1..5: skin tones
+    QString m_injectionMode = "auto";    // auto, ydotool, wtype, clipboard
+    int m_typingDelay = 12;              // 12ms debounce
+    int m_panelScale = 100;              // 100%
 
     QStringList m_recentEmojis;
     QVariantMap m_frequentEmojis;        // emoji -> count

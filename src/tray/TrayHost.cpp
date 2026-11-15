@@ -10,6 +10,7 @@
 #include "../hotkey/PortalHotkey.h"
 #include "../panel/EmojiPanel.h"
 #include "../settings/Settings.h"
+#include "../settings/SettingsDialog.h"
 #include <QtWidgets/QSystemTrayIcon>
 #include <QtWidgets/QMenu>
 #include <QtGui/QAction>
@@ -204,13 +205,27 @@ void TrayHost::setupTray()
     m_trayMenu = std::make_unique<QMenu>();
     m_trayMenu->setObjectName("trayMenu");
 
-    QAction* showAction = m_trayMenu->addAction(icon, "Show Emoji Picker\tWin + .");
-    connect(showAction, &QAction::triggered, this, [this](){ showPanel(); });
+    Settings& settings = Settings::instance();
+    m_showAction = m_trayMenu->addAction(icon, QString("Show Emoji Picker\t%1").arg(settings.hotkeySequence()));
+    connect(m_showAction, &QAction::triggered, this, [this](){ showPanel(); });
 
     m_trayMenu->addSeparator();
 
+    // Preferences action with settings gear icon
+    QIcon prefIcon = QIcon::fromTheme("preferences-system");
+    if (prefIcon.isNull()) {
+        prefIcon = QIcon::fromTheme("settings-configure");
+    }
+    if (prefIcon.isNull()) {
+        prefIcon = QApplication::style()->standardIcon(QStyle::SP_FileDialogDetailedView);
+    }
+    m_prefAction = m_trayMenu->addAction(prefIcon, "Preferences...");
+    connect(m_prefAction, &QAction::triggered, this, &TrayHost::onPreferences);
+
     QAction* aboutAction = m_trayMenu->addAction("About TypEmoji");
     connect(aboutAction, &QAction::triggered, this, &TrayHost::onAbout);
+
+    m_trayMenu->addSeparator();
 
     QAction* quitAction = m_trayMenu->addAction("Exit");
     connect(quitAction, &QAction::triggered, this, &TrayHost::onQuit);
@@ -242,7 +257,7 @@ void TrayHost::setupTray()
     m_trayIcon = std::make_unique<QSystemTrayIcon>();
     m_trayIcon->setIcon(icon);
     m_trayIcon->setContextMenu(m_trayMenu.get());
-    m_trayIcon->setToolTip("TypEmoji — Press Win + . for emoji picker");
+    m_trayIcon->setToolTip(QString("TypEmoji — Press %1 for emoji picker").arg(settings.hotkeySequence()));
     m_trayIcon->show();
 
     // Open panel on left-click (Trigger) of the tray icon
@@ -265,6 +280,10 @@ void TrayHost::setupConnections()
     if (m_x11Hotkey) {
         connect(m_x11Hotkey.get(), &GlobalHotkey::hotkeyPressed, this, &TrayHost::onHotkeyPressed);
     }
+
+    Settings& settings = Settings::instance();
+    connect(&settings, &Settings::hotkeyChanged, this, &TrayHost::onHotkeySettingsChanged);
+    connect(&settings, &Settings::themeChanged, this, &TrayHost::onThemeSettingsChanged);
 }
 
 void TrayHost::createPanel()
@@ -361,10 +380,77 @@ void TrayHost::onHotkeyPressed(const QPoint& caretPos)
 }
 
 void TrayHost::onPanelClosed() { emit panelClosed(); }
-void TrayHost::onAbout() { QMessageBox::about(nullptr, "TypEmoji", "TypEmoji v1.0.0\nDirect Emoji Typing Tool for Linux\nPress Meta + . to open"); }
+
+void TrayHost::onPreferences()
+{
+    if (!m_settingsDialog) {
+        m_settingsDialog = std::make_unique<SettingsDialog>();
+    }
+    m_settingsDialog->loadSettings();
+    m_settingsDialog->show();
+    m_settingsDialog->raise();
+    m_settingsDialog->activateWindow();
+}
+
+void TrayHost::onAbout()
+{
+    if (!m_settingsDialog) {
+        m_settingsDialog = std::make_unique<SettingsDialog>();
+    }
+    m_settingsDialog->loadSettings();
+    m_settingsDialog->showAboutTab();
+    m_settingsDialog->show();
+    m_settingsDialog->raise();
+    m_settingsDialog->activateWindow();
+}
+
+void TrayHost::onHotkeySettingsChanged()
+{
+    Settings& settings = Settings::instance();
+    qDebug() << "TrayHost: Hotkey configuration updated live:" << settings.hotkeySequence();
+
+    if (m_kdeHotkey) {
+        m_kdeHotkey->uninstall();
+        m_kdeHotkey->setHotkey(settings.hotkeyModifiers(), settings.hotkeyKey());
+        if (m_useKdeHotkey) {
+            m_kdeHotkey->install();
+        }
+    }
+    if (m_x11Hotkey) {
+        m_x11Hotkey->uninstall();
+        m_x11Hotkey->setHotkey(settings.hotkeyModifiers(), settings.hotkeyKey());
+        if (!m_useKdeHotkey) {
+            m_x11Hotkey->install();
+        }
+    }
+
+    if (m_showAction) {
+        m_showAction->setText(QString("Show Emoji Picker\t%1").arg(settings.hotkeySequence()));
+    }
+    if (m_trayIcon) {
+        m_trayIcon->setToolTip(QString("TypEmoji — Press %1 for emoji picker").arg(settings.hotkeySequence()));
+    }
+}
+
+void TrayHost::onThemeSettingsChanged()
+{
+    qDebug() << "TrayHost: Theme updated live, refreshing EmojiPanel";
+    if (m_panel) {
+        bool wasVisible = m_panel->isVisible();
+        m_panel.reset();
+        createPanel();
+        if (wasVisible) {
+            m_panel->showAt();
+        }
+    }
+}
+
 void TrayHost::onQuit() { quit(); }
 void TrayHost::quit()
 {
+    if (m_settingsDialog) {
+        m_settingsDialog->hide();
+    }
     if (m_kdeHotkey) {
         m_kdeHotkey->uninstall();
     }

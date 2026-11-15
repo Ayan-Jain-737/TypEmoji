@@ -16,6 +16,7 @@ class GlobalHotkey;
 class KGlobalAccelHotkey;
 class PortalHotkey;
 class EmojiPanel;
+class SettingsDialog;
 
 class TrayHost : public QObject
 {
@@ -37,8 +38,11 @@ signals:
 private slots:
     void onHotkeyPressed(const QPoint& caretPos);
     void onPanelClosed();
+    void onPreferences();
     void onAbout();
     void onQuit();
+    void onHotkeySettingsChanged();
+    void onThemeSettingsChanged();
 
 private:
     void setupTray();
@@ -48,7 +52,10 @@ private:
 
     std::unique_ptr<QSystemTrayIcon> m_trayIcon;
     std::unique_ptr<QMenu> m_trayMenu;
+    QAction* m_showAction = nullptr;
+    QAction* m_prefAction = nullptr;
 
+    std::unique_ptr<SettingsDialog> m_settingsDialog;
     std::unique_ptr<EmojiDatabase> m_database;
     std::unique_ptr<EmojiInjector> m_injector;
     std::unique_ptr<TargetState> m_targetState;

@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="dark-theme">
-  <!-- Interactive Background Canvas for Floating Particles -->
+  <!-- Interactive Floating Background Particle Canvas -->
   <canvas id="hero-particles" aria-hidden="true"></canvas>
 
   <!-- Sticky Cybernetic Header -->
@@ -30,7 +30,6 @@
       <a href="#" class="brand-lockup" aria-label="TypEmoji Home">
         <div class="brand-icon-wrapper">
           <img src="assets/logo.png" alt="TypEmoji 3D Keycap Logo" class="brand-logo" width="36" height="36">
-          <div class="brand-glow"></div>
         </div>
         <div class="brand-text">
           <span class="brand-title">TypEmoji</span>
@@ -39,34 +38,15 @@
       </a>
 
       <nav class="nav-links" aria-label="Main Navigation">
-        <a href="#simulator" class="nav-link">Interactive Demo</a>
+        <a href="#simulator" class="nav-link">Demo</a>
         <a href="#features" class="nav-link">Features</a>
         <a href="#architecture" class="nav-link">Architecture</a>
         <a href="#benchmarks" class="nav-link">Benchmarks</a>
-        <a href="#distros" class="nav-link">Distros & Install</a>
-        <a href="#kaomoji" class="nav-link">Kaomojis</a>
+        <a href="#distros" class="nav-link">Install</a>
+        <a href="#kaomoji" class="nav-link">Kaomoji</a>
       </nav>
 
       <div class="header-actions">
-        <!-- Mechanical Sound Toggle -->
-        <button id="sound-toggle" class="icon-toggle-btn" title="Toggle mechanical switch click sound" aria-label="Toggle mechanical sound FX" aria-pressed="true">
-          <svg class="sound-on-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-          </svg>
-          <svg class="sound-off-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            <line x1="23" y1="9" x2="17" y2="15"></line>
-            <line x1="17" y1="9" x2="23" y2="15"></line>
-          </svg>
-          <span class="sound-label">Click Sound</span>
-        </button>
-
-        <a href="#simulator" class="btn btn-secondary trigger-summon-btn" id="header-try-btn">
-          <span class="btn-kbd">Super + .</span>
-          <span>Try Demo</span>
-        </a>
-
         <a href="#distros" class="btn btn-primary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -104,7 +84,7 @@
           </h1>
 
           <p class="hero-subheading">
-            Press <code class="inline-shortcut">Super + .</code> anywhere. TypEmoji injects native Unicode emojis directly into your active window across <strong>Wayland</strong> and <strong>X11</strong> — without touching, clearing, or overwriting your clipboard buffer.
+            Inject native Unicode emojis and kaomojis directly into your active window across <strong>Wayland</strong> and <strong>X11</strong> — without touching, clearing, or overwriting your clipboard buffer.
           </p>
 
           <!-- Interactive Mechanical Keycap Simulation -->
@@ -121,7 +101,7 @@
                 <span class="key-side"></span>
               </button>
             </div>
-            <div class="keycap-hint">Click keycaps or press <kbd>Super + .</kbd> on your keyboard to test!</div>
+            <div class="keycap-hint">Interactive popup preview — click the keycaps to test!</div>
           </div>
 
           <!-- CTA Actions -->
@@ -191,7 +171,7 @@
     <section class="simulator-section" id="simulator">
       <div class="container">
         <div class="section-header text-center">
-          <div class="section-tag">Interactive In-Browser Experience</div>
+          <div class="section-tag">Interactive Simulator</div>
           <h2 class="section-title">Test Drive TypEmoji Live</h2>
           <p class="section-desc">
             Experience the actual 396×506 Qt6 panel right in your browser. Click emojis or kaomojis to type them directly into the simulated terminal window below. Hold <kbd>Shift</kbd> to keep the panel open for continuous multi-emoji typing!
@@ -223,7 +203,6 @@
             <!-- Terminal Screen -->
             <div class="terminal-body" id="terminal-body">
               <div class="term-line term-dim"># TypEmoji synthetic injection daemon listening on Wayland / X11</div>
-              <div class="term-line term-dim"># Press Super + . to summon picker or click the button below</div>
               <div class="term-line term-prompt">
                 <span class="prompt-user">furious@archlinux</span>:<span class="prompt-path">~/workspace</span><span class="prompt-char">$</span>
                 <span class="term-command">echo "Testing direct emoji insertion:"</span>
@@ -238,15 +217,12 @@
             <!-- Host Window Bottom Toolbar -->
             <div class="terminal-actions">
               <div class="term-tips">
-                <span>Tip: Hold <kbd>Shift</kbd> while clicking emojis to continuous-type without closing</span>
+                <span>Hold <kbd>Shift</kbd> while clicking for continuous typing</span>
               </div>
               <div class="term-btns">
-                <button class="term-btn" id="btn-sample-text">Insert Sample</button>
-                <button class="term-btn" id="btn-clear-term">Clear Text</button>
-                <button class="term-btn term-btn-primary" id="btn-copy-term">Copy Output</button>
-                <button class="term-btn term-btn-accent" id="sim-summon-toggle">
-                  <span class="key-badge">Super + .</span> Toggle Picker
-                </button>
+                <button class="term-btn" id="btn-clear-term" title="Clear terminal text">Clear</button>
+                <button class="term-btn term-btn-primary" id="btn-copy-term" title="Copy terminal text to clipboard">Copy</button>
+                <button class="term-btn term-btn-accent" id="sim-summon-toggle" title="Toggle TypEmoji virtual panel">Toggle Panel</button>
               </div>
             </div>
           </div>
@@ -307,24 +283,6 @@
             </div>
           </div>
         </div>
-
-        <div class="simulator-features-grid">
-          <div class="sim-feature-card">
-            <div class="feature-icon-badge">⚡</div>
-            <h3>Direct Active-Window Typing</h3>
-            <p>Unlike standard pickers that force you to paste, TypEmoji directly types characters into the focused application via Linux synthetic input hooks.</p>
-          </div>
-          <div class="sim-feature-card">
-            <div class="feature-icon-badge">🔒</div>
-            <h3>Zero Clipboard Tampering</h3>
-            <p>Your clipboard history, copied API tokens, and snippet buffers remain 100% untouched. No accidental overwrites or clipboard leaks.</p>
-          </div>
-          <div class="sim-feature-card">
-            <div class="feature-icon-badge">🚀</div>
-            <h3>Continuous Multi-Emoji Mode</h3>
-            <p>Hold <kbd>Shift</kbd> while clicking or pressing <kbd>Enter</kbd> to type multiple emojis in sequence without the panel closing.</p>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -332,7 +290,7 @@
     <section class="architecture-section" id="architecture">
       <div class="container">
         <div class="section-header">
-          <div class="section-tag">Linux Native Engineering</div>
+          <div class="section-tag">Native Architecture</div>
           <h2 class="section-title">Engineered Specifically for the Modern Linux Desktop</h2>
           <p class="section-desc">
             No heavy JavaScript runtimes. No 200MB background processes. Built from the ground up in modern <strong>C++23</strong> and <strong>Qt 6</strong> with dedicated Wayland portal integration.
@@ -397,7 +355,7 @@
               <h3 class="arch-title">Pre-Warmed Singleton Daemon</h3>
             </div>
             <p class="arch-body">
-              TypEmoji idles silently as a lightweight background daemon consuming under 14MB RAM. When triggered by <kbd>Super + .</kbd>, the window shows in under 4ms without cold-boot overhead.
+              TypEmoji idles silently as a lightweight background daemon consuming under 14MB RAM. When triggered, the picker window pops up in under 4ms without cold-boot overhead.
             </p>
             <div class="arch-tags">
               <span class="tag">Pre-Warmed Qt6</span>
@@ -475,7 +433,7 @@
     <section class="benchmarks-section" id="benchmarks">
       <div class="container">
         <div class="section-header text-center">
-          <div class="section-tag">Performance Comparison</div>
+          <div class="section-tag">Benchmarks</div>
           <h2 class="section-title">Built for Speed, Not Web Bloat</h2>
           <p class="section-desc">
             Standard desktop emoji pickers pack full Chromium runtimes just to show a grid of icons. TypEmoji stays faithful to the Unix philosophy: fast, lean, and resource-conscious.
@@ -590,7 +548,7 @@
     <section class="distros-section" id="distros">
       <div class="container">
         <div class="section-header text-center">
-          <div class="section-tag">Cross-Distribution Distribution</div>
+          <div class="section-tag">Distribution Packages</div>
           <h2 class="section-title">Install on Any Linux Distribution</h2>
           <p class="section-desc">
             Official v2.1.0 pre-compiled native packages for every major Linux package manager and a universal installer.
@@ -694,10 +652,10 @@
     <section class="kaomoji-section" id="kaomoji">
       <div class="container">
         <div class="section-header text-center">
-          <div class="section-tag">Text Face Clipboard</div>
+          <div class="section-tag">Kaomoji Library</div>
           <h2 class="section-title">Japanese Kaomoji Clip Station</h2>
           <p class="section-desc">
-            Express emotions with authentic Japanese text faces. Click any Kaomoji below to test the instant copy sound and animation!
+            Express emotions with authentic Japanese text faces. Click any Kaomoji below to copy it instantly to your clipboard!
           </p>
         </div>
 
@@ -710,7 +668,7 @@
             <h4>Want them globally on your Linux desktop?</h4>
             <p>Every single one of these Kaomojis is built right into TypEmoji's <code>(•‿•)</code> category tab and searchable in realtime with instant injection into Discord, Slack, Firefox, and your favorite terminal.</p>
           </div>
-          <a href="#simulator" class="btn btn-primary">Try in Simulator</a>
+          <a href="#distros" class="btn btn-primary">Install TypEmoji</a>
         </div>
       </div>
     </section>
@@ -719,29 +677,54 @@
     <section class="cli-section" id="features">
       <div class="container">
         <div class="section-header">
-          <div class="section-tag">Power User Ergonomics</div>
+          <div class="section-tag">CLI &amp; Window Managers</div>
           <h2 class="section-title">CLI Flags, Tray Controls &amp; WM Integration</h2>
           <p class="section-desc">
             Designed for window managers like i3, bspwm, Sway, and Hyprland. Bind <code>EmojiTyper --toggle</code> directly to any custom key combination in your configuration file.
           </p>
         </div>
 
-        <div class="cli-grid">
-          <div class="cli-card">
-            <div class="cli-cmd-badge">EmojiTyper --toggle</div>
-            <p>Toggles the emoji picker panel visibility. Perfect for binding to custom key combinations in <code>hyprland.conf</code> or <code>i3/config</code>.</p>
+        <div class="cli-terminal-card">
+          <div class="cli-terminal-header">
+            <div class="code-header-left">
+              <span class="terminal-circle red"></span>
+              <span class="terminal-circle yellow"></span>
+              <span class="terminal-circle green"></span>
+              <span class="cli-terminal-title">CLI Flags &amp; Window Manager IPC Commands</span>
+            </div>
           </div>
-          <div class="cli-card">
-            <div class="cli-cmd-badge">EmojiTyper --show</div>
-            <p>Forces the panel to open directly at the current active mouse cursor position or text caret coordinate.</p>
-          </div>
-          <div class="cli-card">
-            <div class="cli-cmd-badge">EmojiTyper --reload</div>
-            <p>Hot-reloads the emoji database and configuration files without terminating background instances.</p>
-          </div>
-          <div class="cli-card">
-            <div class="cli-cmd-badge">EmojiTyper --quit</div>
-            <p>Gracefully terminates the background daemon process and releases all global keyboard hooks.</p>
+          <div class="table-responsive">
+            <table class="cli-table">
+              <thead>
+                <tr>
+                  <th>Command Flag</th>
+                  <th>Action</th>
+                  <th>Config Binding Example (Hyprland / i3 / Sway)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>EmojiTyper --toggle</code></td>
+                  <td>Toggle picker visibility</td>
+                  <td><code>bindsym $mod+period exec EmojiTyper --toggle</code></td>
+                </tr>
+                <tr>
+                  <td><code>EmojiTyper --show</code></td>
+                  <td>Open panel at current cursor / caret coordinate</td>
+                  <td><code>bind = $mainMod, E, exec, EmojiTyper --show</code></td>
+                </tr>
+                <tr>
+                  <td><code>EmojiTyper --reload</code></td>
+                  <td>Hot-reload emoji database &amp; configuration</td>
+                  <td><code>bindsym $mod+Shift+e exec EmojiTyper --reload</code></td>
+                </tr>
+                <tr>
+                  <td><code>EmojiTyper --quit</code></td>
+                  <td>Gracefully terminate background daemon process</td>
+                  <td><code>bindsym $mod+Escape exec EmojiTyper --quit</code></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

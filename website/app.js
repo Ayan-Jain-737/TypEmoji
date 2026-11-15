@@ -1,7 +1,7 @@
 /**
  * TypEmoji — Modern Promotional Experience Script
- * Handles: 3D perspective tilt, particle canvas, virtual 396x506 panel simulator,
- * Web Audio mechanical switch synthesizer, distro tab switcher, and clipboard copy.
+ * Handles: 3D perspective tilt, floating emoji particle canvas, virtual panel simulator,
+ * distro tab switcher, and clipboard copy.
  */
 
 (function () {
@@ -9,8 +9,6 @@
 
   // State Management
   const state = {
-    soundEnabled: true,
-    audioCtx: null,
     activeCategory: 'Smileys & Emotion',
     searchQuery: '',
     recentEmojis: ['🚀', '🐧', '🔥', '✨', '💻', '💡', '🎉'],
@@ -19,75 +17,7 @@
   };
 
   // ==========================================================================
-  // 1. Web Audio API — Tactile Mechanical Switch Synthesizer
-  // ==========================================================================
-  function initAudio() {
-    if (!state.audioCtx && (window.AudioContext || window.webkitAudioContext)) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      state.audioCtx = new AudioContextClass();
-    }
-    if (state.audioCtx && state.audioCtx.state === 'suspended') {
-      state.audioCtx.resume();
-    }
-  }
-
-  function playMechanicalClick(pitchMod = 1.0) {
-    if (!state.soundEnabled) return;
-    try {
-      initAudio();
-      if (!state.audioCtx) return;
-
-      const ctx = state.audioCtx;
-      const now = ctx.currentTime;
-
-      // 1. High frequency mechanical transient click (snap)
-      const osc = ctx.createOscillator();
-      const oscGain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1400 * pitchMod, now);
-      osc.frequency.exponentialRampToValueAtTime(80, now + 0.035);
-
-      oscGain.gain.setValueAtTime(0.3, now);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
-
-      osc.connect(oscGain);
-      oscGain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.04);
-
-      // 2. Tactile body thud / bottom-out resonance
-      const bufferSize = ctx.sampleRate * 0.025;
-      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const output = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        output[i] = Math.random() * 2 - 1;
-      }
-
-      const whiteNoise = ctx.createBufferSource();
-      whiteNoise.buffer = noiseBuffer;
-
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(850 * pitchMod, now);
-      filter.Q.setValueAtTime(3, now);
-
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.25, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
-
-      whiteNoise.connect(filter);
-      filter.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
-
-      whiteNoise.start(now);
-      whiteNoise.stop(now + 0.03);
-    } catch (e) {
-      // Audio autoplay policy or failure - ignore gracefully
-    }
-  }
-
-  // ==========================================================================
-  // 2. Floating Emoji Particle Canvas (Hero Background)
+  // 1. Floating Emoji Particle Canvas (Global Background)
   // ==========================================================================
   function initParticleCanvas() {
     const canvas = document.getElementById('hero-particles');
@@ -97,8 +27,8 @@
 
     let width, height;
     const particles = [];
-    const emojiPool = ['⌨️', '🚀', '🐧', '💫', '💎', '⚡', '🎯', '🔥', '👾', '✨', '💡', '🐱', '🍕', '❤️', '🌟'];
-    const particleCount = 26;
+    const emojiPool = ['✨', '🚀', '🐧', '⚡', '💻', '💡', '🎉', '🔥', '💫', '🎨', '🐱'];
+    const particleCount = 22;
     let mouseX = -9999;
     let mouseY = -9999;
 
@@ -120,14 +50,14 @@
       }
       reset(initial = false) {
         this.x = Math.random() * width;
-        this.y = initial ? Math.random() * height : height + 40;
-        this.vx = (Math.random() - 0.5) * 0.6;
-        this.vy = -(Math.random() * 0.7 + 0.3);
+        this.y = initial ? Math.random() * height : height + 30;
+        this.vx = (Math.random() - 0.5) * 0.45;
+        this.vy = -(Math.random() * 0.55 + 0.25);
         this.emoji = emojiPool[Math.floor(Math.random() * emojiPool.length)];
-        this.size = Math.floor(Math.random() * 12 + 16); // 16px to 28px
-        this.alpha = Math.random() * 0.45 + 0.25;
+        this.size = Math.floor(Math.random() * 8 + 16); // 16px to 24px
+        this.alpha = Math.random() * 0.2 + 0.16; // 0.16 to 0.36
         this.rot = Math.random() * Math.PI * 2;
-        this.rotSpeed = (Math.random() - 0.5) * 0.015;
+        this.rotSpeed = (Math.random() - 0.5) * 0.01;
       }
       update() {
         this.x += this.vx;
@@ -138,13 +68,13 @@
         const dx = this.x - mouseX;
         const dy = this.y - mouseY;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 140) {
-          const force = (140 - dist) / 140;
-          this.x += (dx / dist) * force * 3;
-          this.y += (dy / dist) * force * 3;
+        if (dist < 120) {
+          const force = (120 - dist) / 120;
+          this.x += (dx / dist) * force * 2;
+          this.y += (dy / dist) * force * 2;
         }
 
-        if (this.y < -40 || this.x < -40 || this.x > width + 40) {
+        if (this.y < -30 || this.x < -30 || this.x > width + 30) {
           this.reset(false);
         }
       }
@@ -337,12 +267,12 @@
       previewEmoji.textContent = item.char;
       previewName.textContent = item.name;
       previewShortcode.textContent = item.shortcode;
+      const isKaomoji = item.category === 'Kaomoji' || (item.char && item.char.length > 2);
+      previewEmoji.classList.toggle('is-kaomoji', isKaomoji);
     }
 
     // Direct injection into terminal field
     function injectEmoji(item, keepOpen) {
-      playMechanicalClick(1.1);
-
       // Add to recent emojis
       if (!state.recentEmojis.includes(item.char)) {
         state.recentEmojis.unshift(item.char);
@@ -392,7 +322,6 @@
     }
 
     function togglePanel(forceState) {
-      playMechanicalClick(0.9);
       if (typeof forceState === 'boolean') {
         state.isPanelVisible = forceState;
       } else {
@@ -412,7 +341,6 @@
     // Category Tabs Switching
     categoryTabs.forEach((tab) => {
       tab.addEventListener('click', () => {
-        playMechanicalClick(1.05);
         categoryTabs.forEach((t) => {
           t.classList.remove('active');
           t.setAttribute('aria-selected', 'false');
@@ -473,7 +401,6 @@
     // Terminal host window buttons
     if (sampleBtn && targetText) {
       sampleBtn.addEventListener('click', () => {
-        playMechanicalClick();
         targetText.textContent = 'TypEmoji brings native Wayland & X11 keyboard magic to Linux! 🐧✨ ';
         showToast('Inserted sample terminal buffer');
       });
@@ -481,7 +408,6 @@
 
     if (clearBtn && targetText) {
       clearBtn.addEventListener('click', () => {
-        playMechanicalClick();
         targetText.textContent = '';
         showToast('Cleared active window buffer');
       });
@@ -489,7 +415,6 @@
 
     if (copyTermBtn && targetText) {
       copyTermBtn.addEventListener('click', () => {
-        playMechanicalClick();
         const text = targetText.textContent || '';
         navigator.clipboard.writeText(text).then(() => {
           showToast('Copied terminal output to clipboard!', '📋');
@@ -518,7 +443,6 @@
     function animateKeypress() {
       if (metaKey) metaKey.classList.add('pressed');
       if (dotKey) dotKey.classList.add('pressed');
-      playMechanicalClick(1.15);
 
       setTimeout(() => {
         if (metaKey) metaKey.classList.remove('pressed');
@@ -651,7 +575,6 @@
 
     tabs.forEach((tab) => {
       tab.addEventListener('click', () => {
-        playMechanicalClick();
         tabs.forEach((t) => t.classList.remove('active'));
         tab.classList.add('active');
 
@@ -670,7 +593,6 @@
 
     if (copyBtn && snippetCode) {
       copyBtn.addEventListener('click', () => {
-        playMechanicalClick();
         const text = snippetCode.textContent || '';
         navigator.clipboard.writeText(text).then(() => {
           showToast('Installation command copied to clipboard!', '📋');
@@ -695,7 +617,10 @@
     const container = document.getElementById('kaomoji-clip-grid');
     if (!container || !window.TYPEMOJI_DATA) return;
 
-    const kaomojis = window.TYPEMOJI_DATA.filter((item) => item.category === 'Kaomoji');
+    const topChars = ['(•‿•)', '(◕‿◕✿)', '¯\\_(ツ)_/¯', '( ͡° ͜ʖ ͡°)', '(｡♥‿♥｡)', 'ʕ•ᴥ•ʔ', '(>_<)', 'ಠ_ಠ', '(☞ﾟヮﾟ)☞', '(づ￣ ³￣)づ', "(ง'̀-'́)ง", '(ノಠ益ಠ)ノ彡┻━┻'];
+    const kaomojis = window.TYPEMOJI_DATA
+      .filter((item) => item.category === 'Kaomoji' && topChars.includes(item.char))
+      .sort((a, b) => topChars.indexOf(a.char) - topChars.indexOf(b.char));
 
     const fragment = document.createDocumentFragment();
     kaomojis.forEach((k) => {
@@ -708,7 +633,6 @@
       `;
 
       card.addEventListener('click', () => {
-        playMechanicalClick(1.2);
         navigator.clipboard.writeText(k.char).then(() => {
           showToast(`Copied ${k.char} (${k.name})`, '🎉');
         }).catch(() => {
@@ -731,33 +655,7 @@
   }
 
   // ==========================================================================
-  // 9. Sound FX Toggle & Storage
-  // ==========================================================================
-  function initSoundToggle() {
-    const btn = document.getElementById('sound-toggle');
-    if (!btn) return;
-
-    const saved = localStorage.getItem('typemoji_sound');
-    if (saved !== null) {
-      state.soundEnabled = saved === 'true';
-    }
-    btn.setAttribute('aria-pressed', state.soundEnabled ? 'true' : 'false');
-
-    btn.addEventListener('click', () => {
-      state.soundEnabled = !state.soundEnabled;
-      btn.setAttribute('aria-pressed', state.soundEnabled ? 'true' : 'false');
-      localStorage.setItem('typemoji_sound', state.soundEnabled ? 'true' : 'false');
-      if (state.soundEnabled) {
-        playMechanicalClick();
-        showToast('Mechanical switch sound enabled', '🔊');
-      } else {
-        showToast('Mechanical sound muted', '🔇');
-      }
-    });
-  }
-
-  // ==========================================================================
-  // 10. Scroll Header Glass State & Reveal Animations
+  // 9. Scroll Header Glass State & Reveal Animations
   // ==========================================================================
   function initScrollEffects() {
     const header = document.querySelector('.site-header');
@@ -780,7 +678,7 @@
       });
     }, { threshold: 0.15 });
 
-    document.querySelectorAll('.arch-card, .bench-card, .sim-feature-card, .cli-card').forEach((el) => {
+    document.querySelectorAll('.arch-card, .bench-card, .cli-terminal-card').forEach((el) => {
       observer.observe(el);
     });
   }
@@ -800,14 +698,12 @@
   // Initialize Everything on DOM Ready
   // ==========================================================================
   document.addEventListener('DOMContentLoaded', () => {
-    initAudio();
     initParticleCanvas();
     init3DTilt();
     initSimulator();
     initKeycapShortcuts();
     initDistroSelector();
     initKaomojiStation();
-    initSoundToggle();
     initScrollEffects();
   });
 

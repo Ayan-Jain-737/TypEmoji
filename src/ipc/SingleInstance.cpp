@@ -50,15 +50,26 @@ void SingleInstance::createServer()
 
 void SingleInstance::connectToExisting()
 {
+    sendMessage("show");
+}
+
+bool SingleInstance::sendMessage(const QString& message)
+{
     QLocalSocket socket;
     socket.connectToServer(m_instanceKey);
 
     if (socket.waitForConnected(500)) {
-        socket.write("show\n");
+        QByteArray data = message.toUtf8();
+        if (!data.endsWith('\n')) {
+            data.append('\n');
+        }
+        socket.write(data);
         socket.flush();
         socket.waitForBytesWritten(500);
         socket.disconnectFromServer();
+        return true;
     }
+    return false;
 }
 
 void SingleInstance::setMessageHandler(std::function<void(const QString&)> handler)
@@ -68,7 +79,7 @@ void SingleInstance::setMessageHandler(std::function<void(const QString&)> handl
 
 void SingleInstance::sendShowMessage()
 {
-    connectToExisting();
+    sendMessage("show");
 }
 
 void SingleInstance::onNewConnection()

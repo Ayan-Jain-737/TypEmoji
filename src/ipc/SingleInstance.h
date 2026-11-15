@@ -21,6 +21,7 @@ public:
 
     void setMessageHandler(std::function<void(const QString&)> handler);
     void sendShowMessage();
+    bool sendMessage(const QString& message);
 
 signals:
     void messageReceived(const QString& message);

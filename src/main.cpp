@@ -27,9 +27,22 @@ int main(int argc, char *argv[])
     }
 
     SingleInstance instance("EmojiTyperInstance");
+    QStringList args = app.arguments();
+
     if (instance.isAnotherRunning()) {
-        qDebug() << "Another instance running, sending show message";
-        instance.sendShowMessage();
+        if (args.contains("--quit") || args.contains("-q")) {
+            instance.sendMessage("quit");
+        } else if (args.contains("--toggle") || args.contains("-t")) {
+            instance.sendMessage("toggle");
+        } else if (args.contains("--reload")) {
+            instance.sendMessage("reload");
+        } else {
+            instance.sendMessage("show");
+        }
+        return 0;
+    }
+
+    if (args.contains("--quit") || args.contains("-q")) {
         return 0;
     }
 
@@ -44,12 +57,16 @@ int main(int argc, char *argv[])
     instance.setMessageHandler([&trayHost](const QString& msg) {
         if (msg == "show") {
             trayHost.showPanel();
+        } else if (msg == "toggle") {
+            trayHost.togglePanel();
+        } else if (msg == "quit") {
+            trayHost.quit();
         } else if (msg == "reload") {
             trayHost.reexecSelf();
         }
     });
 
-    if (app.arguments().contains("--show")) {
+    if (args.contains("--show") || args.contains("--toggle") || args.contains("-t")) {
         trayHost.showPanel();
     }
 

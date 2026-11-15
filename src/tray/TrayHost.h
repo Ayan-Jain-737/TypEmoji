@@ -14,6 +14,7 @@ class EmojiInjector;
 class TargetState;
 class GlobalHotkey;
 class KGlobalAccelHotkey;
+class PortalHotkey;
 class EmojiPanel;
 
 class TrayHost : public QObject
@@ -25,6 +26,7 @@ public:
 
     bool initialize();
     void showPanel(const QPoint& pos = QPoint(-1, -1));
+    void togglePanel();
     void quit();
     bool isBinaryUpdated() const;
     void reexecSelf(const QPoint& pos = QPoint(-1, -1));
@@ -52,6 +54,7 @@ private:
     std::unique_ptr<TargetState> m_targetState;
     std::unique_ptr<GlobalHotkey> m_x11Hotkey;
     std::unique_ptr<KGlobalAccelHotkey> m_kdeHotkey;
+    std::unique_ptr<PortalHotkey> m_portalHotkey;
     std::unique_ptr<EmojiPanel> m_panel;
     bool m_useKdeHotkey = false;
 

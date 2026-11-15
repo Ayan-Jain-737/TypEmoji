@@ -44,12 +44,16 @@ public:
 
             // Draw selection background / border
             if (option.state & QStyle::State_Selected) {
-                painter->setPen(QPen(QColor(0, 120, 212), 2));
-                painter->setBrush(QColor(0, 120, 212, 45));
+                QColor hl = opt.palette.color(QPalette::Highlight);
+                painter->setPen(QPen(hl, 2));
+                hl.setAlpha(45);
+                painter->setBrush(hl);
                 painter->drawRoundedRect(r, 8, 8);
             } else if (option.state & QStyle::State_MouseOver) {
+                QColor hoverColor = opt.palette.color(QPalette::Text);
+                hoverColor.setAlpha(24);
                 painter->setPen(Qt::NoPen);
-                painter->setBrush(QColor(255, 255, 255, 22));
+                painter->setBrush(hoverColor);
                 painter->drawRoundedRect(r, 8, 8);
             }
 
@@ -122,12 +126,19 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
     m_clickOutsideTimer->setInterval(80);
     connect(m_clickOutsideTimer, &QTimer::timeout, this, [this]() {
         if (!isVisible() || m_isInjecting || !m_wasActivated) return;
-        if (!isActiveWindow()) {
+
+        QWidget* active = QApplication::activeWindow();
+        if (active && (active == this || isAncestorOf(active) || active->inherits("QMenu") || active->inherits("QToolTip"))) {
+            return;
+        }
+
+        if (!isActiveWindow() && !QApplication::activePopupWidget()) {
             hidePanel();
             return;
         }
+
         if (QGuiApplication::mouseButtons() != Qt::NoButton) {
-            if (!rect().contains(mapFromGlobal(QCursor::pos()))) {
+            if (!rect().contains(mapFromGlobal(QCursor::pos())) && !QApplication::activePopupWidget()) {
                 hidePanel();
             }
         }
@@ -749,6 +760,10 @@ void EmojiPanel::hidePanel()
         settings.setPanelSize(size());
         settings.save();
 
+        if (m_injector) {
+            m_injector->flushQueue();
+        }
+
         if (m_targetState) {
             m_targetState->clear();
         }
@@ -1230,14 +1245,31 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
         return;
     }
 
-    // Ignore modifier keys and Ctrl combinations (e.g. Ctrl+V paste simulation from ydotool)
+    // Handle app shortcuts with Ctrl (Ctrl+Q to quit app, Ctrl+W to close panel)
+    if (event->modifiers() & Qt::ControlModifier) {
+        if (event->key() == Qt::Key_Q) {
+            event->accept();
+            QCoreApplication::quit();
+            return;
+        }
+        if (event->key() == Qt::Key_W) {
+            event->accept();
+            hidePanel();
+            return;
+        }
+        if (event->key() == Qt::Key_V) {
+            event->accept();
+            return;
+        }
+    }
+
+    // Ignore standalone modifier keys
     if (event->key() == Qt::Key_Control ||
         event->key() == Qt::Key_Shift ||
         event->key() == Qt::Key_Alt ||
         event->key() == Qt::Key_Meta ||
         event->key() == Qt::Key_Super_L ||
-        event->key() == Qt::Key_Super_R ||
-        (event->modifiers() & Qt::ControlModifier)) {
+        event->key() == Qt::Key_Super_R) {
         event->accept();
         return;
     }
@@ -1248,12 +1280,7 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
     switch (event->key()) {
     case Qt::Key_Escape:
         event->accept();
-        if (m_searchEdit && !m_searchEdit->text().isEmpty()) {
-            m_searchEdit->clear();
-            if (curList) curList->setFocus();
-        } else {
-            hidePanel();
-        }
+        hidePanel();
         break;
 
     case Qt::Key_Tab:
@@ -1324,6 +1351,10 @@ void EmojiPanel::changeEvent(QEvent* event)
         if (isActiveWindow()) {
             m_wasActivated = true;
         } else if (m_wasActivated && !m_isInjecting && isVisible()) {
+            QWidget* active = QApplication::activeWindow();
+            if (active && (active == this || isAncestorOf(active) || active->inherits("QMenu") || QApplication::activePopupWidget())) {
+                return;
+            }
             qDebug() << "EmojiPanel: Lost window activation, closing panel";
             hidePanel();
         }
@@ -1345,15 +1376,22 @@ bool EmojiPanel::eventFilter(QObject* watched, QEvent* event)
         int curIdx = m_stackedWidget->currentIndex();
         QListView* curList = (curIdx >= 0 && curIdx < m_listViews.size()) ? m_listViews[curIdx] : nullptr;
 
-        // Escape: clear search if non-empty, otherwise close panel
+        // Escape: immediately close panel
         if (key == Qt::Key_Escape) {
-            if (m_searchEdit && !m_searchEdit->text().isEmpty()) {
-                m_searchEdit->clear();
-                if (curList) curList->setFocus();
-            } else {
-                hidePanel();
-            }
+            hidePanel();
             return true;
+        }
+
+        // Ctrl+Q to quit application, Ctrl+W to close panel
+        if (keyEvent->modifiers() & Qt::ControlModifier) {
+            if (key == Qt::Key_Q) {
+                QCoreApplication::quit();
+                return true;
+            }
+            if (key == Qt::Key_W) {
+                hidePanel();
+                return true;
+            }
         }
 
         // Tab / Shift+Tab cycling

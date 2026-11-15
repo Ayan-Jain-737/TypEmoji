@@ -7,6 +7,7 @@
 #include "../TargetState.h"
 #include "../hotkey/GlobalHotkey.h"
 #include "../hotkey/KGlobalAccelHotkey.h"
+#include "../hotkey/PortalHotkey.h"
 #include "../panel/EmojiPanel.h"
 #include "../settings/Settings.h"
 #include <QtWidgets/QSystemTrayIcon>
@@ -66,44 +67,45 @@ bool TrayHost::initialize()
     m_targetState = std::make_unique<TargetState>();
 
     // Determine which hotkey backend to use
-    // Prefer KGlobalAccel on KDE (Wayland or X11), fall back to X11 XGrabKey otherwise
+    // 1. Try KGlobalAccel on KDE (Wayland or X11)
+    // 2. Try XDG Desktop Portal on Wayland (GNOME 44+, Sway, Hyprland)
+    // 3. Fall back to X11 XGrabKey (X11 desktops, XFCE, i3, etc.)
     QString platform = QGuiApplication::platformName().toLower();
     QString desktop = qEnvironmentVariable("XDG_CURRENT_DESKTOP").toLower();
     bool isKde = desktop.contains("kde") || desktop.contains("plasma");
-    m_useKdeHotkey = isKde;  // Only use KGlobalAccel on KDE desktops
+    m_useKdeHotkey = isKde;
     qDebug() << "TrayHost: platform=" << platform << "desktop=" << desktop << "useKDE=" << m_useKdeHotkey;
 
-    if (m_useKdeHotkey) {
-        m_kdeHotkey = std::make_unique<KGlobalAccelHotkey>();
-        Settings& settings = Settings::instance();
-        m_kdeHotkey->setHotkey(settings.hotkeyModifiers(), settings.hotkeyKey());
-    } else {
-        m_x11Hotkey = std::make_unique<GlobalHotkey>();
-        Settings& settings = Settings::instance();
-        m_x11Hotkey->setHotkey(settings.hotkeyModifiers(), settings.hotkeyKey());
-    }
+    Settings& settings = Settings::instance();
+    m_kdeHotkey = std::make_unique<KGlobalAccelHotkey>();
+    m_kdeHotkey->setHotkey(settings.hotkeyModifiers(), settings.hotkeyKey());
+
+    m_portalHotkey = std::make_unique<PortalHotkey>();
+
+    m_x11Hotkey = std::make_unique<GlobalHotkey>();
+    m_x11Hotkey->setHotkey(settings.hotkeyModifiers(), settings.hotkeyKey());
 
     // Setup tray FIRST so even if hotkey fails we have a working tray icon
     setupTray();
     setupConnections();
 
     bool hotkeyInstalled = false;
-    if (m_useKdeHotkey && m_kdeHotkey) {
-        hotkeyInstalled = m_kdeHotkey->install();
-    } else if (m_x11Hotkey) {
-        hotkeyInstalled = m_x11Hotkey->install();
+    if (m_useKdeHotkey && m_kdeHotkey && m_kdeHotkey->install()) {
+        hotkeyInstalled = true;
+        qDebug() << "TrayHost: Global shortcut registered via KDE KGlobalAccel";
+    } else if (m_portalHotkey && m_portalHotkey->install()) {
+        hotkeyInstalled = true;
+        qDebug() << "TrayHost: Global shortcut registered via XDG Desktop Portal";
+    } else if (m_x11Hotkey && m_x11Hotkey->install()) {
+        hotkeyInstalled = true;
+        qDebug() << "TrayHost: Global shortcut registered via X11 XGrabKey";
     }
 
     if (!hotkeyInstalled) {
         // Non-fatal: app continues in tray-only mode. User can left-click the
-        // tray icon or use "Show Emoji Panel" from the context menu.
-        qWarning() << "Failed to install global hotkey (platform:" << platform << "desktop:" << desktop << ")";
-        qWarning() << "EmojiTyper running in tray-only mode. Use tray icon to open emoji panel.";
-        m_trayIcon->showMessage(
-            "EmojiTyper",
-            "Hotkey registration failed. Click the tray icon to open the emoji panel.",
-            QSystemTrayIcon::Warning, 4000
-        );
+        // tray icon or use "Show Emoji Panel" from the context menu, or bind 'EmojiTyper --toggle'.
+        qWarning() << "Failed to install global hotkey automatically (platform:" << platform << "desktop:" << desktop << ")";
+        qWarning() << "EmojiTyper running with tray and CLI support ('EmojiTyper --toggle').";
     }
 
     // Auto-setup XDG autostart on first run so EmojiTyper starts with the session
@@ -248,9 +250,13 @@ void TrayHost::setupTray()
 
 void TrayHost::setupConnections()
 {
-    if (m_useKdeHotkey && m_kdeHotkey) {
+    if (m_kdeHotkey) {
         connect(m_kdeHotkey.get(), &KGlobalAccelHotkey::hotkeyPressed, this, &TrayHost::onHotkeyPressed);
-    } else if (m_x11Hotkey) {
+    }
+    if (m_portalHotkey) {
+        connect(m_portalHotkey.get(), &PortalHotkey::hotkeyPressed, this, &TrayHost::onHotkeyPressed);
+    }
+    if (m_x11Hotkey) {
         connect(m_x11Hotkey.get(), &GlobalHotkey::hotkeyPressed, this, &TrayHost::onHotkeyPressed);
     }
 }
@@ -280,9 +286,13 @@ bool TrayHost::isBinaryUpdated() const
 void TrayHost::reexecSelf(const QPoint& pos)
 {
     qDebug() << "TrayHost: Seamlessly reloading updated binary...";
-    if (m_useKdeHotkey && m_kdeHotkey) {
+    if (m_kdeHotkey) {
         m_kdeHotkey->uninstall();
-    } else if (m_x11Hotkey) {
+    }
+    if (m_portalHotkey) {
+        m_portalHotkey->uninstall();
+    }
+    if (m_x11Hotkey) {
         m_x11Hotkey->uninstall();
     }
     if (m_trayIcon) {
@@ -328,6 +338,11 @@ void TrayHost::showPanel(const QPoint& pos)
     }
 }
 
+void TrayHost::togglePanel()
+{
+    showPanel();
+}
+
 void TrayHost::onHotkeyPressed(const QPoint& caretPos)
 {
     qDebug() << "TrayHost: hotkey pressed, toggling panel";
@@ -344,11 +359,17 @@ void TrayHost::onAbout() { QMessageBox::about(nullptr, "TypEmoji", "TypEmoji v1.
 void TrayHost::onQuit() { quit(); }
 void TrayHost::quit()
 {
-    if (m_useKdeHotkey && m_kdeHotkey) {
+    if (m_kdeHotkey) {
         m_kdeHotkey->uninstall();
-    } else if (m_x11Hotkey) {
+    }
+    if (m_portalHotkey) {
+        m_portalHotkey->uninstall();
+    }
+    if (m_x11Hotkey) {
         m_x11Hotkey->uninstall();
     }
-    m_trayIcon->hide();
+    if (m_trayIcon) {
+        m_trayIcon->hide();
+    }
     QCoreApplication::quit();
 }

@@ -57,6 +57,9 @@ _agents/
 _agent/
 *mcp_config*.json
 .env*
+AGENT.md
+agent.md
+*agent*.md
 
 # Packaging artifacts
 packaging/src/

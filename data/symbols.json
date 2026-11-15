@@ -1,0 +1,986 @@
+[
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Almost Equal To",
+    "char": "≈",
+    "keywords": [
+      "almost equal to",
+      "approx",
+      "approximately",
+      "math",
+      "equivalent"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Not Equal To",
+    "char": "≠",
+    "keywords": [
+      "not equal to",
+      "neq",
+      "different",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Less-Than Or Equal To",
+    "char": "≤",
+    "keywords": [
+      "less than or equal to",
+      "leq",
+      "smaller",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Greater-Than Or Equal To",
+    "char": "≥",
+    "keywords": [
+      "greater than or equal to",
+      "geq",
+      "bigger",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Plus-Minus Sign",
+    "char": "±",
+    "keywords": [
+      "plus minus",
+      "pm",
+      "tolerance",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Multiplication Sign",
+    "char": "×",
+    "keywords": [
+      "multiplication",
+      "times",
+      "multiply",
+      "cross",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Division Sign",
+    "char": "÷",
+    "keywords": [
+      "division",
+      "divide",
+      "obelus",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Infinity",
+    "char": "∞",
+    "keywords": [
+      "infinity",
+      "infinite",
+      "forever",
+      "math",
+      "loop"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Square Root",
+    "char": "√",
+    "keywords": [
+      "square root",
+      "sqrt",
+      "radical",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Integral",
+    "char": "∫",
+    "keywords": [
+      "integral",
+      "calculus",
+      "integrate",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "N-Ary Summation",
+    "char": "∑",
+    "keywords": [
+      "summation",
+      "sum",
+      "sigma",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "N-Ary Product",
+    "char": "∏",
+    "keywords": [
+      "product",
+      "pi product",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Partial Differential",
+    "char": "∂",
+    "keywords": [
+      "partial differential",
+      "del",
+      "derivative",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Nabla Gradient",
+    "char": "∇",
+    "keywords": [
+      "nabla",
+      "gradient",
+      "vector",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Intersection",
+    "char": "∩",
+    "keywords": [
+      "intersection",
+      "cap",
+      "set",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Union",
+    "char": "∪",
+    "keywords": [
+      "union",
+      "cup",
+      "set",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Element Of",
+    "char": "∈",
+    "keywords": [
+      "element of",
+      "belongs to",
+      "in set",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Not An Element Of",
+    "char": "∉",
+    "keywords": [
+      "not an element of",
+      "not in set",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Subset Of",
+    "char": "⊂",
+    "keywords": [
+      "subset of",
+      "proper subset",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Subset Of Or Equal To",
+    "char": "⊆",
+    "keywords": [
+      "subset of or equal to",
+      "subset",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Circled Plus",
+    "char": "⊕",
+    "keywords": [
+      "circled plus",
+      "direct sum",
+      "xor",
+      "oplus",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Circled Times",
+    "char": "⊗",
+    "keywords": [
+      "circled times",
+      "tensor product",
+      "otimes",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Perpendicular",
+    "char": "⊥",
+    "keywords": [
+      "perpendicular",
+      "orthogonal",
+      "bottom",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Parallel To",
+    "char": "∥",
+    "keywords": [
+      "parallel to",
+      "norm",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Identical To",
+    "char": "≡",
+    "keywords": [
+      "identical to",
+      "equivalent",
+      "congruent",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Proportional To",
+    "char": "∝",
+    "keywords": [
+      "proportional to",
+      "varies as",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Therefore",
+    "char": "∴",
+    "keywords": [
+      "therefore",
+      "hence",
+      "so",
+      "logic",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "Because",
+    "char": "∵",
+    "keywords": [
+      "because",
+      "since",
+      "logic",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "math",
+    "name": "End Of Proof Tombstone",
+    "char": "∎",
+    "keywords": [
+      "end of proof",
+      "qed",
+      "tombstone",
+      "halmos",
+      "math"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Rightwards Arrow",
+    "char": "→",
+    "keywords": [
+      "rightwards arrow",
+      "right arrow",
+      "next",
+      "forward"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Leftwards Arrow",
+    "char": "←",
+    "keywords": [
+      "leftwards arrow",
+      "left arrow",
+      "back",
+      "previous"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Upwards Arrow",
+    "char": "↑",
+    "keywords": [
+      "upwards arrow",
+      "up arrow",
+      "top",
+      "above"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Downwards Arrow",
+    "char": "↓",
+    "keywords": [
+      "downwards arrow",
+      "down arrow",
+      "bottom",
+      "below"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Rightwards Arrow Over Leftwards Arrow",
+    "char": "⇄",
+    "keywords": [
+      "swap arrows",
+      "exchange",
+      "switch",
+      "transfer"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Left Right Arrow",
+    "char": "↔",
+    "keywords": [
+      "left right arrow",
+      "bidirectional",
+      "both directions"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Rightwards Double Arrow",
+    "char": "⇒",
+    "keywords": [
+      "implies",
+      "right double arrow",
+      "leads to",
+      "logic"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Left Right Double Arrow",
+    "char": "⇔",
+    "keywords": [
+      "iff",
+      "if and only if",
+      "equivalent",
+      "double arrow"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Return Key Arrow",
+    "char": "↵",
+    "keywords": [
+      "return key",
+      "enter key",
+      "carriage return",
+      "newline"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Up Arrowhead Shift",
+    "char": "⇧",
+    "keywords": [
+      "shift key",
+      "up arrowhead",
+      "capital"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Anticlockwise Open Circle Arrow",
+    "char": "↺",
+    "keywords": [
+      "counterclockwise arrow",
+      "undo",
+      "rotate left",
+      "reload"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "arrows",
+    "name": "Clockwise Open Circle Arrow",
+    "char": "↻",
+    "keywords": [
+      "clockwise arrow",
+      "redo",
+      "rotate right",
+      "refresh"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "currency",
+    "name": "Euro Sign",
+    "char": "€",
+    "keywords": [
+      "euro sign",
+      "eur",
+      "europe",
+      "money",
+      "currency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "currency",
+    "name": "Pound Sign",
+    "char": "£",
+    "keywords": [
+      "pound sign",
+      "gbp",
+      "sterling",
+      "money",
+      "currency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "currency",
+    "name": "Yen Sign",
+    "char": "¥",
+    "keywords": [
+      "yen sign",
+      "jpy",
+      "yuan",
+      "cny",
+      "japan",
+      "china",
+      "money",
+      "currency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "currency",
+    "name": "Indian Rupee Sign",
+    "char": "₹",
+    "keywords": [
+      "indian rupee sign",
+      "inr",
+      "rupee",
+      "india",
+      "money",
+      "currency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "currency",
+    "name": "Ruble Sign",
+    "char": "₽",
+    "keywords": [
+      "ruble sign",
+      "rub",
+      "russia",
+      "money",
+      "currency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "currency",
+    "name": "Bitcoin Sign",
+    "char": "₿",
+    "keywords": [
+      "bitcoin sign",
+      "btc",
+      "crypto",
+      "money",
+      "currency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "currency",
+    "name": "Cent Sign",
+    "char": "¢",
+    "keywords": [
+      "cent sign",
+      "cents",
+      "penny",
+      "currency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "currency",
+    "name": "Won Sign",
+    "char": "₩",
+    "keywords": [
+      "won sign",
+      "krw",
+      "korea",
+      "currency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "currency",
+    "name": "Turkish Lira Sign",
+    "char": "₺",
+    "keywords": [
+      "turkish lira sign",
+      "try",
+      "turkey",
+      "currency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "currency",
+    "name": "Dong Sign",
+    "char": "₫",
+    "keywords": [
+      "dong sign",
+      "vnd",
+      "vietnam",
+      "currency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "currency",
+    "name": "Hryvnia Sign",
+    "char": "₴",
+    "keywords": [
+      "hryvnia sign",
+      "uah",
+      "ukraine",
+      "currency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Em Dash",
+    "char": "—",
+    "keywords": [
+      "em dash",
+      "long dash",
+      "punctuation",
+      "typography"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "En Dash",
+    "char": "–",
+    "keywords": [
+      "en dash",
+      "range dash",
+      "punctuation"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Left Double Quotation Mark",
+    "char": "“",
+    "keywords": [
+      "left double quotation mark",
+      "quote",
+      "curly quote"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Right Double Quotation Mark",
+    "char": "”",
+    "keywords": [
+      "right double quotation mark",
+      "quote",
+      "curly quote"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Left Single Quotation Mark",
+    "char": "‘",
+    "keywords": [
+      "left single quotation mark",
+      "apostrophe",
+      "quote"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Right Single Quotation Mark",
+    "char": "’",
+    "keywords": [
+      "right single quotation mark",
+      "apostrophe",
+      "quote"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Copyright Sign",
+    "char": "©",
+    "keywords": [
+      "copyright sign",
+      "copy",
+      "legal"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Registered Sign",
+    "char": "®",
+    "keywords": [
+      "registered sign",
+      "trademark",
+      "legal"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Trade Mark Sign",
+    "char": "™",
+    "keywords": [
+      "trade mark sign",
+      "trademark",
+      "brand"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Bullet",
+    "char": "•",
+    "keywords": [
+      "bullet point",
+      "dot",
+      "list"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Middle Dot",
+    "char": "·",
+    "keywords": [
+      "middle dot",
+      "interpunct",
+      "center dot"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Degree Sign",
+    "char": "°",
+    "keywords": [
+      "degree sign",
+      "degrees",
+      "temperature",
+      "angle"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Degree Celsius",
+    "char": "℃",
+    "keywords": [
+      "degree celsius",
+      "celsius",
+      "centigrade",
+      "temperature"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Degree Fahrenheit",
+    "char": "℉",
+    "keywords": [
+      "degree fahrenheit",
+      "fahrenheit",
+      "temperature"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Horizontal Ellipsis",
+    "char": "…",
+    "keywords": [
+      "horizontal ellipsis",
+      "dots",
+      "more",
+      "trailing"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Section Sign",
+    "char": "§",
+    "keywords": [
+      "section sign",
+      "paragraph",
+      "legal",
+      "clause"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "typography",
+    "name": "Pilcrow Sign",
+    "char": "¶",
+    "keywords": [
+      "pilcrow sign",
+      "paragraph mark",
+      "blind text"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Small Letter Alpha",
+    "char": "α",
+    "keywords": [
+      "alpha",
+      "greek",
+      "math",
+      "physics"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Small Letter Beta",
+    "char": "β",
+    "keywords": [
+      "beta",
+      "greek",
+      "math",
+      "software"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Small Letter Gamma",
+    "char": "γ",
+    "keywords": [
+      "gamma",
+      "greek",
+      "radiation"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Small Letter Delta",
+    "char": "δ",
+    "keywords": [
+      "delta",
+      "greek",
+      "difference"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Capital Letter Delta",
+    "char": "Δ",
+    "keywords": [
+      "capital delta",
+      "triangle",
+      "change",
+      "greek"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Small Letter Epsilon",
+    "char": "ε",
+    "keywords": [
+      "epsilon",
+      "greek",
+      "error"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Small Letter Theta",
+    "char": "θ",
+    "keywords": [
+      "theta",
+      "greek",
+      "angle"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Small Letter Lambda",
+    "char": "λ",
+    "keywords": [
+      "lambda",
+      "greek",
+      "functional",
+      "physics"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Capital Letter Lambda",
+    "char": "Λ",
+    "keywords": [
+      "capital lambda",
+      "greek"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Small Letter Mu",
+    "char": "μ",
+    "keywords": [
+      "mu",
+      "micro",
+      "micron",
+      "greek"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Small Letter Pi",
+    "char": "π",
+    "keywords": [
+      "pi",
+      "greek",
+      "circle",
+      "3.14159"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Small Letter Sigma",
+    "char": "σ",
+    "keywords": [
+      "sigma",
+      "greek",
+      "standard deviation"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Small Letter Omega",
+    "char": "ω",
+    "keywords": [
+      "omega",
+      "greek",
+      "angular frequency"
+    ]
+  },
+  {
+    "category": "Symbols",
+    "subcategory": "greek",
+    "name": "Greek Capital Letter Omega",
+    "char": "Ω",
+    "keywords": [
+      "capital omega",
+      "ohm",
+      "resistance",
+      "greek"
+    ]
+  }
+]

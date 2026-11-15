@@ -1,0 +1,27 @@
+app-id: org.emojiboard.EmojiTyper
+runtime: org.kde.Platform
+runtime-version: '6.6'
+sdk: org.kde.Sdk
+command: EmojiTyper
+
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --talk-name=org.freedesktop.portal.Desktop
+  - --talk-name=org.freedesktop.portal.GlobalShortcuts
+  - --talk-name=org.kde.KWin
+  - --talk-name=org.kde.kglobalaccel
+  - --device=all
+
+modules:
+  - name: typemoji
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DINSTALL_SYSTEMD_SERVICE=OFF
+    sources:
+      - type: dir
+        path: ..

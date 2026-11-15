@@ -36,6 +36,11 @@
     <name>Ayan Jain</name>
   </developer>
   <releases>
+    <release version="2.0.0" date="2026-11-15">
+      <description>
+        <p>Major update: Cross-distro support with XDG Desktop Portal for GNOME and Sway, batched emoji queue typing, Escape/Ctrl+Q instant window dismiss, and optional KDE dependencies.</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-10-24">
       <description>
         <p>Initial release with full Unicode 16.0 support, Wayland and X11 hotkey injection, search, and categorization.</p>

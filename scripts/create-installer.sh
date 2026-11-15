@@ -1,26 +1,18 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Script to build EmojiTyper-1.0.0-Installer.run
-# Combines prebuilt payload tarball with self-resolving dependency installer
-# ==============================================================================
+# Combine prebuilt payload tarball with self-resolving dependency installer
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build"
-TAR_FILE="$BUILD_DIR/TypEmoji-1.0.0-Linux.tar.gz"
-if [[ ! -f "$TAR_FILE" && -f "$BUILD_DIR/EmojiTyper-1.0.0-Linux.tar.gz" ]]; then
-    TAR_FILE="$BUILD_DIR/EmojiTyper-1.0.0-Linux.tar.gz"
-fi
-OUTPUT_RUN="$BUILD_DIR/TypEmoji-1.0.0-Installer.run"
-
-mkdir -p "$BUILD_DIR"
-
-if [[ ! -f "$TAR_FILE" ]]; then
-    echo "Creating payload tarball..."
+TAR_FILE="$(ls -t "$BUILD_DIR"/*-Linux.tar.gz 2>/dev/null | head -n1 || echo "")"
+if [[ -z "$TAR_FILE" || ! -f "$TAR_FILE" ]]; then
     cd "$BUILD_DIR"
     cpack -G TGZ
+    TAR_FILE="$(ls -t "$BUILD_DIR"/*-Linux.tar.gz 2>/dev/null | head -n1)"
 fi
+OUTPUT_RUN="$BUILD_DIR/TypEmoji-2.0.0-Universal-Installer.run"
 
 TEMP_HEADER="$(mktemp /tmp/installer_header_XXXXXX.sh)"
 

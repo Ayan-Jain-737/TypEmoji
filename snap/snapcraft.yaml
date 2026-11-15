@@ -1,6 +1,6 @@
 name: emojityper
 base: core24
-version: '1.0.0'
+version: '2.0.0'
 summary: Direct emoji picker and typing utility for Linux
 description: |
   TypEmoji is a fast, lightweight emoji selector and direct typing tool for Linux.
@@ -19,6 +19,7 @@ apps:
       - desktop
       - desktop-legacy
       - unity7
+      - uinput
     environment:
       QT_QPA_PLATFORM: "wayland;xcb"
 

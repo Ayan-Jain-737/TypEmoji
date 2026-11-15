@@ -1,5 +1,5 @@
 Name:           emojityper
-Version:        1.0.0
+Version:        2.0.0
 Release:        1%{?dist}
 Summary:        Direct emoji picker and typing utility for Linux (X11 & Wayland)
 
@@ -12,15 +12,15 @@ BuildRequires:  gcc-c++
 BuildRequires:  ninja-build
 BuildRequires:  qt6-qtbase-devel
 BuildRequires:  qt6-qttools-devel
-BuildRequires:  kf6-kglobalaccel-devel
-BuildRequires:  kf6-kxmlgui-devel
 BuildRequires:  libX11-devel
 BuildRequires:  libXtst-devel
 
 Requires:       qt6-qtbase
-Requires:       kf6-kglobalaccel
 Requires:       google-noto-color-emoji-fonts
 
+Suggests:       kf6-kglobalaccel
+Suggests:       xdg-desktop-portal
+Recommends:     ydotool
 Recommends:     wl-clipboard
 Recommends:     wtype
 Recommends:     xclip

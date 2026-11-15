@@ -1,6 +1,6 @@
 # Maintainer: EmojiTyper Contributors <contact@emojityper.org>
 pkgname=emojityper
-pkgver=1.0.0
+pkgver=2.0.0
 pkgrel=1
 pkgdesc="Direct emoji picker and typing utility for Linux (X11 & Wayland)"
 arch=('x86_64' 'aarch64')
@@ -8,13 +8,14 @@ url="https://github.com/Ayan-Jain-737/TypEmoji"
 license=('MIT')
 depends=(
     'qt6-base'
-    'qt6-declarative'
     'libxtst'
     'libx11'
-    'kglobalaccel'
-    'kxmlgui'
 )
 optdepends=(
+    'kglobalaccel: KDE Plasma native Wayland global shortcut support'
+    'kxmlgui: KDE XML GUI integration'
+    'xdg-desktop-portal: GNOME, Sway, and Wayland global shortcut support'
+    'ydotool: Hardware-level direct keyboard typing injection'
     'wtype: Wayland direct keyboard typing injection'
     'wl-clipboard: Wayland clipboard injection fallback'
     'xclip: X11 clipboard injection fallback'

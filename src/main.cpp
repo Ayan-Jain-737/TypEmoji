@@ -21,7 +21,10 @@ int main(int argc, char *argv[])
     app.setApplicationVersion("1.0.0");
     app.setOrganizationName("EmojiTyper");
 
-    QIcon appIcon(":/icons/emojityper.svg");
+    QIcon appIcon(":/icons/emojityper.png");
+    if (appIcon.isNull()) {
+        appIcon = QIcon(":/icons/emojityper.svg");
+    }
     if (!appIcon.isNull()) {
         app.setWindowIcon(appIcon);
     }

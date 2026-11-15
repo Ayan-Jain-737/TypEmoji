@@ -168,16 +168,22 @@ void TrayHost::setupAutostart()
 
 void TrayHost::setupTray()
 {
-    // High-resolution SVG logo loading with Qt resource fallback
-    QIcon icon(":/icons/emojityper.svg");
+    // High-resolution logo loading with Qt resource fallback
+    QIcon icon(":/icons/emojityper.png");
+    if (icon.isNull()) {
+        icon = QIcon(":/icons/emojityper.svg");
+    }
     if (icon.isNull()) {
         icon = QIcon::fromTheme("emojityper");
     }
     if (icon.isNull()) {
         QStringList paths = {
+            QDir::homePath() + "/.local/share/icons/hicolor/512x512/apps/emojityper.png",
             QDir::homePath() + "/.local/share/icons/hicolor/scalable/apps/emojityper.svg",
+            "/usr/share/icons/hicolor/512x512/apps/emojityper.png",
             "/usr/share/icons/hicolor/scalable/apps/emojityper.svg",
             "/usr/local/share/icons/hicolor/scalable/apps/emojityper.svg",
+            "assets/icons/emojityper.png",
             "assets/icons/emojityper.svg"
         };
         for (const QString& p : paths) {

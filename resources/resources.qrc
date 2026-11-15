@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file alias="icons/emojityper.svg">../assets/icons/emojityper.svg</file>
+        <file alias="icons/emojityper.png">../assets/icons/emojityper.png</file>
     </qresource>
 </RCC>

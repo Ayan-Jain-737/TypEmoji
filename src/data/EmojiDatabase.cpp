@@ -9,6 +9,10 @@
 #include <QtCore/QDir>
 #include <QtCore/QStandardPaths>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QJsonDocument>
+#include <QtCore/QJsonArray>
+#include <QtCore/QJsonObject>
+#include <QtCore/QJsonValue>
 #include <algorithm>
 
 EmojiDatabase::EmojiDatabase(QObject* parent) : QObject(parent) {}
@@ -67,6 +71,7 @@ bool EmojiDatabase::load()
     }
 
     loadKaomoji();
+    loadSymbols();
     buildIndexes();
 
     qDebug() << "Loaded" << m_emojis.size() << "emojis in" << m_categories.size() << "categories";
@@ -149,6 +154,7 @@ bool EmojiDatabase::parseEmojiTest(const QString& data)
                 // Simple stemming
                 if (word.endsWith("ing") && word.length() > 5) {
                     keywords.append(word.left(word.length() - 3));
+                    keywords.append(word.left(word.length() - 3) + "e");
                 } else if (word.endsWith("ed") && word.length() > 4) {
                     keywords.append(word.left(word.length() - 2));
                 } else if (word.endsWith("es") && word.length() > 4) {
@@ -487,7 +493,7 @@ void EmojiDatabase::attachPurposeKeywords(EmojiEntry& entry)
     if (it != purposeMap.constEnd()) {
         for (const QString& tag : it.value()) {
             if (!entry.keywords.contains(tag, Qt::CaseInsensitive)) {
-                entry.keywords.append(tag);
+                entry.keywords.prepend(tag);
             }
         }
     }
@@ -497,7 +503,7 @@ void EmojiDatabase::attachPurposeKeywords(EmojiEntry& entry)
         if (itFull != purposeMap.constEnd()) {
             for (const QString& tag : itFull.value()) {
                 if (!entry.keywords.contains(tag, Qt::CaseInsensitive)) {
-                    entry.keywords.append(tag);
+                    entry.keywords.prepend(tag);
                 }
             }
         }
@@ -547,6 +553,39 @@ void EmojiDatabase::buildIndexes()
             }
         }
     }
+
+    // Build search vocabulary for rapid typo-tolerant fuzzy matching
+    m_searchCache.clear();
+    m_vocabList.clear();
+
+    QHash<QString, QVector<WordPosting>> vocab;
+    for (int i = 0; i < m_emojis.size(); ++i) {
+        const auto& e = m_emojis[i];
+        QString nameLower = e.name.toLower();
+        auto nameWords = nameLower.split(u' ', Qt::SkipEmptyParts);
+
+        vocab[nameLower].append({i, WordPosting::ExactName});
+
+        for (int wIdx = 0; wIdx < nameWords.size(); ++wIdx) {
+            const QString& w = nameWords[wIdx];
+            WordPosting::Role r = (wIdx == 0 || nameWords.size() <= 2) ? WordPosting::FirstNameWord : WordPosting::NameWord;
+            vocab[w].append({i, r});
+        }
+        for (int kIdx = 0; kIdx < e.keywords.size(); ++kIdx) {
+            const QString& kw = e.keywords[kIdx].toLower();
+            if (kw != nameLower) {
+                WordPosting::Role r = WordPosting::Keyword;
+                if (kIdx == 0 || (kw == "heart" && e.codepoints.startsWith("2764"))) r = WordPosting::ExactName;
+                else if (kIdx < 3) r = WordPosting::PrimaryKeyword;
+                vocab[kw].append({i, r});
+            }
+        }
+    }
+
+    m_vocabList.reserve(vocab.size());
+    for (auto it = vocab.begin(); it != vocab.end(); ++it) {
+        m_vocabList.append({it.key(), it.value()});
+    }
 }
 
 QString EmojiDatabase::codepointsToChar(const QString& codepoints) const
@@ -582,124 +621,377 @@ QVector<EmojiEntry> EmojiDatabase::emojisByCategory(const QString& category) con
     return result;
 }
 
+int EmojiDatabase::damerauLevenshtein(QStringView s1, QStringView s2, int maxDist)
+{
+    int len1 = static_cast<int>(s1.length());
+    int len2 = static_cast<int>(s2.length());
+    if (std::abs(len1 - len2) > maxDist) return maxDist + 1;
+    if (len1 == 0) return len2 <= maxDist ? len2 : maxDist + 1;
+    if (len2 == 0) return len1 <= maxDist ? len1 : maxDist + 1;
+    if (len1 > 32 || len2 > 32) return maxDist + 1;
+
+    int d[33][33];
+    for (int i = 0; i <= len1; ++i) d[i][0] = i;
+    for (int j = 0; j <= len2; ++j) d[0][j] = j;
+
+    for (int i = 1; i <= len1; ++i) {
+        int minRow = d[i][0];
+        QChar c1 = s1[i - 1];
+        for (int j = 1; j <= len2; ++j) {
+            QChar c2 = s2[j - 1];
+            int cost = (c1 == c2) ? 0 : 1;
+            int val = std::min({
+                d[i - 1][j] + 1,       // deletion
+                d[i][j - 1] + 1,       // insertion
+                d[i - 1][j - 1] + cost // substitution
+            });
+            if (i > 1 && j > 1 && c1 == s2[j - 2] && s1[i - 2] == c2) {
+                val = std::min(val, d[i - 2][j - 2] + 1); // transposition
+            }
+            d[i][j] = val;
+            minRow = std::min(minRow, val);
+        }
+        if (minRow > maxDist) return maxDist + 1;
+    }
+    return d[len1][len2];
+}
+
+int EmojiDatabase::calculateMatchScore(const QString& query, const QString& name, const QStringList& keywords, bool hasSkinTones, const QString& category)
+{
+    QString q = query.trimmed().toLower();
+    if (q.isEmpty()) return 0;
+
+    static const QHash<QString, QString> commonTypos = {
+        {"hart", "heart"},
+        {"smlie", "smile"},
+        {"thunb", "thumb"},
+        {"cryin", "crying"},
+        {"firee", "fire"}
+    };
+
+    QString aliasTarget = commonTypos.value(q);
+    int qLen = static_cast<int>(q.length());
+    int maxDist = (qLen >= 5) ? 2 : ((qLen >= 3) ? 1 : 0);
+
+    QString nameLower = name.toLower();
+    if (nameLower == q) {
+        return 12000 + (!hasSkinTones ? 400 : 0) + (category != "Kaomoji" ? 300 : 0) + std::max(0, 60 - static_cast<int>(nameLower.length()));
+    }
+    if (!aliasTarget.isEmpty() && nameLower == aliasTarget) {
+        return 11500 + (!hasSkinTones ? 400 : 0) + (category != "Kaomoji" ? 300 : 0) + std::max(0, 60 - static_cast<int>(nameLower.length()));
+    }
+
+    int bestScore = 0;
+
+    // Full name prefix
+    if (nameLower.startsWith(q)) {
+        bestScore = std::max(bestScore, 8500 + std::max(0, static_cast<int>(300 - (nameLower.length() - qLen) * 20)));
+    } else if (!aliasTarget.isEmpty() && nameLower.startsWith(aliasTarget)) {
+        bestScore = std::max(bestScore, 8200 + std::max(0, static_cast<int>(200 - (nameLower.length() - aliasTarget.length()) * 20)));
+    }
+
+    auto nameWords = nameLower.split(u' ', Qt::SkipEmptyParts);
+
+    // Check name words
+    for (int wIdx = 0; wIdx < nameWords.size(); ++wIdx) {
+        const QString& w = nameWords[wIdx];
+        int wLen = static_cast<int>(w.length());
+        int roleBonus = (wIdx == 0 || nameWords.size() <= 2) ? 600 : 350;
+
+        if (w == q) {
+            bestScore = std::max(bestScore, 9500 + roleBonus);
+        } else if (!aliasTarget.isEmpty() && (w == aliasTarget || w == aliasTarget + u's')) {
+            bestScore = std::max(bestScore, 8800 + roleBonus);
+        } else if (w.startsWith(q)) {
+            int score = 8000 + std::max(0, static_cast<int>(300 - (wLen - qLen) * 20)) + roleBonus;
+            bestScore = std::max(bestScore, score);
+        } else if (!aliasTarget.isEmpty() && w.startsWith(aliasTarget)) {
+            int score = 7800 + std::max(0, static_cast<int>(200 - (wLen - aliasTarget.length()) * 20)) + roleBonus;
+            bestScore = std::max(bestScore, score);
+        } else if (maxDist > 0) {
+            int dist = damerauLevenshtein(q, w, maxDist);
+            if (dist <= maxDist) {
+                int s = (dist == 1 ? 5200 : 3200);
+                if (wLen > 0 && qLen > 0 && w[0] == q[0]) {
+                    s += 300;
+                    if (wLen > 1 && qLen > 1 && w[1] == q[1]) s += 200;
+                }
+                s -= std::abs(wLen - qLen) * 50;
+                bestScore = std::max(bestScore, s + roleBonus);
+            } else if (wLen > qLen) {
+                int pDist = damerauLevenshtein(q, QStringView(w).left(qLen), maxDist);
+                if (pDist <= maxDist) {
+                    int s = (pDist == 1 ? 4600 : 2800);
+                    if (w[0] == q[0]) s += 200;
+                    bestScore = std::max(bestScore, s + roleBonus);
+                }
+            }
+        }
+    }
+
+    // Check keywords
+    for (int kIdx = 0; kIdx < keywords.size(); ++kIdx) {
+        const QString& kw = keywords[kIdx].toLower();
+        if (kw == nameLower) continue;
+        int kwLen = static_cast<int>(kw.length());
+        int roleBonus = (kIdx == 0) ? 700 : ((kIdx < 3) ? 550 : 150);
+
+        if (kw == q) {
+            bestScore = std::max(bestScore, 9500 + roleBonus);
+        } else if (!aliasTarget.isEmpty() && (kw == aliasTarget || kw == aliasTarget + u's')) {
+            bestScore = std::max(bestScore, 8800 + roleBonus);
+        } else if (kw.startsWith(q)) {
+            int score = 8000 + std::max(0, static_cast<int>(300 - (kwLen - qLen) * 20)) + roleBonus;
+            bestScore = std::max(bestScore, score);
+        } else if (!aliasTarget.isEmpty() && kw.startsWith(aliasTarget)) {
+            int score = 7800 + std::max(0, static_cast<int>(200 - (kwLen - aliasTarget.length()) * 20)) + roleBonus;
+            bestScore = std::max(bestScore, score);
+        } else if (maxDist > 0) {
+            int dist = damerauLevenshtein(q, kw, maxDist);
+            if (dist <= maxDist) {
+                int s = (dist == 1 ? 5200 : 3200);
+                if (kwLen > 0 && qLen > 0 && kw[0] == q[0]) {
+                    s += 300;
+                    if (kwLen > 1 && qLen > 1 && kw[1] == q[1]) s += 200;
+                }
+                s -= std::abs(kwLen - qLen) * 50;
+                bestScore = std::max(bestScore, s + roleBonus);
+            } else if (kwLen > qLen && !kw.contains(u' ')) {
+                int pDist = damerauLevenshtein(q, QStringView(kw).left(qLen), maxDist);
+                if (pDist <= maxDist) {
+                    int s = (pDist == 1 ? 4600 : 2800);
+                    if (kw[0] == q[0]) s += 200;
+                    bestScore = std::max(bestScore, s + roleBonus);
+                }
+            }
+        }
+    }
+
+    if (bestScore > 0) {
+        if (!hasSkinTones) bestScore += 400;
+        if (category != "Kaomoji") bestScore += 300;
+        bestScore += std::max(0, 60 - static_cast<int>(nameLower.length()));
+    }
+
+    return bestScore;
+}
+
+QHash<int, int> EmojiDatabase::searchSingleTerm(const QString& term) const
+{
+    QString q = term.toLower().trimmed();
+    if (q.isEmpty()) return {};
+
+    static const QHash<QString, QString> commonTypos = {
+        {"hart", "heart"},
+        {"smlie", "smile"},
+        {"thunb", "thumb"},
+        {"cryin", "crying"},
+        {"firee", "fire"}
+    };
+
+    QString aliasTarget = commonTypos.value(q);
+    int qLen = static_cast<int>(q.length());
+    int maxDist = (qLen >= 5) ? 2 : ((qLen >= 3) ? 1 : 0);
+
+    QHash<int, int> scores;
+    scores.reserve(128);
+
+    for (const auto& wEntry : m_vocabList) {
+        const QString& w = wEntry.word;
+        int wLen = static_cast<int>(w.length());
+        int baseScore = 0;
+        bool isExact = false;
+
+        if (w == q) {
+            baseScore = 9500;
+            isExact = true;
+        } else if (!aliasTarget.isEmpty() && (w == aliasTarget || w == aliasTarget + u's')) {
+            baseScore = 9000;
+            isExact = true;
+        } else if (w.startsWith(q)) {
+            baseScore = 8000;
+            baseScore += std::max(0, static_cast<int>(300 - (wLen - qLen) * 20));
+        } else if (!aliasTarget.isEmpty() && w.startsWith(aliasTarget)) {
+            baseScore = 7800;
+            baseScore += std::max(0, static_cast<int>(200 - (wLen - aliasTarget.length()) * 20));
+        } else if (maxDist > 0) {
+            int dist = damerauLevenshtein(q, w, maxDist);
+            if (dist <= maxDist) {
+                baseScore = (dist == 1 ? 5200 : 3200);
+                if (wLen > 0 && qLen > 0 && w[0] == q[0]) {
+                    baseScore += 300;
+                    if (wLen > 1 && qLen > 1 && w[1] == q[1]) baseScore += 200;
+                }
+                baseScore -= std::abs(wLen - qLen) * 50;
+            } else if (wLen > qLen && !w.contains(u' ')) {
+                int pDist = damerauLevenshtein(q, QStringView(w).left(qLen), maxDist);
+                if (pDist <= maxDist) {
+                    baseScore = (pDist == 1 ? 4600 : 2800);
+                    if (w[0] == q[0]) baseScore += 200;
+                }
+            }
+        }
+
+        if (baseScore > 0) {
+            for (const auto& post : wEntry.postings) {
+                int score = baseScore;
+                switch (post.role) {
+                case WordPosting::ExactName:
+                    score += isExact ? 1500 : 300;
+                    break;
+                case WordPosting::FirstNameWord:
+                    score += 600;
+                    break;
+                case WordPosting::PrimaryKeyword:
+                    score += 550;
+                    break;
+                case WordPosting::NameWord:
+                    score += 350;
+                    break;
+                case WordPosting::Keyword:
+                    score += 150;
+                    break;
+                }
+
+                int& curr = scores[post.emojiIndex];
+                if (score > curr) curr = score;
+            }
+        }
+    }
+    return scores;
+}
+
 QVector<int> EmojiDatabase::searchIndices(const QString& query) const
 {
     QString q = query.toLower().trimmed();
     if (q.isEmpty()) return {};
 
+    // Check search cache for instant response (< 0.001ms)
+    auto cacheIt = m_searchCache.constFind(q);
+    if (cacheIt != m_searchCache.constEnd()) {
+        return cacheIt.value();
+    }
+
+    // Direct character or codepoint match (e.g. pasted emoji)
+    auto charIt = m_charIndex.constFind(q);
+    if (charIt != m_charIndex.constEnd()) {
+        QVector<int> res = {charIt.value()};
+        m_searchCache.insert(q, res);
+        return res;
+    }
+    auto cpIt = m_codepointsIndex.constFind(q.toUpper());
+    if (cpIt != m_codepointsIndex.constEnd()) {
+        QVector<int> res = {cpIt.value()};
+        m_searchCache.insert(q, res);
+        return res;
+    }
+
     QStringList terms = q.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
     if (terms.isEmpty()) return {};
 
-    struct MatchCandidate {
+    struct Candidate {
         int index;
         int score;
     };
-    QVector<MatchCandidate> candidates;
-    candidates.reserve(m_emojis.size());
+    QVector<Candidate> results;
 
-    for (int i = 0; i < m_emojis.size(); ++i) {
-        const EmojiEntry& entry = m_emojis[i];
-        QString nameLower = entry.name.toLower();
-        QStringList nameWords = nameLower.split(QRegularExpression("[\\s,:_\\-]+"), Qt::SkipEmptyParts);
+    if (terms.size() == 1) {
+        QHash<int, int> termScores = searchSingleTerm(terms[0]);
+        results.reserve(termScores.size());
+        for (auto it = termScores.begin(); it != termScores.end(); ++it) {
+            int idx = it.key();
+            int score = it.value();
+            const auto& e = m_emojis[idx];
+            if (!e.hasSkinTones) score += 400;
+            if (e.category != "Kaomoji") score += 300;
+            score += std::max(0, 60 - static_cast<int>(e.name.length()));
+            results.append({idx, score});
+        }
+    } else {
+        // Multi-term query
+        QVector<QHash<int, int>> termScoresList;
+        termScoresList.reserve(terms.size());
+        for (const auto& term : terms) {
+            termScoresList.append(searchSingleTerm(term));
+        }
 
-        int totalScore = 0;
-        bool allTermsMatched = true;
+        QHash<int, int> combinedScores;
+        QHash<int, int> termsMatchedCount;
 
-        for (const QString& term : terms) {
-            int termScore = 0;
-
-            // 1. Exact full name match
-            if (nameLower == term) {
-                termScore = std::max(termScore, 1000);
+        for (const auto& tMap : termScoresList) {
+            for (auto it = tMap.begin(); it != tMap.end(); ++it) {
+                combinedScores[it.key()] += it.value();
+                termsMatchedCount[it.key()] += 1;
             }
-            // 2. Name starts with whole word term (e.g. "fire engine" for "fire")
-            else if (nameLower.startsWith(term + " ") || nameLower.startsWith(term + ":")) {
-                int score = 650 + std::max(0, 50 - static_cast<int>(nameLower.length() - term.length()));
-                termScore = std::max(termScore, score);
-            }
+        }
 
-            // 3. Exact word match in name
-            for (int wIdx = 0; wIdx < nameWords.size(); ++wIdx) {
-                const QString& w = nameWords[wIdx];
-                if (w == term) {
-                    int score = 550 + (wIdx == 0 ? 100 : 0);
-                    termScore = std::max(termScore, score);
-                } else if (w.startsWith(term)) {
-                    int score = 300 + (wIdx == 0 ? 50 : 0);
-                    termScore = std::max(termScore, score);
-                }
-            }
-
-            // 4. Keywords & Purpose matches
-            for (const QString& kw : entry.keywords) {
-                QString kwLower = kw.toLower();
-                if (kwLower == term) {
-                    termScore = std::max(termScore, 520);
-                } else if (kwLower.startsWith(term)) {
-                    termScore = std::max(termScore, 260);
-                } else if (kwLower.contains(term)) {
-                    termScore = std::max(termScore, 100);
-                }
-            }
-
-            // 5. Substring match in name
-            if (nameLower.contains(term)) {
-                int pos = static_cast<int>(nameLower.indexOf(term));
-                int score = 180 - std::min(pos * 5, 80);
-                termScore = std::max(termScore, score);
-            }
-
-            // 6. Subcategory / Category match
-            if (entry.subcategory.toLower().contains(term) || entry.category.toLower().contains(term)) {
-                termScore = std::max(termScore, 80);
-            }
-
-            // 7. Subsequence match in name (if term length >= 3)
-            if (termScore == 0 && term.length() >= 3) {
-                qsizetype tIdx = 0;
-                for (qsizetype cIdx = 0; cIdx < nameLower.length() && tIdx < term.length(); ++cIdx) {
-                    if (nameLower[cIdx] == term[tIdx]) {
-                        ++tIdx;
-                    }
-                }
-                if (tIdx == term.length()) {
-                    termScore = std::max(termScore, 40);
-                }
-            }
-
-            if (termScore == 0) {
-                allTermsMatched = false;
+        bool hasAllMatched = false;
+        for (auto it = termsMatchedCount.begin(); it != termsMatchedCount.end(); ++it) {
+            if (it.value() == terms.size()) {
+                hasAllMatched = true;
                 break;
             }
-
-            totalScore += termScore;
         }
 
-        if (!allTermsMatched || totalScore <= 0) {
-            continue;
+        results.reserve(combinedScores.size());
+        for (auto it = combinedScores.begin(); it != combinedScores.end(); ++it) {
+            int idx = it.key();
+            int matched = termsMatchedCount.value(idx, 0);
+
+            // If any emojis matched all terms, filter out partial matches
+            if (hasAllMatched && matched < terms.size()) {
+                continue;
+            }
+
+            int score = it.value();
+            if (matched == terms.size()) {
+                score += 8000;
+            }
+
+            const auto& e = m_emojis[idx];
+            QString nameLower = e.name.toLower();
+
+            // Exact full phrase match
+            if (nameLower == q) {
+                score += 15000;
+            } else if (nameLower.startsWith(q)) {
+                score += 10000;
+            } else if (nameLower.contains(q)) {
+                score += 5000;
+            }
+
+            // Check phrase in keywords
+            for (const QString& kw : e.keywords) {
+                if (kw.toLower() == q) {
+                    score += 12000;
+                    break;
+                }
+            }
+
+            if (!e.hasSkinTones) score += 400;
+            if (e.category != "Kaomoji") score += 300;
+            score += std::max(0, 60 - static_cast<int>(e.name.length()));
+            results.append({idx, score});
         }
-
-        // Base emoji bonus: yellow / neutral default without skin tone gets priority
-        if (!entry.hasSkinTones) {
-            totalScore += 100;
-        }
-
-        // Shorter name brevity bonus
-        totalScore += std::max(0, 40 - static_cast<int>(nameLower.length()));
-
-        candidates.append({i, totalScore});
     }
 
-    std::stable_sort(candidates.begin(), candidates.end(), [](const MatchCandidate& a, const MatchCandidate& b) {
+    std::stable_sort(results.begin(), results.end(), [](const Candidate& a, const Candidate& b) {
         return a.score > b.score;
     });
 
-    QVector<int> result;
-    result.reserve(candidates.size());
-    for (const auto& c : candidates) {
-        result.append(c.index);
+    QVector<int> out;
+    out.reserve(results.size());
+    for (const auto& c : results) {
+        out.append(c.index);
     }
-    return result;
+
+    // Limit cache size to prevent memory bloat
+    if (m_searchCache.size() > 256) {
+        m_searchCache.clear();
+    }
+    m_searchCache.insert(q, out);
+
+    return out;
 }
 
 QVector<EmojiEntry> EmojiDatabase::search(const QString& query) const
@@ -902,6 +1194,86 @@ void EmojiDatabase::loadKaomoji()
         int index = m_emojis.size();
         m_emojis.append(entry);
         m_categoryIndex["Kaomoji"].append(index);
+        m_codepointsIndex.insert(entry.codepoints, index);
+        m_charIndex.insert(entry.emojiChar, index);
+        for (const QString& w : kw) {
+            m_keywordIndex[w.toLower()].append(index);
+        }
+    }
+}
+
+void EmojiDatabase::loadSymbols()
+{
+    if (!m_categories.contains("Symbols")) {
+        m_categories.append("Symbols");
+    }
+
+    QByteArray jsonData;
+    QFile resFile(":/data/symbols.json");
+    if (resFile.open(QIODevice::ReadOnly)) {
+        jsonData = resFile.readAll();
+        resFile.close();
+    } else {
+        QStringList candidateDirs = {
+            QDir::homePath() + "/.local/share/emojityper/data",
+            "/usr/share/emojityper/data",
+            "/usr/local/share/emojityper/data",
+            "/app/share/emojityper/data",
+            QDir::currentPath() + "/data",
+            QCoreApplication::applicationDirPath() + "/data",
+            QCoreApplication::applicationDirPath() + "/../share/emojityper/data"
+        };
+        for (const QString& dataDir : QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation)) {
+            candidateDirs.append(dataDir + "/emojityper/data");
+        }
+        for (const QString& dir : candidateDirs) {
+            QFile f(dir + "/symbols.json");
+            if (f.open(QIODevice::ReadOnly)) {
+                jsonData = f.readAll();
+                f.close();
+                break;
+            }
+        }
+    }
+
+    if (jsonData.isEmpty()) {
+        qWarning() << "EmojiDatabase: symbols.json not found";
+        return;
+    }
+
+    QJsonParseError parseErr;
+    QJsonDocument doc = QJsonDocument::fromJson(jsonData, &parseErr);
+    if (doc.isNull() || !doc.isArray()) {
+        qWarning() << "EmojiDatabase: Failed to parse symbols.json:" << parseErr.errorString();
+        return;
+    }
+
+    QJsonArray arr = doc.array();
+    for (const QJsonValue& val : arr) {
+        if (!val.isObject()) continue;
+        QJsonObject obj = val.toObject();
+
+        EmojiEntry entry;
+        entry.emojiChar = obj["char"].toString();
+        entry.name = obj["name"].toString();
+        entry.category = "Symbols";
+        entry.subcategory = obj.value("subcategory").toString("math");
+        entry.codepoints = QString("SYM_%1").arg(qHash(entry.emojiChar), 8, 16, QChar('0')).toUpper();
+
+        QStringList kw;
+        QJsonArray kwArr = obj["keywords"].toArray();
+        for (const QJsonValue& kVal : kwArr) {
+            kw.append(kVal.toString());
+        }
+        kw.append(entry.name.toLower().split(' ', Qt::SkipEmptyParts));
+        kw.append("symbol");
+        kw.append(entry.subcategory);
+        kw.removeDuplicates();
+        entry.keywords = kw;
+
+        int index = m_emojis.size();
+        m_emojis.append(entry);
+        m_categoryIndex["Symbols"].append(index);
         m_codepointsIndex.insert(entry.codepoints, index);
         m_charIndex.insert(entry.emojiChar, index);
         for (const QString& w : kw) {

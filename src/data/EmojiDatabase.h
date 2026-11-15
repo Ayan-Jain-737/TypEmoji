@@ -8,6 +8,8 @@
 #include <QtCore/QStringList>
 #include <QtCore/QVector>
 #include <QtCore/QVariantMap>
+#include <QtCore/QHash>
+#include <QtCore/QStringView>
 
 struct EmojiEntry
 {
@@ -47,6 +49,12 @@ public:
     // Search emojis returning indices directly (sorted by relevance)
     QVector<int> searchIndices(const QString& query) const;
 
+    // Fast Damerau-Levenshtein distance calculation (returns maxDist + 1 if exceeded)
+    static int damerauLevenshtein(QStringView s1, QStringView s2, int maxDist);
+
+    // Calculate relevance match score between query and emoji entry
+    static int calculateMatchScore(const QString& query, const QString& name, const QStringList& keywords, bool hasSkinTones = false, const QString& category = QString());
+
     // Get emoji by codepoints (e.g. "1F600")
     const EmojiEntry* findByCodepoints(const QString& codepoints) const;
 
@@ -73,12 +81,34 @@ signals:
     void loadFailed(const QString& error);
 
 private:
+    struct WordPosting {
+        int emojiIndex;
+        enum Role : uint8_t {
+            ExactName = 0,
+            FirstNameWord = 1,
+            PrimaryKeyword = 2,
+            NameWord = 3,
+            Keyword = 4
+        } role;
+    };
+
+    struct VocabEntry {
+        QString word;
+        QVector<WordPosting> postings;
+    };
+
     QVector<EmojiEntry> m_emojis;
     QStringList m_categories;
     QMap<QString, QVector<int>> m_categoryIndex;   // category -> indices
     QMap<QString, QVector<int>> m_keywordIndex;    // keyword -> indices
     QHash<QString, int> m_codepointsIndex;         // codepoints -> index
     QHash<QString, int> m_charIndex;               // emojiChar -> index
+
+    QVector<VocabEntry> m_vocabList;
+    mutable QHash<QString, QVector<int>> m_searchCache;
+
+    // Search single term returning mapping of emojiIndex -> relevance score
+    QHash<int, int> searchSingleTerm(const QString& term) const;
 
     // Parse emoji-test.txt format
     bool parseEmojiTest(const QString& data);
@@ -94,6 +124,9 @@ private:
 
     // Load universal kaomoji collection
     void loadKaomoji();
+
+    // Load Unicode symbols, math, currencies, and technical characters
+    void loadSymbols();
 
     // Generate emoji character from codepoints
     QString codepointsToChar(const QString& codepoints) const;

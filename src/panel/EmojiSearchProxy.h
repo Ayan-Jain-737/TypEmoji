@@ -1,29 +1,29 @@
 /**
- * EmojiSearchProxy - Filter proxy model for emoji search
+ * EmojiSearchProxy - Filter and sorting proxy model for intelligent typo-tolerant emoji search
  */
 #pragma once
+
 #include <QtCore/QSortFilterProxyModel>
 #include <QtCore/QRegularExpression>
+#include <QtCore/QHash>
 
 class EmojiSearchProxy : public QSortFilterProxyModel
 {
     Q_OBJECT
 public:
-    explicit EmojiSearchProxy(QObject* parent = nullptr) : QSortFilterProxyModel(parent) {
-        setFilterKeyColumn(-1);
-        setFilterCaseSensitivity(Qt::CaseInsensitive);
-        setDynamicSortFilter(true);
-    }
+    explicit EmojiSearchProxy(QObject* parent = nullptr);
+    ~EmojiSearchProxy() override = default;
+
+    void setSearchQuery(const QString& query);
+    QString searchQuery() const { return m_searchQuery; }
 
 protected:
-    bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const override {
-        if (filterRegularExpression().pattern().isEmpty()) return true;
+    bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const override;
+    bool lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const override;
 
-        QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
-        QString name = sourceModel()->data(index, Qt::UserRole + 2).toString(); // NameRole
-        QString keywords = sourceModel()->data(index, Qt::UserRole + 3).toString(); // KeywordsRole
-        QString emojiChar = sourceModel()->data(index, Qt::UserRole + 6).toString(); // EmojiCharRole
+private:
+    QString m_searchQuery;
+    mutable QHash<int, int> m_scoreCache;
 
-        return name.contains(filterRegularExpression()) || keywords.contains(filterRegularExpression()) || emojiChar.contains(filterRegularExpression());
-    }
+    int getRowScore(int sourceRow, const QModelIndex& sourceParent) const;
 };

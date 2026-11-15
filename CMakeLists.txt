@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(EmojiTyper VERSION 1.0.0 LANGUAGES CXX)
+project(EmojiTyper VERSION 2.0.0 LANGUAGES CXX)
 
 # C++23
 set(CMAKE_CXX_STANDARD 23)
@@ -18,9 +18,18 @@ set(CMAKE_AUTOUIC ON)
 find_package(X11 REQUIRED)
 find_library(XTEST_LIB Xtst REQUIRED)
 
-# KDE Frameworks 6 - KGlobalAccel for Wayland native global shortcuts
-find_package(KF6GlobalAccel REQUIRED)
-find_package(KF6XmlGui REQUIRED)
+# Optional KDE Frameworks 6 - KGlobalAccel for native KDE Wayland shortcuts
+option(ENABLE_KDE "Enable KDE KGlobalAccel shortcut backend" ON)
+if(ENABLE_KDE)
+    find_package(KF6GlobalAccel QUIET)
+    find_package(KF6XmlGui QUIET)
+    if(KF6GlobalAccel_FOUND AND KF6XmlGui_FOUND)
+        message(STATUS "KDE Frameworks 6 found: KGlobalAccel backend enabled")
+        add_compile_definitions(HAVE_KDE_GLOBALACCEL)
+    else()
+        message(STATUS "KDE Frameworks 6 not found: falling back to XDG Desktop Portal + X11 backends")
+    endif()
+endif()
 
 # Output directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -58,6 +67,8 @@ add_executable(EmojiTyper
     src/hotkey/GlobalHotkey.h
     src/hotkey/KGlobalAccelHotkey.cpp
     src/hotkey/KGlobalAccelHotkey.h
+    src/hotkey/PortalHotkey.cpp
+    src/hotkey/PortalHotkey.h
     src/hotkey/X11Hotkey.cpp
     src/hotkey/X11Hotkey.h
     src/data/EmojiDatabase.cpp
@@ -94,9 +105,14 @@ target_link_libraries(EmojiTyper PRIVATE
     Qt6::Network
     Qt6::Concurrent
     Qt6::DBus
-    KF6::GlobalAccel
-    KF6::XmlGui
 )
+
+if(TARGET KF6::GlobalAccel AND TARGET KF6::XmlGui)
+    target_link_libraries(EmojiTyper PRIVATE
+        KF6::GlobalAccel
+        KF6::XmlGui
+    )
+endif()
 
 # X11 libraries
 target_link_libraries(EmojiTyper PRIVATE
@@ -176,7 +192,8 @@ set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/Ayan-Jain-737/TypEmoji")
 # Debian (.deb) package options
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ayan Jain <contact@typemoji.org>")
 set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt6core6 | qt6-base, libqt6gui6, libqt6widgets6, libqt6dbus6, libkf6globalaccel6 | kf6-kglobalaccel, libx11-6, libxtst6")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt6core6 | qt6-base, libqt6gui6, libqt6widgets6, libqt6dbus6, libx11-6, libxtst6")
+set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "libkf6globalaccel6 | kf6-kglobalaccel, xdg-desktop-portal, ydotool, wl-clipboard, wtype")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/packaging/debian/postinst;${CMAKE_CURRENT_SOURCE_DIR}/packaging/debian/prerm")
@@ -185,7 +202,8 @@ set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/packaging/de
 set(CPACK_RPM_PACKAGE_LICENSE "MIT")
 set(CPACK_RPM_PACKAGE_GROUP "Applications/Utilities")
 set(CPACK_RPM_PACKAGE_AUTOREQPROV OFF)
-set(CPACK_RPM_PACKAGE_REQUIRES "qt6-qtbase, kf6-kglobalaccel, libX11, libXtst")
+set(CPACK_RPM_PACKAGE_REQUIRES "qt6-qtbase, libX11, libXtst")
+set(CPACK_RPM_PACKAGE_SUGGESTS "kf6-kglobalaccel, xdg-desktop-portal, ydotool")
 set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
 
 set(CPACK_GENERATOR "TGZ;DEB;RPM")

@@ -2,6 +2,8 @@
  * KGlobalAccelHotkey implementation - KDE KGlobalAccel global hotkey for Wayland
  */
 #include "KGlobalAccelHotkey.h"
+
+#ifdef HAVE_KDE_GLOBALACCEL
 #include <KGlobalAccel>
 #include <KActionCollection>
 #include <QKeySequence>
@@ -230,3 +232,13 @@ void KGlobalAccelHotkey::setupAction()
         globalAccel->isComponentActive(QCoreApplication::applicationName());
     }
 }
+#else
+KGlobalAccelHotkey::KGlobalAccelHotkey(QObject* parent) : QObject(parent) {}
+KGlobalAccelHotkey::~KGlobalAccelHotkey() {}
+bool KGlobalAccelHotkey::install() { return false; }
+void KGlobalAccelHotkey::uninstall() {}
+void KGlobalAccelHotkey::setHotkey(int, int) {}
+void KGlobalAccelHotkey::setupAction() {}
+void KGlobalAccelHotkey::triggerHotkey() {}
+void KGlobalAccelHotkey::onGlobalShortcutPressed(const QString&, const QString&, qlonglong) {}
+#endif

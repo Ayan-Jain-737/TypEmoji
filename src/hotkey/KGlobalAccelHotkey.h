@@ -1,6 +1,6 @@
 /**
  * KGlobalAccelHotkey - KDE KGlobalAccel global hotkey implementation for Wayland
- * Uses KGlobalAccel to register global shortcuts that work on Wayland
+ * When built without KDE Frameworks, gracefully stubs out.
  */
 #pragma once
 
@@ -8,7 +8,10 @@
 #include <QtCore/QPoint>
 #include <QtGui/QAction>
 #include <memory>
+
+#ifdef HAVE_KDE_GLOBALACCEL
 #include <KActionCollection>
+#endif
 
 class KGlobalAccelHotkey : public QObject
 {
@@ -37,7 +40,9 @@ private:
     void setupAction();
     void triggerHotkey();
 
+#ifdef HAVE_KDE_GLOBALACCEL
     std::unique_ptr<KActionCollection> m_actionCollection;
+#endif
     std::unique_ptr<QAction> m_action;
     int m_modifiers = 0;
     int m_keyCode = 0x2e;  // Qt::Key_Period

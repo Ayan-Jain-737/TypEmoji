@@ -26,6 +26,7 @@
 #include <QtWidgets/QStyledItemDelegate>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QWidgetAction>
+#include <QtWidgets/QGraphicsDropShadowEffect>
 #include <QtGui/QPainter>
 
 class EmojiDelegate : public QStyledItemDelegate {
@@ -118,7 +119,7 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
     if (savedPos.x() >= 0 && savedPos.y() >= 0) {
         move(savedPos);
     }
-    setFixedSize(360, 440);
+    setFixedSize(376, 456);
 
     setFocusPolicy(Qt::StrongFocus);
 
@@ -154,14 +155,21 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
 
 void EmojiPanel::setupUi()
 {
-    // Main layout with no margins for edge-to-edge design
+    // Main layout with margins for soft floating drop shadow
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(0, 0, 0, 0);
+    m_mainLayout->setContentsMargins(8, 8, 8, 8);
     m_mainLayout->setSpacing(0);
 
     // Container widget with rounded corners and shadow
     m_containerWidget = new QWidget(this);
     m_containerWidget->setObjectName("containerWidget");
+
+    QGraphicsDropShadowEffect* shadow = new QGraphicsDropShadowEffect(m_containerWidget);
+    shadow->setBlurRadius(16);
+    shadow->setColor(QColor(0, 0, 0, 90));
+    shadow->setOffset(0, 4);
+    m_containerWidget->setGraphicsEffect(shadow);
+
     QVBoxLayout* containerLayout = new QVBoxLayout(m_containerWidget);
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(0);
@@ -404,9 +412,13 @@ void EmojiPanel::applyTheme()
 {
     Settings& settings = Settings::instance();
     QString theme = settings.theme();
+    QString accent = palette().color(QPalette::Highlight).name();
+    if (accent.isEmpty()) {
+        accent = "#0078D4";
+    }
 
     if (theme == "dark" || (theme == "system" && QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark)) {
-        setStyleSheet(R"(
+        QString qss = R"(
             EmojiPanel {
                 background-color: transparent;
             }
@@ -525,9 +537,11 @@ void EmojiPanel::applyTheme()
                 border-radius: 4px;
                 padding: 2px 6px;
             }
-        )");
+        )";
+        qss.replace("#0078D4", accent);
+        setStyleSheet(qss);
     } else {
-        setStyleSheet(R"(
+        QString qss = R"(
             EmojiPanel {
                 background-color: transparent;
             }
@@ -646,7 +660,9 @@ void EmojiPanel::applyTheme()
                 border-radius: 4px;
                 padding: 2px 6px;
             }
-        )");
+        )";
+        qss.replace("#0078D4", accent);
+        setStyleSheet(qss);
     }
 }
 
@@ -804,6 +820,20 @@ void EmojiPanel::updatePreview(const QString& emoji, const QString& name, const 
             while (clean.startsWith('_')) clean.remove(0, 1);
             while (clean.endsWith('_')) clean.chop(1);
             sc = QString(":%1:").arg(clean);
+        }
+        const EmojiEntry* entry = m_database ? m_database->findEmoji(emoji) : nullptr;
+        if (entry && !entry->codepoints.isEmpty()) {
+            QStringList cpList = entry->codepoints.split(' ', Qt::SkipEmptyParts);
+            QString formattedCp;
+            for (const QString& cp : cpList) {
+                if (!formattedCp.isEmpty()) formattedCp += " ";
+                formattedCp += "U+" + cp;
+            }
+            if (!sc.isEmpty()) {
+                sc += "  •  " + formattedCp;
+            } else {
+                sc = formattedCp;
+            }
         }
         m_previewShortcode->setText(sc);
     }

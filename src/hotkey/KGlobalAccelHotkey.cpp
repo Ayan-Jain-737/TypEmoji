@@ -191,7 +191,7 @@ void KGlobalAccelHotkey::setHotkey(int modifiers, int keyCode)
 void KGlobalAccelHotkey::triggerHotkey()
 {
     qint64 now = QDateTime::currentMSecsSinceEpoch();
-    if (now - m_lastHotkeyTime < 350) {
+    if (now - m_lastHotkeyTime < 450) {
         return;
     }
     m_lastHotkeyTime = now;

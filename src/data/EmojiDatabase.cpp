@@ -7,6 +7,7 @@
 #include <QtCore/QRegularExpression>
 #include <QtCore/QDebug>
 #include <QtCore/QDir>
+#include <QtCore/QStandardPaths>
 #include <QtCore/QCoreApplication>
 #include <algorithm>
 
@@ -23,13 +24,18 @@ bool EmojiDatabase::load()
 
     // If not in resources, check standard Linux search paths
     if (!testFile.exists()) {
-        const QStringList candidateDirs = {
+        QStringList candidateDirs = {
             QCoreApplication::applicationDirPath() + "/data",
             QCoreApplication::applicationDirPath() + "/../share/emojityper/data",
+            QDir::homePath() + "/.local/share/emojityper/data",
             "/usr/share/emojityper/data",
             "/usr/local/share/emojityper/data",
+            "/app/share/emojityper/data",
             QDir::currentPath() + "/data"
         };
+        for (const QString& dataDir : QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation)) {
+            candidateDirs.append(dataDir + "/emojityper/data");
+        }
         for (const QString& dir : candidateDirs) {
             if (QFile::exists(dir + "/emoji-test.txt")) {
                 testFile.setFileName(dir + "/emoji-test.txt");

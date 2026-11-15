@@ -6,6 +6,7 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
+#include <QtCore/QTimer>
 
 class TargetState;
 
@@ -16,34 +17,26 @@ public:
     explicit EmojiInjector(QObject* parent = nullptr);
     ~EmojiInjector() override = default;
 
-    // Insert emoji string into the target window
-    // Returns true on success, false if clipboard fallback needed
+    // Insert emoji into target window (queued and batched for zero drops)
     bool insertEmoji(const QString& emoji, TargetState* targetState);
 
-    // Fallback: copy to clipboard and simulate Ctrl+V
-    bool clipboardFallback(const QString& emoji, TargetState* targetState);
+    // Immediately flush any queued emojis
+    void flushQueue();
 
 signals:
     void injectionFailed(const QString& reason);
     void clipboardFallbackUsed(const QString& emoji);
 
-private:
-    // Send Unicode string via XTest (X11 path through Xwayland)
-    bool sendViaXTest(const QString& str);
-
-    // Send Unicode string via wtype (Wayland native)
-    bool sendViaWtype(const QString& str);
-
-    // Ensure ydotoold daemon is running and socket is ready
-    bool ensureYdotooldRunning();
-
-    // Paste via ydotool hardware-level virtual key events (evdev Ctrl+V)
-    bool pasteViaYdotool();
-
-    // Restore original clipboard content
+private slots:
+    void processQueue();
     void restoreClipboard();
 
-    // Save current clipboard content
+private:
+    bool sendViaXTest(const QString& str);
+    bool sendViaWtype(const QString& str);
+    bool ensureYdotooldRunning();
+    bool pasteViaYdotool();
+    bool simulatePaste();
     bool saveClipboard();
 
     bool m_hasClipboardBackup = false;
@@ -51,5 +44,9 @@ private:
     bool m_wtypeTested = false;
     bool m_wtypeSupported = false;
     QString m_savedClipboardText;
-    class QTimer* m_restoreTimer = nullptr;
+
+    QString m_queuedEmojis;
+    TargetState* m_pendingTargetState = nullptr;
+    QTimer* m_batchTimer = nullptr;
+    QTimer* m_restoreTimer = nullptr;
 };

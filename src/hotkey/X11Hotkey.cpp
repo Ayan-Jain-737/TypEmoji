@@ -17,10 +17,19 @@ struct X11Hotkey::Impl
     unsigned int modifiers = 0;
     bool installed = false;
 
+    static constexpr unsigned int LockMasks[] = {
+        0,
+        Mod2Mask,              // NumLock
+        LockMask,              // CapsLock
+        Mod2Mask | LockMask    // NumLock + CapsLock
+    };
+
     ~Impl() {
         if (display) {
             if (installed) {
-                XUngrabKey(display, keyCode, modifiers, root);
+                for (unsigned int mask : LockMasks) {
+                    XUngrabKey(display, keyCode, modifiers | mask, root);
+                }
             }
             XCloseDisplay(display);
         }
@@ -50,10 +59,17 @@ bool X11Hotkey::install(int keyCode, unsigned int modifiers)
     // Select input on root window to receive key events
     XSelectInput(display, m_impl->root, KeyPressMask | KeyReleaseMask);
 
-    // Grab the key combination
-    int grabResult = XGrabKey(display, keyCode, modifiers, m_impl->root, True,
-                              GrabModeAsync, GrabModeAsync);
-    if (grabResult != GrabSuccess) {
+    // Grab key with all NumLock/CapsLock variations
+    bool anySuccess = false;
+    for (unsigned int mask : Impl::LockMasks) {
+        int grabResult = XGrabKey(display, keyCode, modifiers | mask, m_impl->root, True,
+                                  GrabModeAsync, GrabModeAsync);
+        if (grabResult == GrabSuccess) {
+            anySuccess = true;
+        }
+    }
+
+    if (!anySuccess) {
         XCloseDisplay(display);
         m_impl->display = nullptr;
         return false;
@@ -69,7 +85,9 @@ void X11Hotkey::uninstall()
     if (!m_impl->installed) return;
 
     if (m_impl->display) {
-        XUngrabKey(m_impl->display, m_impl->keyCode, m_impl->modifiers, m_impl->root);
+        for (unsigned int mask : Impl::LockMasks) {
+            XUngrabKey(m_impl->display, m_impl->keyCode, m_impl->modifiers | mask, m_impl->root);
+        }
     }
 
     m_impl->installed = false;

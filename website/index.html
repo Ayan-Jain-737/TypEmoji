@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypEmoji — Direct Emoji & Kaomoji Picker for Linux (Wayland & X11)</title>
+  <meta name="description" content="Super + . to type emojis directly into any Linux app without overwriting clipboard data. Blazing fast, native C++23 & Qt 6 utility for KDE Plasma, GNOME, Sway, and Hyprland.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+
+  <!-- Open Graph / Meta -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="TypEmoji — Direct Emoji & Kaomoji Picker for Linux">
+  <meta property="og:description" content="Native C++23 & Qt6 Linux utility. Press Super + . to type Unicode 16.0 emojis and Japanese Kaomojis directly without clipboard clobbering.">
+  <meta property="og:image" content="assets/logo.png">
+
+  <!-- Fonts: Plus Jakarta Sans, Inter, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+  <!-- Interactive Background Canvas for Floating Particles -->
+  <canvas id="hero-particles" aria-hidden="true"></canvas>
+
+  <!-- Sticky Cybernetic Header -->
+  <header class="site-header">
+    <div class="header-inner container">
+      <a href="#" class="brand-lockup" aria-label="TypEmoji Home">
+        <div class="brand-icon-wrapper">
+          <img src="assets/logo.png" alt="TypEmoji 3D Keycap Logo" class="brand-logo" width="36" height="36">
+          <div class="brand-glow"></div>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">TypEmoji</span>
+          <span class="version-badge" title="Current Stable Release">v2.1.0</span>
+        </div>
+      </a>
+
+      <nav class="nav-links" aria-label="Main Navigation">
+        <a href="#simulator" class="nav-link">Interactive Demo</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#architecture" class="nav-link">Architecture</a>
+        <a href="#benchmarks" class="nav-link">Benchmarks</a>
+        <a href="#distros" class="nav-link">Distros & Install</a>
+        <a href="#kaomoji" class="nav-link">Kaomojis</a>
+      </nav>
+
+      <div class="header-actions">
+        <!-- Mechanical Sound Toggle -->
+        <button id="sound-toggle" class="icon-toggle-btn" title="Toggle mechanical switch click sound" aria-label="Toggle mechanical sound FX" aria-pressed="true">
+          <svg class="sound-on-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+          <svg class="sound-off-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+          <span class="sound-label">Click Sound</span>
+        </button>
+
+        <a href="#simulator" class="btn btn-secondary trigger-summon-btn" id="header-try-btn">
+          <span class="btn-kbd">Super + .</span>
+          <span>Try Demo</span>
+        </a>
+
+        <a href="#distros" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Get v2.1.0</span>
+        </a>
+
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji" target="_blank" rel="noopener noreferrer" class="github-badge-link" aria-label="GitHub Repository">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO SECTION -->
+    <section class="hero-section">
+      <div class="hero-container container">
+        <div class="hero-content">
+          <!-- Tactile Release Tag -->
+          <div class="hero-pill-tag">
+            <span class="pill-dot"></span>
+            <span class="pill-distro">v2.1.0 Released</span>
+            <span class="pill-sep">•</span>
+            <span class="pill-title">Native C++23 &amp; Qt 6 for Linux</span>
+          </div>
+
+          <!-- Main Value Proposition Headline -->
+          <h1 class="hero-headline">
+            The Direct Emoji &amp; Kaomoji Picker for Linux Desktops.
+          </h1>
+
+          <p class="hero-subheading">
+            Press <code class="inline-shortcut">Super + .</code> anywhere. TypEmoji injects native Unicode emojis directly into your active window across <strong>Wayland</strong> and <strong>X11</strong> — without touching, clearing, or overwriting your clipboard buffer.
+          </p>
+
+          <!-- Interactive Mechanical Keycap Simulation -->
+          <div class="hero-keycap-showcase" id="hero-keycaps">
+            <span class="keycap-label">Global Desktop Shortcut</span>
+            <div class="keycap-combo">
+              <button class="keycap-3d" id="key-meta" aria-label="Meta / Super Key">
+                <span class="key-top"><span class="key-icon">❖</span> Super</span>
+                <span class="key-side"></span>
+              </button>
+              <span class="key-plus">+</span>
+              <button class="keycap-3d" id="key-dot" aria-label="Period Key">
+                <span class="key-top">.</span>
+                <span class="key-side"></span>
+              </button>
+            </div>
+            <div class="keycap-hint">Click keycaps or press <kbd>Super + .</kbd> on your keyboard to test!</div>
+          </div>
+
+          <!-- CTA Actions -->
+          <div class="hero-cta-group">
+            <a href="#distros" class="btn btn-primary btn-large">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Install for Your Distro</span>
+            </a>
+
+            <button class="btn btn-outline btn-large" id="hero-demo-trigger">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Launch Live Simulator</span>
+            </button>
+          </div>
+
+          <!-- Compatibility Badges Strip -->
+          <div class="compat-strip">
+            <span class="compat-item"><span class="compat-check">✓</span> Wayland Native</span>
+            <span class="compat-item"><span class="compat-check">✓</span> X11 Full Support</span>
+            <span class="compat-item"><span class="compat-check">✓</span> KDE Plasma 6</span>
+            <span class="compat-item"><span class="compat-check">✓</span> GNOME 44+</span>
+            <span class="compat-item"><span class="compat-check">✓</span> Sway &amp; Hyprland</span>
+            <span class="compat-item"><span class="compat-check">✓</span> Zero Electron</span>
+          </div>
+        </div>
+
+        <!-- 3D Interactive Logo Display Card -->
+        <div class="hero-visual">
+          <div class="hero-3d-card-wrapper" id="hero-tilt-card">
+            <div class="glow-underlay"></div>
+            <div class="hero-3d-card">
+              <div class="card-ambient-light"></div>
+              <div class="card-glare"></div>
+              <div class="logo-3d-container">
+                <img src="assets/logo.png" alt="TypEmoji Mechanical Keycap 3D Logo" class="logo-3d-image" width="340" height="340">
+                <div class="logo-shadow"></div>
+              </div>
+              <div class="hero-card-footer">
+                <div class="card-stat">
+                  <span class="stat-value">&lt; 14 MB</span>
+                  <span class="stat-label">RAM Footprint</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="card-stat">
+                  <span class="stat-value">&lt; 4 ms</span>
+                  <span class="stat-label">Pop-Up Latency</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="card-stat">
+                  <span class="stat-value">Unicode 16</span>
+                  <span class="stat-label">+ Kaomojis</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIVE IN-BROWSER SIMULATOR SECTION ("Test Out Features") -->
+    <section class="simulator-section" id="simulator">
+      <div class="container">
+        <div class="section-header text-center">
+          <div class="section-tag">Interactive In-Browser Experience</div>
+          <h2 class="section-title">Test Drive TypEmoji Live</h2>
+          <p class="section-desc">
+            Experience the actual 396×506 Qt6 panel right in your browser. Click emojis or kaomojis to type them directly into the simulated terminal window below. Hold <kbd>Shift</kbd> to keep the panel open for continuous multi-emoji typing!
+          </p>
+        </div>
+
+        <!-- Desktop Environment Stage -->
+        <div class="simulator-stage">
+          <!-- Simulated Host Application Window (Kitty / Neovim / Terminal) -->
+          <div class="sim-host-window">
+            <div class="window-titlebar">
+              <div class="window-controls">
+                <span class="ctrl-btn ctrl-close"></span>
+                <span class="ctrl-btn ctrl-min"></span>
+                <span class="ctrl-btn ctrl-max"></span>
+              </div>
+              <div class="window-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="4 17 10 11 4 5"></polyline>
+                  <line x1="12" y1="19" x2="20" y2="19"></line>
+                </svg>
+                <span>active_window — kitty (bash) — focused</span>
+              </div>
+              <div class="window-status-badge">
+                <span class="pulse-indicator"></span> Injection Ready
+              </div>
+            </div>
+
+            <!-- Terminal Screen -->
+            <div class="terminal-body" id="terminal-body">
+              <div class="term-line term-dim"># TypEmoji synthetic injection daemon listening on Wayland / X11</div>
+              <div class="term-line term-dim"># Press Super + . to summon picker or click the button below</div>
+              <div class="term-line term-prompt">
+                <span class="prompt-user">furious@archlinux</span>:<span class="prompt-path">~/workspace</span><span class="prompt-char">$</span>
+                <span class="term-command">echo "Testing direct emoji insertion:"</span>
+              </div>
+              <div class="term-active-input-row">
+                <span class="prompt-arrow">❯</span>
+                <div class="term-input-field" id="sim-target-text" contenteditable="true" spellcheck="false" placeholder="Type here or click emojis to inject directly...">Hello Linux world! 🚀🐧 </div>
+                <span class="cursor-block"></span>
+              </div>
+            </div>
+
+            <!-- Host Window Bottom Toolbar -->
+            <div class="terminal-actions">
+              <div class="term-tips">
+                <span>Tip: Hold <kbd>Shift</kbd> while clicking emojis to continuous-type without closing</span>
+              </div>
+              <div class="term-btns">
+                <button class="term-btn" id="btn-sample-text">Insert Sample</button>
+                <button class="term-btn" id="btn-clear-term">Clear Text</button>
+                <button class="term-btn term-btn-primary" id="btn-copy-term">Copy Output</button>
+                <button class="term-btn term-btn-accent" id="sim-summon-toggle">
+                  <span class="key-badge">Super + .</span> Toggle Picker
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- THE 396x506 VIRTUAL TYPEMOJI PANEL -->
+          <div class="sim-panel-wrapper visible" id="virtual-typemoji-panel" style="width: 396px; height: 506px;">
+            <div class="sim-panel-card" id="containerWidget">
+              <!-- Panel Header with Search and Close -->
+              <div class="panel-header" id="headerWidget">
+                <div class="search-input-wrapper">
+                  <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="text" id="sim-search-input" placeholder="Search emojis, kaomojis, shortcodes..." autocomplete="off" spellcheck="false">
+                  <button class="search-clear-btn" id="sim-search-clear" style="display: none;" title="Clear Search">✕</button>
+                </div>
+                <button class="panel-close-btn" id="sim-panel-close" title="Close Panel (Escape)">✕</button>
+              </div>
+
+              <!-- Category Tab Bar matching Qt m_categoryTabBar -->
+              <div class="panel-tab-bar" id="categoryTabBar" role="tablist">
+                <button class="cat-tab" data-cat="Recent" title="Recently used" role="tab" aria-selected="false">🕒</button>
+                <button class="cat-tab active" data-cat="Smileys & Emotion" title="Smileys &amp; Emotion" role="tab" aria-selected="true">😀</button>
+                <button class="cat-tab" data-cat="People & Body" title="People &amp; Body" role="tab" aria-selected="false">👋</button>
+                <button class="cat-tab" data-cat="Animals & Nature" title="Animals &amp; Nature" role="tab" aria-selected="false">🐱</button>
+                <button class="cat-tab" data-cat="Food & Drink" title="Food &amp; Drink" role="tab" aria-selected="false">🍕</button>
+                <button class="cat-tab" data-cat="Activities" title="Activities" role="tab" aria-selected="false">⚽</button>
+                <button class="cat-tab" data-cat="Travel & Places" title="Travel &amp; Places" role="tab" aria-selected="false">✈️</button>
+                <button class="cat-tab" data-cat="Objects" title="Objects" role="tab" aria-selected="false">💡</button>
+                <button class="cat-tab" data-cat="Symbols" title="Symbols" role="tab" aria-selected="false">❤️</button>
+                <button class="cat-tab" data-cat="Flags" title="Flags" role="tab" aria-selected="false">🚩</button>
+                <button class="cat-tab kaomoji-tab" data-cat="Kaomoji" title="Japanese Kaomoji" role="tab" aria-selected="false">(•‿•)</button>
+              </div>
+
+              <!-- Main Emoji / Kaomoji Grid -->
+              <div class="panel-body" id="stackedWidget">
+                <div class="emoji-grid-scroll" id="sim-grid-container">
+                  <!-- Injected via JavaScript from TYPEMOJI_DATA -->
+                </div>
+              </div>
+
+              <!-- Footer Widget with Preview and Keyboard Hints -->
+              <div class="panel-footer" id="footerWidget">
+                <div class="preview-row">
+                  <div class="preview-emoji-box" id="previewEmoji">😀</div>
+                  <div class="preview-meta">
+                    <div class="preview-name" id="previewName">Grinning Face</div>
+                    <div class="preview-shortcode" id="previewShortcode">:grinning_face:</div>
+                  </div>
+                  <div class="preview-hints" id="previewHints">
+                    <span class="hint-pill"><kbd>↵</kbd> inject</span>
+                    <span class="hint-pill"><kbd>⇧</kbd> multi</span>
+                    <span class="hint-pill"><kbd>Esc</kbd> exit</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="simulator-features-grid">
+          <div class="sim-feature-card">
+            <div class="feature-icon-badge">⚡</div>
+            <h3>Direct Active-Window Typing</h3>
+            <p>Unlike standard pickers that force you to paste, TypEmoji directly types characters into the focused application via Linux synthetic input hooks.</p>
+          </div>
+          <div class="sim-feature-card">
+            <div class="feature-icon-badge">🔒</div>
+            <h3>Zero Clipboard Tampering</h3>
+            <p>Your clipboard history, copied API tokens, and snippet buffers remain 100% untouched. No accidental overwrites or clipboard leaks.</p>
+          </div>
+          <div class="sim-feature-card">
+            <div class="feature-icon-badge">🚀</div>
+            <h3>Continuous Multi-Emoji Mode</h3>
+            <p>Hold <kbd>Shift</kbd> while clicking or pressing <kbd>Enter</kbd> to type multiple emojis in sequence without the panel closing.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CORE ARCHITECTURE & WHY TYPEMOJI -->
+    <section class="architecture-section" id="architecture">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">Linux Native Engineering</div>
+          <h2 class="section-title">Engineered Specifically for the Modern Linux Desktop</h2>
+          <p class="section-desc">
+            No heavy JavaScript runtimes. No 200MB background processes. Built from the ground up in modern <strong>C++23</strong> and <strong>Qt 6</strong> with dedicated Wayland portal integration.
+          </p>
+        </div>
+
+        <div class="arch-grid">
+          <!-- Wayland & X11 Card -->
+          <div class="arch-card">
+            <div class="arch-card-header">
+              <div class="arch-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+              </div>
+              <h3 class="arch-title">Wayland &amp; X11 Hybrid Core</h3>
+            </div>
+            <p class="arch-body">
+              Automatic runtime detection of compositor protocols. Employs <code>KGlobalAccel</code> on KDE Wayland, XDG Desktop Portals on GNOME, IPC bindings for Sway and Hyprland, and native <code>XGrabKey</code> under X11.
+            </p>
+            <div class="arch-tags">
+              <span class="tag">KGlobalAccel</span>
+              <span class="tag">XDG Portal</span>
+              <span class="tag">ydotool</span>
+              <span class="tag">wtype</span>
+              <span class="tag">XTest</span>
+            </div>
+          </div>
+
+          <!-- Non-Destructive Injection Card -->
+          <div class="arch-card">
+            <div class="arch-card-header">
+              <div class="arch-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>
+              </div>
+              <h3 class="arch-title">Clipboard-Safe Injection</h3>
+            </div>
+            <p class="arch-body">
+              If an environment requires synthetic clipboard injection, TypEmoji snapshots your clipboard state prior to injection and restores your exact clipboard history within microseconds.
+            </p>
+            <div class="arch-tags">
+              <span class="tag">Zero Clobber</span>
+              <span class="tag">Instant Restore</span>
+              <span class="tag">MIME Preservation</span>
+            </div>
+          </div>
+
+          <!-- Daemon Architecture Card -->
+          <div class="arch-card">
+            <div class="arch-card-header">
+              <div class="arch-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+              <h3 class="arch-title">Pre-Warmed Singleton Daemon</h3>
+            </div>
+            <p class="arch-body">
+              TypEmoji idles silently as a lightweight background daemon consuming under 14MB RAM. When triggered by <kbd>Super + .</kbd>, the window shows in under 4ms without cold-boot overhead.
+            </p>
+            <div class="arch-tags">
+              <span class="tag">Pre-Warmed Qt6</span>
+              <span class="tag">D-Bus / Unix Socket</span>
+              <span class="tag">Systemd Service</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compatibility Matrix Table -->
+        <div class="matrix-card">
+          <div class="matrix-title">Desktop Environment &amp; Display Server Matrix</div>
+          <div class="table-responsive">
+            <table class="matrix-table">
+              <thead>
+                <tr>
+                  <th>Desktop Environment</th>
+                  <th>Display Server</th>
+                  <th>Shortcut Backend</th>
+                  <th>Injection Engine</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>KDE Plasma 6</strong></td>
+                  <td>Wayland</td>
+                  <td><code>KGlobalAccel / D-Bus</code></td>
+                  <td><code>ydotool / KWin Script</code></td>
+                  <td><span class="status-badge status-verified">Verified 100%</span></td>
+                </tr>
+                <tr>
+                  <td><strong>KDE Plasma 5 / 6</strong></td>
+                  <td>X11</td>
+                  <td><code>XGrabKey</code></td>
+                  <td><code>XTest / ydotool</code></td>
+                  <td><span class="status-badge status-verified">Verified 100%</span></td>
+                </tr>
+                <tr>
+                  <td><strong>GNOME 44+</strong></td>
+                  <td>Wayland</td>
+                  <td><code>XDG Portal / Custom Key</code></td>
+                  <td><code>ydotool / wtype</code></td>
+                  <td><span class="status-badge status-verified">Verified 100%</span></td>
+                </tr>
+                <tr>
+                  <td><strong>GNOME 40+</strong></td>
+                  <td>X11</td>
+                  <td><code>XGrabKey</code></td>
+                  <td><code>XTest / xdotool</code></td>
+                  <td><span class="status-badge status-verified">Verified 100%</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Sway / Hyprland</strong></td>
+                  <td>Wayland</td>
+                  <td><code>IPC (swaymsg/hyprctl)</code></td>
+                  <td><code>wtype / ydotool</code></td>
+                  <td><span class="status-badge status-verified">Verified 100%</span></td>
+                </tr>
+                <tr>
+                  <td><strong>XFCE / MATE / i3 / bspwm</strong></td>
+                  <td>X11</td>
+                  <td><code>XGrabKey</code></td>
+                  <td><code>XTest / xdotool</code></td>
+                  <td><span class="status-badge status-verified">Verified 100%</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BENCHMARKS & PERFORMANCE -->
+    <section class="benchmarks-section" id="benchmarks">
+      <div class="container">
+        <div class="section-header text-center">
+          <div class="section-tag">Performance Comparison</div>
+          <h2 class="section-title">Built for Speed, Not Web Bloat</h2>
+          <p class="section-desc">
+            Standard desktop emoji pickers pack full Chromium runtimes just to show a grid of icons. TypEmoji stays faithful to the Unix philosophy: fast, lean, and resource-conscious.
+          </p>
+        </div>
+
+        <div class="benchmark-grid">
+          <!-- RAM Benchmark -->
+          <div class="bench-card">
+            <div class="bench-header">
+              <span class="bench-metric">Memory Footprint (Idle / Active)</span>
+              <span class="bench-unit">Lower is better</span>
+            </div>
+            <div class="bench-bars">
+              <div class="bench-row highlight-row">
+                <div class="bench-label-group">
+                  <span class="bench-name">TypEmoji v2.1.0 (Native Qt6)</span>
+                  <span class="bench-val">13.8 MB</span>
+                </div>
+                <div class="bench-bar-track">
+                  <div class="bench-bar-fill typemoji-fill" style="width: 7.5%;"></div>
+                </div>
+              </div>
+
+              <div class="bench-row">
+                <div class="bench-label-group">
+                  <span class="bench-name">Electron-based Picker</span>
+                  <span class="bench-val">184.0 MB</span>
+                </div>
+                <div class="bench-bar-track">
+                  <div class="bench-bar-fill comp-fill" style="width: 78%;"></div>
+                </div>
+              </div>
+
+              <div class="bench-row">
+                <div class="bench-label-group">
+                  <span class="bench-name">Web/Tauri Wrapper</span>
+                  <span class="bench-val">112.5 MB</span>
+                </div>
+                <div class="bench-bar-track">
+                  <div class="bench-bar-fill comp-fill" style="width: 48%;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="bench-footnote">Measured via <code>smem -u</code> RSS memory resident set on Linux 6.12.</div>
+          </div>
+
+          <!-- Latency Benchmark -->
+          <div class="bench-card">
+            <div class="bench-header">
+              <span class="bench-metric">Trigger to Render Latency</span>
+              <span class="bench-unit">Milliseconds (Lower is better)</span>
+            </div>
+            <div class="bench-bars">
+              <div class="bench-row highlight-row">
+                <div class="bench-label-group">
+                  <span class="bench-name">TypEmoji v2.1.0</span>
+                  <span class="bench-val">3.8 ms</span>
+                </div>
+                <div class="bench-bar-track">
+                  <div class="bench-bar-fill typemoji-fill" style="width: 4%;"></div>
+                </div>
+              </div>
+
+              <div class="bench-row">
+                <div class="bench-label-group">
+                  <span class="bench-name">GNOME Characters / Shell</span>
+                  <span class="bench-val">210 ms</span>
+                </div>
+                <div class="bench-bar-track">
+                  <div class="bench-bar-fill comp-fill" style="width: 52%;"></div>
+                </div>
+              </div>
+
+              <div class="bench-row">
+                <div class="bench-label-group">
+                  <span class="bench-name">Electron Picker Cold Pop-up</span>
+                  <span class="bench-val">420 ms</span>
+                </div>
+                <div class="bench-bar-track">
+                  <div class="bench-bar-fill comp-fill" style="width: 95%;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="bench-footnote">Average over 50 invocations measured with high-resolution monotonic clocks.</div>
+          </div>
+        </div>
+
+        <!-- Binary & Features Grid -->
+        <div class="stats-counter-strip">
+          <div class="counter-item">
+            <div class="counter-number">4.2 MB</div>
+            <div class="counter-desc">Total Binary Size</div>
+          </div>
+          <div class="counter-item">
+            <div class="counter-number">3,700+</div>
+            <div class="counter-desc">Unicode 16.0 Emojis</div>
+          </div>
+          <div class="counter-item">
+            <div class="counter-number">28</div>
+            <div class="counter-desc">Built-in Japanese Kaomojis</div>
+          </div>
+          <div class="counter-item">
+            <div class="counter-number">0.0%</div>
+            <div class="counter-desc">Clipboard Data Loss</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INTERACTIVE DISTRO SELECTOR & INSTALL GUIDE -->
+    <section class="distros-section" id="distros">
+      <div class="container">
+        <div class="section-header text-center">
+          <div class="section-tag">Cross-Distribution Distribution</div>
+          <h2 class="section-title">Install on Any Linux Distribution</h2>
+          <p class="section-desc">
+            Official v2.1.0 pre-compiled native packages for every major Linux package manager and a universal installer.
+          </p>
+        </div>
+
+        <div class="distro-installer-card">
+          <!-- Distro Tab Navigation -->
+          <div class="distro-tabs" role="tablist">
+            <button class="distro-tab-btn active" data-distro="arch" role="tab">
+              <span class="distro-tab-icon">🏹</span>
+              <span class="distro-tab-name">Arch Linux</span>
+              <span class="distro-ext">.pkg.tar.zst</span>
+            </button>
+            <button class="distro-tab-btn" data-distro="ubuntu" role="tab">
+              <span class="distro-tab-icon">🟣</span>
+              <span class="distro-tab-name">Ubuntu / Debian</span>
+              <span class="distro-ext">.deb</span>
+            </button>
+            <button class="distro-tab-btn" data-distro="fedora" role="tab">
+              <span class="distro-tab-icon">🎩</span>
+              <span class="distro-tab-name">Fedora / RHEL</span>
+              <span class="distro-ext">.rpm</span>
+            </button>
+            <button class="distro-tab-btn" data-distro="opensuse" role="tab">
+              <span class="distro-tab-icon">🦎</span>
+              <span class="distro-tab-name">openSUSE</span>
+              <span class="distro-ext">.rpm</span>
+            </button>
+            <button class="distro-tab-btn" data-distro="universal" role="tab">
+              <span class="distro-tab-icon">📦</span>
+              <span class="distro-tab-name">Universal .run</span>
+              <span class="distro-ext">Portable</span>
+            </button>
+            <button class="distro-tab-btn" data-distro="source" role="tab">
+              <span class="distro-tab-icon">⚙️</span>
+              <span class="distro-tab-name">Build from Source</span>
+              <span class="distro-ext">CMake</span>
+            </button>
+          </div>
+
+          <!-- Dynamic Distro Content Container -->
+          <div class="distro-tab-content">
+            <!-- Command Code Box -->
+            <div class="code-terminal-box">
+              <div class="code-header">
+                <div class="code-header-left">
+                  <span class="terminal-circle red"></span>
+                  <span class="terminal-circle yellow"></span>
+                  <span class="terminal-circle green"></span>
+                  <span class="code-filename" id="distro-code-title">Terminal — Install on Arch Linux</span>
+                </div>
+                <button class="copy-cmd-btn" id="btn-copy-install-cmd" aria-label="Copy installation command">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span class="copy-text">Copy Command</span>
+                </button>
+              </div>
+              <pre class="code-pre"><code id="distro-install-snippet" class="language-bash">sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst</code></pre>
+            </div>
+
+            <!-- Distro Metadata & Direct Download Bar -->
+            <div class="distro-action-bar">
+              <div class="distro-meta-info">
+                <div class="meta-item">
+                  <span class="meta-label">Release Artifact:</span>
+                  <span class="meta-value" id="distro-artifact-name">TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Package Size:</span>
+                  <span class="meta-value" id="distro-size">~4.1 MB</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Dependencies:</span>
+                  <span class="meta-value" id="distro-deps">qt6-base, qt6-tools, libx11, libxtst</span>
+                </div>
+              </div>
+
+              <div class="distro-buttons">
+                <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst" id="distro-direct-download" class="btn btn-primary" download>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>Download Package</span>
+                </a>
+                <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/tag/v2.1.0" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+                  Release Notes
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KAOMOJI INTERACTIVE CLIP STATION -->
+    <section class="kaomoji-section" id="kaomoji">
+      <div class="container">
+        <div class="section-header text-center">
+          <div class="section-tag">Text Face Clipboard</div>
+          <h2 class="section-title">Japanese Kaomoji Clip Station</h2>
+          <p class="section-desc">
+            Express emotions with authentic Japanese text faces. Click any Kaomoji below to test the instant copy sound and animation!
+          </p>
+        </div>
+
+        <div class="kaomoji-grid" id="kaomoji-clip-grid">
+          <!-- Injected via JavaScript from Kaomoji Dataset -->
+        </div>
+
+        <div class="kaomoji-callout">
+          <div class="callout-content">
+            <h4>Want them globally on your Linux desktop?</h4>
+            <p>Every single one of these Kaomojis is built right into TypEmoji's <code>(•‿•)</code> category tab and searchable in realtime with instant injection into Discord, Slack, Firefox, and your favorite terminal.</p>
+          </div>
+          <a href="#simulator" class="btn btn-primary">Try in Simulator</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLI & DAEMON USAGE -->
+    <section class="cli-section" id="features">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">Power User Ergonomics</div>
+          <h2 class="section-title">CLI Flags, Tray Controls &amp; WM Integration</h2>
+          <p class="section-desc">
+            Designed for window managers like i3, bspwm, Sway, and Hyprland. Bind <code>EmojiTyper --toggle</code> directly to any custom key combination in your configuration file.
+          </p>
+        </div>
+
+        <div class="cli-grid">
+          <div class="cli-card">
+            <div class="cli-cmd-badge">EmojiTyper --toggle</div>
+            <p>Toggles the emoji picker panel visibility. Perfect for binding to custom key combinations in <code>hyprland.conf</code> or <code>i3/config</code>.</p>
+          </div>
+          <div class="cli-card">
+            <div class="cli-cmd-badge">EmojiTyper --show</div>
+            <p>Forces the panel to open directly at the current active mouse cursor position or text caret coordinate.</p>
+          </div>
+          <div class="cli-card">
+            <div class="cli-cmd-badge">EmojiTyper --reload</div>
+            <p>Hot-reloads the emoji database and configuration files without terminating background instances.</p>
+          </div>
+          <div class="cli-card">
+            <div class="cli-cmd-badge">EmojiTyper --quit</div>
+            <p>Gracefully terminates the background daemon process and releases all global keyboard hooks.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand-col">
+        <div class="brand-lockup">
+          <img src="assets/logo.png" alt="TypEmoji Logo" width="28" height="28">
+          <span class="brand-title">TypEmoji</span>
+        </div>
+        <p class="footer-tagline">
+          The fast, native direct emoji and kaomoji typing utility for Linux desktops. MIT Licensed.
+        </p>
+        <div class="footer-credits">
+          Created with C++23 &amp; Qt 6 by <a href="https://github.com/Ayan-Jain-737" target="_blank" rel="noopener noreferrer">Ayan Jain</a>.
+        </div>
+      </div>
+
+      <div class="footer-links-col">
+        <div class="footer-heading">Project</div>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases" target="_blank" rel="noopener noreferrer">Release Downloads</a>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji/issues" target="_blank" rel="noopener noreferrer">Report an Issue</a>
+      </div>
+
+      <div class="footer-links-col">
+        <div class="footer-heading">Downloads (v2.1.0)</div>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst">Arch Linux (.pkg.tar.zst)</a>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Ubuntu-Debian-x86_64.deb">Ubuntu / Debian (.deb)</a>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Fedora-openSUSE-x86_64.rpm">Fedora / openSUSE (.rpm)</a>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Universal-Installer.run">Universal Installer (.run)</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="emoji-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

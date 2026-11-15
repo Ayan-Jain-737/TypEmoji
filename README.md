@@ -5,7 +5,7 @@
 </h3>
 
 <p align="center">
-  <a href="typemoji.netlify.app"><strong>🎮 Try the Live Web Simulator</strong></a> •
+  <a href="https://typemoji.netlify.app"><strong>🎮 Try the Live Web Simulator</strong></a> •
   <a href="#quick-install"><strong>⚡ Quick Install</strong></a> •
   <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/latest"><strong>📦 Releases</strong></a> •
   <a href="https://github.com/Ayan-Jain-737/TypEmoji/discussions"><strong>💬 Discussions</strong></a>

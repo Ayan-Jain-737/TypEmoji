@@ -36,6 +36,11 @@
     <name>Ayan Jain</name>
   </developer>
   <releases>
+    <release version="2.1.0" date="2026-11-15">
+      <description>
+        <p>Visual redesign and UX overhaul: spacious geometry, concentric rounded design, vector search bar, pill category tabs, jitter-free emoji cells, and elevated preview bar.</p>
+      </description>
+    </release>
     <release version="2.0.0" date="2026-11-15">
       <description>
         <p>Major update: Cross-distro support with XDG Desktop Portal for GNOME and Sway, batched emoji queue typing, Escape/Ctrl+Q instant window dismiss, and optional KDE dependencies.</p>

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-11-15
+
+### Added
+- **UI Visual Overhaul**: Spacious 396×506px floating panel with 12px drop shadow margins, 14px concentric rounded corners, and elevated depth.
+- **Vector Search Bar**: Replaced raw emoji text icon with an antialiased vector magnifying glass, sleek frosted input pill, and circular hover close button.
+- **Pill Category Bar**: Redesigned tab bar with smooth pill-shaped category tabs, active accent indicator, and 38px touch targets.
+- **Grid Polish & Anti-Jitter**: 44×44px concentric item cells with 22pt emoji typography; eliminated text shift on hover, and added a distinct amber badge for skin tone variants.
+- **Thin Overlay Scrollbars**: Minimalist 6px rounded scrollbars that integrate cleanly into dark and light themes.
+- **Elevated Preview Bar**: 52px footer with a dedicated rounded preview tile, bold typography, shortcode and formatted Unicode codepoints pill tag, and keycap shortcut badges (`[↵ Insert]` `[⇧↵ Keep]`).
+- **Screen Edge Clamping**: Added 12px safety margin to screen bounds so floating shadows remain completely visible.
+- **Qt 6.4 Compatibility**: Added backward compatibility for Qt 6.4 (Ubuntu 24.04, Debian 12) for color scheme detection.
+
 ## [2.0.0] - 2026-11-15
 
 ### Added

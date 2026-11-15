@@ -12,7 +12,7 @@ if [[ -z "$TAR_FILE" || ! -f "$TAR_FILE" ]]; then
     cpack -G TGZ
     TAR_FILE="$(ls -t "$BUILD_DIR"/*-Linux.tar.gz 2>/dev/null | head -n1)"
 fi
-OUTPUT_RUN="$BUILD_DIR/TypEmoji-2.0.0-Universal-Installer.run"
+OUTPUT_RUN="$BUILD_DIR/TypEmoji-2.1.0-Universal-Installer.run"
 
 TEMP_HEADER="$(mktemp /tmp/installer_header_XXXXXX.sh)"
 

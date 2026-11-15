@@ -1,18 +1,33 @@
-# Build directories
+# ==============================================================================
+# TypEmoji .gitignore
+# ==============================================================================
+
+# Build directories and outputs
 build/
+build-*/
+cmake-build-*/
 bin/
 lib/
 dist/
 
-# CMake artifacts
+# CMake artifacts & build caches
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 Makefile
+CTestTestfile.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+_CPack_Packages/
+install_manifest.txt
+compile_commands.json
+.ninja_deps
+.ninja_log
 *.cmake
 !CMakeLists.txt
+!cmake/*.cmake
 
-# Qt artifacts
+# Qt artifacts & code generation
 *.moc
 moc_*.cpp
 ui_*.h
@@ -20,35 +35,102 @@ qrc_*.cpp
 *.qrc.depends
 .qt/
 .rcc/
+*autogen/
 
-# Object and binary files
+# Object files, libraries, and binaries
 *.o
 *.obj
 *.so
+*.so.*
 *.a
 *.dylib
 *.dll
 *.exe
 
-# IDE and Editor files
+# Core dumps and crash logs
+core
+core.*
+vgcore.*
+*.san
+
+# Package build artifacts and archives
+packaging/src/
+packaging/pkg/
+packaging/debian/.debhelper/
+packaging/debian/debhelper-build-stamp
+packaging/debian/files
+packaging/debian/*.substvars
+*.deb
+*.rpm
+*.run
+*.pkg.tar.zst
+*.pkg.tar.xz
+*.tar.gz
+*.tar.xz
+*.tar.bz2
+*.zip
+*.snap
+snap/.snapcraft/
+.flatpak-builder/
+*.flatpak
+
+# IDE, Editor, and Tooling
 .vscode/
 .idea/
+.vs/
 *.user
+*.user.*
+.kdev4/
+*.kdev4
 *.swp
 *.swo
 *~
+*.kate-swp
 .directory
+.clangd/
+.clang-format~
+.cache/
 
-# Testing and Coverage
+# Testing, Coverage, and Profiling
 Testing/
+coverage/
 *.gcda
 *.gcno
 *.gcov
 
-# System and logs
+# Python & Node / Web Scratch
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+env/
+node_modules/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System, OS, and Temporary files
 *.log
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+ehthumbs.db
+*.tmp
+tmp/
+temp/
+
+# Temporary frame/recording scratch files
+frame_*.png
+preview_*.png
+test_*.png
+capture_*.png
+frames/
 
 # Antigravity agent & local configs (secrets/API keys)
 .agents/
@@ -57,12 +139,11 @@ _agents/
 _agent/
 *mcp_config*.json
 .env*
+!.env.example
 AGENT.md
 agent.md
 *agent*.md
-
-# Packaging artifacts
-packaging/src/
-packaging/pkg/
-*.pkg.tar.zst
-
+token.txt
+credentials*.json
+*.pem
+*.key

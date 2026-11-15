@@ -45,9 +45,13 @@ jobs:
       - name: Rename Packages for Clarity
         run: |
           mkdir -p dist
-          cp build/*-Linux.deb dist/TypEmoji-2.0.0-Ubuntu-Debian-x86_64.deb 2>/dev/null || cp build/*.deb dist/TypEmoji-2.0.0-Ubuntu-Debian-x86_64.deb 2>/dev/null || true
-          cp build/*-Installer.run dist/TypEmoji-2.0.0-Universal-Installer.run 2>/dev/null || cp build/*.run dist/TypEmoji-2.0.0-Universal-Installer.run 2>/dev/null || true
-          cp build/*-Linux.tar.gz dist/TypEmoji-2.0.0-Portable-Linux-x86_64.tar.gz 2>/dev/null || cp build/*.tar.gz dist/TypEmoji-2.0.0-Portable-Linux-x86_64.tar.gz 2>/dev/null || true
+          DEB=$(find build -name "*.deb" | head -n 1)
+          [ -n "$DEB" ] && cp "$DEB" dist/TypEmoji-2.0.0-Ubuntu-Debian-x86_64.deb
+          RUN=$(find build -name "*.run" | head -n 1)
+          [ -n "$RUN" ] && cp "$RUN" dist/TypEmoji-2.0.0-Universal-Installer.run
+          TGZ=$(find build -name "*.tar.gz" | head -n 1)
+          [ -n "$TGZ" ] && cp "$TGZ" dist/TypEmoji-2.0.0-Portable-Linux-x86_64.tar.gz
+          ls -la dist/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -114,7 +118,10 @@ jobs:
             makepkg -s --noconfirm
           "
           mkdir -p dist
-          cp /tmp/pkgbuild/packaging/*.pkg.tar.zst dist/TypEmoji-2.0.0-Arch-Linux-x86_64.pkg.tar.zst 2>/dev/null || true
+          PKG=$(find /tmp/pkgbuild/packaging -name "emojityper-2*.pkg.tar.zst" ! -name "*-debug*" | head -n 1)
+          if [ -n "$PKG" ]; then
+            cp "$PKG" dist/TypEmoji-2.0.0-Arch-Linux-x86_64.pkg.tar.zst
+          fi
           ls -la dist/
 
       - name: Upload Arch artifact

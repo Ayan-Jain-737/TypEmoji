@@ -417,7 +417,16 @@ void EmojiPanel::applyTheme()
         accent = "#0078D4";
     }
 
-    if (theme == "dark" || (theme == "system" && QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark)) {
+    bool isDark = (theme == "dark");
+    if (theme == "system") {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+        isDark = (QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark);
+#else
+        isDark = (palette().color(QPalette::Window).lightness() < 128);
+#endif
+    }
+
+    if (isDark) {
         QString qss = R"(
             EmojiPanel {
                 background-color: transparent;

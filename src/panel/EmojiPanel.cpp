@@ -109,12 +109,6 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
     setAttribute(Qt::WA_TranslucentBackground, true);
     setWindowTitle("EmojiTyper");
 
-    // Load position from settings
-    Settings& settings = Settings::instance();
-    QPoint savedPos = settings.panelPos();
-    if (savedPos.x() >= 0 && savedPos.y() >= 0) {
-        move(savedPos);
-    }
     setFixedSize(396, 506);
 
     setFocusPolicy(Qt::StrongFocus);
@@ -258,8 +252,8 @@ void EmojiPanel::setupUi()
     m_footerWidget->setObjectName("footerWidget");
     m_footerWidget->setFixedHeight(52);
     QHBoxLayout* footerLayout = new QHBoxLayout(m_footerWidget);
-    footerLayout->setContentsMargins(12, 6, 12, 6);
-    footerLayout->setSpacing(10);
+    footerLayout->setContentsMargins(10, 6, 10, 6);
+    footerLayout->setSpacing(8);
 
     m_previewEmoji = new QLabel(m_footerWidget);
     m_previewEmoji->setObjectName("previewEmoji");
@@ -295,7 +289,8 @@ void EmojiPanel::setupUi()
 
     m_previewHints = new QLabel(m_footerWidget);
     m_previewHints->setObjectName("previewHints");
-    m_previewHints->setText("↵ Insert   ⇧↵ Keep");
+    m_previewHints->setTextFormat(Qt::RichText);
+    m_previewHints->setText("<span style='font-weight:700;'>↵</span> Insert &nbsp; <span style='font-weight:700;'>⇧↵</span> Keep");
     QFont phFont = m_previewHints->font();
     phFont.setPointSize(8);
     phFont.setFamily("JetBrains Mono, monospace");
@@ -477,25 +472,25 @@ void EmojiPanel::applyTheme()
                 background-color: transparent;
                 border: none;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-                padding: 0 4px;
+                padding: 2px 4px;
             }
             #categoryTabBar::tab {
                 background-color: transparent;
-                color: rgba(255, 255, 255, 0.55);
+                color: rgba(255, 255, 255, 0.6);
                 border: none;
                 border-radius: 8px;
-                padding: 4px 1px;
-                margin: 2px 1px 4px 1px;
-                font-size: 16px;
+                padding: 4px 2px;
+                margin: 2px 2px;
+                font-size: 17px;
                 min-width: 28px;
             }
             #categoryTabBar::tab:selected {
                 color: #FFFFFF;
-                background-color: rgba(0, 120, 212, 0.22);
+                background-color: rgba(255, 255, 255, 0.14);
                 border-bottom: 2px solid #0078D4;
             }
             #categoryTabBar::tab:hover:!selected {
-                background-color: rgba(255, 255, 255, 0.09);
+                background-color: rgba(255, 255, 255, 0.08);
                 color: #FFFFFF;
             }
             #stackedWidget {
@@ -608,25 +603,25 @@ void EmojiPanel::applyTheme()
                 background-color: transparent;
                 border: none;
                 border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-                padding: 0 4px;
+                padding: 2px 4px;
             }
             #categoryTabBar::tab {
                 background-color: transparent;
-                color: rgba(0, 0, 0, 0.55);
+                color: rgba(0, 0, 0, 0.6);
                 border: none;
                 border-radius: 8px;
-                padding: 4px 1px;
-                margin: 2px 1px 4px 1px;
-                font-size: 16px;
+                padding: 4px 2px;
+                margin: 2px 2px;
+                font-size: 17px;
                 min-width: 28px;
             }
             #categoryTabBar::tab:selected {
                 color: #000000;
-                background-color: rgba(0, 120, 212, 0.14);
+                background-color: rgba(0, 0, 0, 0.08);
                 border-bottom: 2px solid #0078D4;
             }
             #categoryTabBar::tab:hover:!selected {
-                background-color: rgba(0, 0, 0, 0.06);
+                background-color: rgba(0, 0, 0, 0.04);
                 color: #000000;
             }
             #stackedWidget {
@@ -698,19 +693,15 @@ void EmojiPanel::applyTheme()
 void EmojiPanel::showAt(const QPoint& pos)
 {
     qDebug() << "EmojiPanel::showAt called with pos:" << pos;
-    if (m_targetState && m_targetState->isValid()) {
-        QPoint caretPos = m_targetState->caretScreenPos();
-        bool useProvidedPos = (pos.x() >= 0 && pos.y() >= 0);
-        if (caretPos.isNull() || useProvidedPos) {
-            positionAtCaret(useProvidedPos ? pos : caretPos);
+    QPoint targetPos = pos;
+    if (targetPos.x() < 0 || targetPos.y() < 0) {
+        if (m_targetState && m_targetState->isValid() && !m_targetState->caretScreenPos().isNull()) {
+            targetPos = m_targetState->caretScreenPos();
         } else {
-            positionAtCaret(caretPos);
+            targetPos = QCursor::pos();
         }
-    } else {
-        // Fallback to cursor position
-        QPoint cursorPos = QCursor::pos();
-        positionAtCaret(cursorPos);
     }
+    positionAtCaret(targetPos);
 
     // Restore recent from settings
     Settings& settings = Settings::instance();
@@ -718,7 +709,9 @@ void EmojiPanel::showAt(const QPoint& pos)
     QVector<EmojiEntry> recent = m_database ? m_database->recentEmojis(recentCodes) : QVector<EmojiEntry>();
     m_model->setShowRecent(recent);
 
-    int initialTab = !recent.isEmpty() ? 0 : 1;
+    // Default to Smileys & Emotion (index 1) so the picker opens to a rich, vibrant grid of 100+ emojis,
+    // or to Recent (index 0) if the user has accumulated a substantial recent history (>= 16 emojis)
+    int initialTab = (recent.size() >= 16) ? 0 : 1;
     m_categoryTabBar->setCurrentIndex(initialTab);
     onCategoryChanged(initialTab);
 
@@ -770,22 +763,37 @@ void EmojiPanel::showAt(const QPoint& pos)
 
 void EmojiPanel::positionAtCaret(const QPoint& caretPos)
 {
-    // Position panel near caret, with screen edge clamping
-    QRect screen = QGuiApplication::primaryScreen()->geometry();
-    QPoint pos = caretPos + QPoint(20, 20);
+    // Position panel near caret/cursor, centered or slightly offset
+    QScreen* screen = QGuiApplication::screenAt(caretPos);
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    QRect screenGeom = screen ? screen->availableGeometry() : QRect(0, 0, 1920, 1080);
 
-    // Clamp to screen with 12px margin
-    if (pos.x() + width() > screen.right()) {
-        pos.setX(screen.right() - width() - 12);
+    // If caretPos is at or near (0, 0) or offscreen, center panel on the active screen
+    if (caretPos.x() <= 10 && caretPos.y() <= 10) {
+        int cx = screenGeom.x() + (screenGeom.width() - width()) / 2;
+        int cy = screenGeom.y() + (screenGeom.height() - height()) / 2;
+        move(cx, cy);
+        return;
     }
-    if (pos.y() + height() > screen.bottom()) {
-        pos.setY(screen.bottom() - height() - 12);
+
+    QPoint pos = caretPos + QPoint(10, 15);
+
+    // If panel would overflow bottom, place it above caret
+    if (pos.y() + height() > screenGeom.bottom() - 10) {
+        pos.setY(caretPos.y() - height() - 10);
     }
-    if (pos.x() < screen.left()) {
-        pos.setX(screen.left() + 12);
+    // If panel would overflow right, shift it left
+    if (pos.x() + width() > screenGeom.right() - 10) {
+        pos.setX(screenGeom.right() - width() - 10);
     }
-    if (pos.y() < screen.top()) {
-        pos.setY(screen.top() + 12);
+    // Clamp to screen bounds
+    if (pos.x() < screenGeom.left() + 10) {
+        pos.setX(screenGeom.left() + 10);
+    }
+    if (pos.y() < screenGeom.top() + 10) {
+        pos.setY(screenGeom.top() + 10);
     }
 
     move(pos);
@@ -799,9 +807,8 @@ void EmojiPanel::hidePanel()
             m_clickOutsideTimer->stop();
         }
 
-        // Save geometry and flush any pending recents to disk immediately
+        // Flush any pending recents and panel size to disk immediately
         Settings& settings = Settings::instance();
-        settings.setPanelPos(pos());
         settings.setPanelSize(size());
         settings.save();
 
@@ -838,8 +845,11 @@ void EmojiPanel::updatePreview(const QString& emoji, const QString& name, const 
         }
         m_previewEmoji->setFont(peFont);
     }
+    QString rawName = name.isEmpty() ? "Sparkles" : name;
     if (m_previewName) {
-        m_previewName->setText(name.isEmpty() ? "Sparkles" : name);
+        QFontMetrics fm(m_previewName->font());
+        m_previewName->setText(fm.elidedText(rawName, Qt::ElideRight, 200));
+        m_previewName->setToolTip(rawName);
     }
     if (m_previewShortcode) {
         QString sc = shortcode;
@@ -859,12 +869,14 @@ void EmojiPanel::updatePreview(const QString& emoji, const QString& name, const 
                 formattedCp += "U+" + cp;
             }
             if (!sc.isEmpty()) {
-                sc += "  •  " + formattedCp;
+                sc += " • " + formattedCp;
             } else {
                 sc = formattedCp;
             }
         }
-        m_previewShortcode->setText(sc);
+        QFontMetrics fmSc(m_previewShortcode->font());
+        m_previewShortcode->setText(fmSc.elidedText(sc, Qt::ElideRight, 200));
+        m_previewShortcode->setToolTip(sc);
     }
 }
 

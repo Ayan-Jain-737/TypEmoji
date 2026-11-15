@@ -1,0 +1,96 @@
+name: Bug Report
+description: File a bug or unexpected behavior in TypEmoji
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Please provide as much detail as possible to help us diagnose and resolve the problem quickly.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-flight Checks
+      description: Please verify before submitting.
+      options:
+        - label: I have searched existing issues and confirmed this bug is not already reported.
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: TypEmoji Version
+      description: Which version of TypEmoji are you running? (e.g., 2.1.0, git commit hash)
+      placeholder: "2.1.0"
+    validations:
+      required: true
+  - type: input
+    id: distribution
+    attributes:
+      label: Linux Distribution
+      description: Which Linux distribution are you using? (e.g., Ubuntu 24.04, Fedora 40, Arch Linux, Debian 12, openSUSE)
+      placeholder: "Ubuntu 24.04"
+    validations:
+      required: true
+  - type: dropdown
+    id: desktop_environment
+    attributes:
+      label: Desktop Environment / Compositor
+      description: What desktop environment or compositor are you running?
+      options:
+        - GNOME (Mutter)
+        - KDE Plasma 6 (KWin)
+        - KDE Plasma 5 (KWin)
+        - Sway (wlroots)
+        - Hyprland (wlroots/aquamarine)
+        - XFCE
+        - Cinnamon
+        - MATE
+        - i3 / bspwm / other X11 WM
+        - Other (specify in logs or description)
+    validations:
+      required: true
+  - type: dropdown
+    id: display_server
+    attributes:
+      label: Display Server
+      description: Are you running Wayland or X11?
+      options:
+        - Wayland
+        - X11
+        - Unknown
+    validations:
+      required: true
+  - type: input
+    id: target_application
+    attributes:
+      label: Target Application
+      description: Which application was active when the emoji was injected? (e.g., Firefox, Alacritty, VS Code, Discord, Slack, LibreOffice)
+      placeholder: "Firefox, Alacritty, VS Code..."
+    validations:
+      required: true
+  - type: textarea
+    id: steps_reproduce
+    attributes:
+      label: Steps to Reproduce & Actual Behavior
+      description: Describe what actually happened and the step-by-step reproduction instructions.
+      placeholder: |
+        1. Open target application (e.g., Alacritty)
+        2. Press Super+Period to bring up TypEmoji
+        3. Search for "sparkles" and select it
+        4. Observe the issue...
+    validations:
+      required: true
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+      placeholder: "The selected emoji should be typed directly into the active application window."
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or Terminal Output
+      description: Terminal output from running `EmojiTyper --show` or logs from `/tmp/emojityper.log`.
+      render: shell

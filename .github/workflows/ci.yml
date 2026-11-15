@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Verify (Ubuntu 24.04)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            g++ \
+            qt6-base-dev \
+            qt6-tools-dev \
+            libx11-dev \
+            libxtst-dev \
+            fonts-noto-color-emoji
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_KDE=OFF
+
+      - name: Build with Ninja
+        run: |
+          cmake --build build --parallel
+
+      - name: Verify executable binary
+        run: |
+          test -f build/bin/EmojiTyper
+
+      - name: Sanity check executable
+        run: |
+          test -x build/bin/EmojiTyper
+          file build/bin/EmojiTyper
+          ls -la build/bin/EmojiTyper

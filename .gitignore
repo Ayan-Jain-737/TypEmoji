@@ -147,3 +147,10 @@ token.txt
 credentials*.json
 *.pem
 *.key
+
+# Generated Video Output
+output/
+promo-video/
+*.mp4
+*.webm
+

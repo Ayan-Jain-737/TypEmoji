@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TypEmoji Demo Scene</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    width: 880px;
+    height: 540px;
+    overflow: hidden;
+    background: #080c16;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    position: relative;
+    user-select: none;
+    color: #e2e8f0;
+  }
+
+  /* Rich modern desktop wallpaper with subtle ambient light orbs */
+  .wallpaper-mesh {
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 18% 12%, rgba(99, 102, 241, 0.22) 0%, transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(56, 189, 248, 0.18) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
+      linear-gradient(180deg, #090d1a 0%, #060913 100%);
+  }
+
+  /* Subtle desktop grid pattern */
+  .grid-pattern {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+  }
+
+  /* Terminal Host Window: Alacritty / Kitty style */
+  .terminal-window {
+    position: absolute;
+    top: 38px;
+    left: 48px;
+    width: 784px;
+    height: 464px;
+    background: rgba(13, 17, 28, 0.94);
+    backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Title bar */
+  .titlebar {
+    height: 44px;
+    background: rgba(10, 14, 24, 0.98);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    position: relative;
+  }
+
+  .traffic-lights {
+    display: flex;
+    gap: 8px;
+  }
+  .traffic-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .dot-close { background: #ef4444; border: 1px solid rgba(0,0,0,0.15); }
+  .dot-min { background: #f59e0b; border: 1px solid rgba(0,0,0,0.15); }
+  .dot-max { background: #10b981; border: 1px solid rgba(0,0,0,0.15); }
+
+  .window-title {
+    position: absolute;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    letter-spacing: 0.2px;
+    pointer-events: none;
+  }
+  .window-title svg { opacity: 0.8; stroke: #818cf8; }
+
+  .env-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 3px 9px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.3px;
+  }
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #38bdf8;
+    box-shadow: 0 0 8px #38bdf8;
+  }
+
+  /* Terminal content */
+  .terminal-body {
+    flex: 1;
+    padding: 26px 30px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace;
+    font-size: 14.5px;
+    line-height: 1.75;
+    color: #cbd5e1;
+  }
+
+  .comment { color: #64748b; font-style: italic; font-size: 13.5px; }
+  .prompt-row {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .prompt-user { color: #818cf8; font-weight: 600; }
+  .prompt-dir { color: #38bdf8; }
+  .prompt-git { color: #f43f5e; font-size: 13px; font-weight: 500; }
+
+  .cmd-line {
+    margin-top: 10px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    white-space: pre;
+    color: #f8fafc;
+  }
+  .cmd-arrow {
+    color: #10b981;
+    margin-right: 12px;
+    font-weight: bold;
+  }
+
+  .typed-text {
+    color: #f1f5f9;
+  }
+  .commit-flag {
+    color: #c084fc;
+  }
+  .commit-quote {
+    color: #fde047;
+  }
+  .commit-msg {
+    color: #fde047;
+  }
+
+  .emoji-injected {
+    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+    font-size: 21px;
+    vertical-align: middle;
+    margin: 0 3px;
+    display: inline-block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 9.5px;
+    height: 20px;
+    background: #60a5fa;
+    vertical-align: middle;
+    margin-left: 2px;
+    border-radius: 1px;
+    box-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
+  }
+  .cursor.hidden { opacity: 0; }
+
+  /* Hotkey HUD Badge */
+  .hotkey-hud {
+    position: absolute;
+    top: 92px;
+    left: 80px;
+    background: rgba(15, 23, 42, 0.98);
+    border: 1px solid rgba(129, 140, 248, 0.5);
+    box-shadow: 0 10px 32px rgba(99, 102, 241, 0.35), 0 2px 8px rgba(0, 0, 0, 0.6);
+    border-radius: 10px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #f1f5f9;
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 50;
+  }
+  .hotkey-hud.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  .kbd-chip {
+    background: #1e1b4b;
+    border: 1px solid #6366f1;
+    color: #c7d2fe;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    box-shadow: 0 2px 0 #4338ca;
+  }
+
+  /* TypEmoji Floating Qt6 Panel */
+  .typemoji-panel {
+    position: absolute;
+    top: 70px;
+    left: 430px;
+    width: 382px;
+    height: 420px;
+    background: #141722;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(99, 102, 241, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 100;
+  }
+  .typemoji-panel.visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  /* Panel Header with Search Pill */
+  .panel-header {
+    padding: 12px 14px 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .search-pill {
+    flex: 1;
+    height: 38px;
+    background: #1c202d;
+    border: 1px solid #333a4f;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 10px;
+  }
+  .search-pill.focused {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2.5px rgba(99, 102, 241, 0.25);
+  }
+  .search-icon {
+    color: #818cf8;
+    flex-shrink: 0;
+  }
+  .search-input-text {
+    font-size: 13.5px;
+    color: #f8fafc;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    letter-spacing: 0.2px;
+  }
+  .search-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 16px;
+    background: #818cf8;
+    margin-left: 2px;
+    border-radius: 1px;
+  }
+  .panel-close-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  /* Pill Category Bar */
+  .cat-bar {
+    display: flex;
+    padding: 0 12px 8px;
+    gap: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    overflow-x: hidden;
+  }
+  .cat-tab {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-family: 'Noto Color Emoji', sans-serif;
+    color: #94a3b8;
+    background: transparent;
+  }
+  .cat-tab.active {
+    background: #252b3d;
+    border: 1px solid #3b445f;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  /* Emoji Grid */
+  .emoji-grid {
+    flex: 1;
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    align-content: start;
+    overflow: hidden;
+  }
+  .grid-cell {
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Noto Color Emoji', sans-serif;
+    font-size: 24px;
+    background: #1a1e2b;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+  }
+  .grid-cell.selected {
+    background: #2e2a5a;
+    border: 2px solid #818cf8;
+    box-shadow: 0 0 16px rgba(129, 140, 248, 0.45);
+    transform: scale(1.05);
+  }
+
+  /* Elevated Preview Bar Footer */
+  .preview-footer {
+    height: 54px;
+    background: #10121a;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 12px;
+  }
+  .preview-tile {
+    width: 38px;
+    height: 38px;
+    background: #1e2230;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-family: 'Noto Color Emoji', sans-serif;
+  }
+  .preview-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+  .preview-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+  .preview-tags {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #94a3b8;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .preview-keycaps {
+    display: flex;
+    gap: 6px;
+  }
+  .preview-kbd {
+    background: #1e2230;
+    border: 1px solid #333a4d;
+    color: #cbd5e1;
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+  }
+  .preview-kbd.enter-active {
+    background: #4338ca;
+    border-color: #6366f1;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+  }
+
+  /* Clipboard Toast Notification */
+  .clipboard-toast {
+    position: absolute;
+    top: 52px;
+    right: 64px;
+    background: rgba(15, 23, 42, 0.98);
+    border: 1px solid #10b981;
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.25), 0 2px 6px rgba(0, 0, 0, 0.6);
+    border-radius: 10px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 200;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .clipboard-toast.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .toast-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .toast-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .toast-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+  .toast-desc {
+    font-size: 11px;
+    color: #94a3b8;
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+  <div class="wallpaper-mesh"></div>
+  <div class="grid-pattern"></div>
+
+  <!-- Terminal Window -->
+  <div class="terminal-window">
+    <div class="titlebar">
+      <div class="traffic-lights">
+        <div class="traffic-dot dot-close"></div>
+        <div class="traffic-dot dot-min"></div>
+        <div class="traffic-dot dot-max"></div>
+      </div>
+      <div class="window-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="4 17 10 11 4 5"></polyline>
+          <line x1="12" y1="19" x2="20" y2="19"></line>
+        </svg>
+        <span>furious@archlinux: ~/workspace/typemoji (kitty)</span>
+      </div>
+      <div class="env-badge">
+        <span class="pulse-dot"></span> Wayland
+      </div>
+    </div>
+
+    <div class="terminal-body">
+      <div class="comment"># TypEmoji background daemon listening globally</div>
+      <div class="comment"># Hotkey: Super + . • Zero clipboard overwrite</div>
+      <div class="prompt-row">
+        <span class="prompt-user">furious@archlinux</span>
+        <span class="prompt-dir">~/workspace/typemoji</span>
+        <span class="prompt-git">git:(main)</span>
+      </div>
+      <div class="cmd-line">
+        <span class="cmd-arrow">❯</span>
+        <span class="typed-text">git commit </span><span class="commit-flag">-m </span><span class="commit-quote">"</span><span id="cmd-prefix" class="commit-msg">feat: ship release </span><span id="injected-emoji" class="emoji-injected"></span><span id="cmd-suffix" class="commit-quote"></span><span id="term-cursor" class="cursor"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hotkey HUD -->
+  <div id="hotkey-hud" class="hotkey-hud">
+    <span>Hotkey:</span>
+    <span class="kbd-chip">Super</span>
+    <span>+</span>
+    <span class="kbd-chip">.</span>
+  </div>
+
+  <!-- TypEmoji Floating Qt6 Panel -->
+  <div id="typemoji-panel" class="typemoji-panel">
+    <!-- Header -->
+    <div class="panel-header">
+      <div id="search-pill" class="search-pill focused">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <div class="search-input-text">
+          <span id="search-query"></span>
+          <span id="search-cursor" class="search-cursor"></span>
+        </div>
+      </div>
+      <div class="panel-close-btn">✕</div>
+    </div>
+
+    <!-- Category Bar -->
+    <div class="cat-bar">
+      <div class="cat-tab">🕒</div>
+      <div id="tab-smileys" class="cat-tab">😀</div>
+      <div class="cat-tab">👋</div>
+      <div class="cat-tab">🐱</div>
+      <div class="cat-tab">🍕</div>
+      <div id="tab-travel" class="cat-tab active">🚀</div>
+      <div class="cat-tab">💡</div>
+      <div class="cat-tab">❤️</div>
+      <div class="cat-tab">🚩</div>
+      <div class="cat-tab">(•‿•)</div>
+    </div>
+
+    <!-- Emoji Grid -->
+    <div id="emoji-grid" class="emoji-grid">
+      <div id="cell-0" class="grid-cell selected">🚀</div>
+      <div id="cell-1" class="grid-cell">🛸</div>
+      <div id="cell-2" class="grid-cell">🛰️</div>
+      <div id="cell-3" class="grid-cell">☄️</div>
+      <div id="cell-4" class="grid-cell">🌌</div>
+      <div id="cell-5" class="grid-cell">✨</div>
+      <div id="cell-6" class="grid-cell">🔥</div>
+      <div id="cell-7" class="grid-cell">🎉</div>
+      <div id="cell-8" class="grid-cell">⚡</div>
+      <div id="cell-9" class="grid-cell">💡</div>
+      <div id="cell-10" class="grid-cell">🐧</div>
+      <div id="cell-11" class="grid-cell">❤️</div>
+      <div id="cell-12" class="grid-cell">⭐</div>
+      <div id="cell-13" class="grid-cell">🎯</div>
+      <div id="cell-14" class="grid-cell">💻</div>
+    </div>
+
+    <!-- Preview Footer -->
+    <div class="preview-footer">
+      <div id="preview-tile" class="preview-tile">🚀</div>
+      <div class="preview-info">
+        <div id="preview-title" class="preview-title">Rocket</div>
+        <div id="preview-tags" class="preview-tags">
+          <span>:rocket:</span>
+          <span>•</span>
+          <span>U+1F680</span>
+        </div>
+      </div>
+      <div class="preview-keycaps">
+        <div id="kbd-insert" class="preview-kbd">↵ Insert</div>
+        <div class="preview-kbd">⇧↵ Keep</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clipboard Toast -->
+  <div id="clipboard-toast" class="clipboard-toast">
+    <div class="toast-icon">✓</div>
+    <div class="toast-text">
+      <div class="toast-title">Zero Clipboard Overwrite</div>
+      <div class="toast-desc">Preserved: 'ghp_secretDeployKey...'</div>
+    </div>
+  </div>
+
+<script>
+  window.__fontsReady = false;
+  document.fonts.ready.then(() => {
+    window.__fontsReady = true;
+  });
+
+  const states = [
+    // 0..1: Terminal ready, blinking cursor
+    { emoji: '', suffix: '', cursor: true, hud: false, panel: false, query: '', enter: false, toast: false },
+    { emoji: '', suffix: '', cursor: false, hud: false, panel: false, query: '', enter: false, toast: false },
+    { emoji: '', suffix: '', cursor: true, hud: false, panel: false, query: '', enter: false, toast: false },
+
+    // 2..3: Super + . hotkey HUD flashes
+    { emoji: '', suffix: '', cursor: true, hud: true, panel: false, query: '', enter: false, toast: false },
+    { emoji: '', suffix: '', cursor: true, hud: true, panel: false, query: '', enter: false, toast: false },
+
+    // 4..8: TypEmoji panel opens, typing 'rocket'
+    { emoji: '', suffix: '', cursor: true, hud: false, panel: true, query: '', enter: false, toast: false },
+    { emoji: '', suffix: '', cursor: true, hud: false, panel: true, query: 'r', enter: false, toast: false },
+    { emoji: '', suffix: '', cursor: true, hud: false, panel: true, query: 'ro', enter: false, toast: false },
+    { emoji: '', suffix: '', cursor: true, hud: false, panel: true, query: 'rock', enter: false, toast: false },
+    { emoji: '', suffix: '', cursor: true, hud: false, panel: true, query: 'rocket', enter: false, toast: false },
+
+    // 9: Selected rocket focused
+    { emoji: '', suffix: '', cursor: true, hud: false, panel: true, query: 'rocket', enter: false, toast: false },
+
+    // 10: Enter key pressed (active state on Insert button)
+    { emoji: '', suffix: '', cursor: true, hud: false, panel: true, query: 'rocket', enter: true, toast: false },
+
+    // 11..16: Injected! Toast appears!
+    { emoji: '🚀', suffix: '"', cursor: true, hud: false, panel: false, query: '', enter: false, toast: true },
+    { emoji: '🚀', suffix: '"', cursor: false, hud: false, panel: false, query: '', enter: false, toast: true },
+    { emoji: '🚀', suffix: '"', cursor: true, hud: false, panel: false, query: '', enter: false, toast: true },
+    { emoji: '🚀', suffix: '"', cursor: false, hud: false, panel: false, query: '', enter: false, toast: true },
+    { emoji: '🚀', suffix: '"', cursor: true, hud: false, panel: false, query: '', enter: false, toast: true },
+    { emoji: '🚀', suffix: '"', cursor: true, hud: false, panel: false, query: '', enter: false, toast: true },
+  ];
+
+  window.setFrame = function(idx) {
+    const s = states[Math.min(idx, states.length - 1)];
+    
+    document.getElementById('injected-emoji').textContent = s.emoji;
+    document.getElementById('cmd-suffix').textContent = s.suffix;
+    
+    const cursor = document.getElementById('term-cursor');
+    if (s.cursor) cursor.classList.remove('hidden');
+    else cursor.classList.add('hidden');
+
+    const hud = document.getElementById('hotkey-hud');
+    if (s.hud) hud.classList.add('visible');
+    else hud.classList.remove('visible');
+
+    const panel = document.getElementById('typemoji-panel');
+    if (s.panel) panel.classList.add('visible');
+    else panel.classList.remove('visible');
+
+    document.getElementById('search-query').textContent = s.query;
+
+    const kbdInsert = document.getElementById('kbd-insert');
+    if (s.enter) kbdInsert.classList.add('enter-active');
+    else kbdInsert.classList.remove('enter-active');
+
+    const toast = document.getElementById('clipboard-toast');
+    if (s.toast) toast.classList.add('visible');
+    else toast.classList.remove('visible');
+  };
+
+  window.getFrameCount = function() {
+    return states.length;
+  };
+</script>
+</body>
+</html>

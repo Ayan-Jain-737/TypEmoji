@@ -28,6 +28,10 @@
 #include <QtWidgets/QWidgetAction>
 #include <QtWidgets/QGraphicsDropShadowEffect>
 #include <QtGui/QPainter>
+#include <QtGui/QWindow>
+#ifdef HAVE_LAYER_SHELL_QT
+#include <LayerShellQt/Window>
+#endif
 
 class EmojiDelegate : public QStyledItemDelegate {
 public:
@@ -65,10 +69,15 @@ public:
             bool isKaomoji = (subcat == "kaomoji" || cat == "Kaomoji" || codepoints.startsWith("KAO_") ||
                               emoji.contains('(') || emoji.contains(')') || emoji.contains('\\') ||
                               emoji.contains(QChar(0x30c4)) /* ツ */ || emoji.contains(QChar(0x30ce)) /* ノ */);
+            bool isSymbol = (codepoints.startsWith("SYM_") || subcat == "math" || subcat == "currency" ||
+                             subcat == "arrow" || subcat == "greek" || subcat == "typography");
 
             if (isKaomoji) {
                 f.setPointSize(9);
                 f.setFamily("JetBrains Mono, monospace, sans-serif");
+            } else if (isSymbol) {
+                f.setPointSize(19);
+                f.setFamilies({"Noto Sans Math", "Noto Sans Symbols", "JetBrains Mono", "sans-serif", "Noto Color Emoji"});
             } else {
                 f.setPointSize(22);
                 f.setFamilies({"Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji"});
@@ -132,6 +141,16 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
             if (!rect().contains(mapFromGlobal(QCursor::pos())) && !QApplication::activePopupWidget()) {
                 hidePanel();
             }
+        }
+    });
+
+    m_pressTimer = new QTimer(this);
+    m_pressTimer->setSingleShot(true);
+    m_pressTimer->setInterval(350);
+    connect(m_pressTimer, &QTimer::timeout, this, [this]() {
+        if (m_pressedIndex.isValid() && m_pressedIndex.data(EmojiModel::HasSkinTonesRole).toBool()) {
+            m_longPressTriggered = true;
+            onSkinToneRequested(m_pressedIndex);
         }
     });
 
@@ -889,6 +908,25 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
     QString name = m_proxyModel->data(index, EmojiModel::NameRole).toString();
     if (emoji.isEmpty()) return;
 
+    // Apply default preferred skin tone if selected in Preferences and emoji supports skin tones
+    Settings& settings = Settings::instance();
+    int toneIdx = settings.defaultSkinTone();
+    if (toneIdx > 0 && index.data(EmojiModel::HasSkinTonesRole).toBool()) {
+        static const QStringList toneCodes = {"", "1F3FB", "1F3FC", "1F3FD", "1F3FE", "1F3FF"};
+        if (toneIdx < toneCodes.size()) {
+            const QString& targetTone = toneCodes[toneIdx];
+            QVariantList variants = index.data(EmojiModel::SkinToneVariantsRole).toList();
+            for (const QVariant& v : variants) {
+                QVariantMap map = v.toMap();
+                if (map["codepoints"].toString().contains(targetTone, Qt::CaseInsensitive)) {
+                    emoji = map["emojiChar"].toString();
+                    name = map["name"].toString();
+                    break;
+                }
+            }
+        }
+    }
+
     if (m_isInjecting) {
         // Queue this emoji so rapid keystrokes/clicks are not dropped
         m_pendingEmoji = emoji;
@@ -899,7 +937,6 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
     bool keepOpen = (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier);
 
     // Update recent/frequent tracking (FIFO up to 20)
-    Settings& settings = Settings::instance();
     settings.addRecentEmoji(emoji);
     settings.incrementFrequency(emoji);
     settings.save();
@@ -1499,6 +1536,16 @@ bool EmojiPanel::eventFilter(QObject* watched, QEvent* event)
             return true;
         }
 
+        // Space or Menu key: open skin tone palette if current item has skin tones
+        if (key == Qt::Key_Space || key == Qt::Key_Menu) {
+            if (watched != m_searchEdit && curList && curList->currentIndex().isValid()) {
+                if (curList->currentIndex().data(EmojiModel::HasSkinTonesRole).toBool()) {
+                    onSkinToneRequested(curList->currentIndex());
+                    return true;
+                }
+            }
+        }
+
         // When focused on search edit:
         if (watched == m_searchEdit) {
             if (key == Qt::Key_Down) {
@@ -1586,9 +1633,21 @@ bool EmojiPanel::eventFilter(QObject* watched, QEvent* event)
         }
     }
 
-    // Detect mouse clicks outside the panel to close it (Plasma/Windows behavior)
+    // Handle mouse events: long-press for skin tone picker and click outside to dismiss
     if (event->type() == QEvent::MouseButtonPress) {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+        if (mouseEvent->button() == Qt::LeftButton) {
+            int curIdx = m_stackedWidget->currentIndex();
+            QListView* curList = (curIdx >= 0 && curIdx < m_listViews.size()) ? m_listViews[curIdx] : nullptr;
+            if (curList && (watched == curList || watched == curList->viewport())) {
+                QPoint pos = (watched == curList->viewport()) ? mouseEvent->pos() : curList->viewport()->mapFrom(curList, mouseEvent->pos());
+                m_pressedIndex = curList->indexAt(pos);
+                m_longPressTriggered = false;
+                if (m_pressedIndex.isValid() && m_pressedIndex.data(EmojiModel::HasSkinTonesRole).toBool()) {
+                    m_pressTimer->start();
+                }
+            }
+        }
         // Check if the click is outside our panel geometry
         if (isVisible() && !geometry().contains(mouseEvent->globalPosition().toPoint())) {
             // Don't hide if the click is on the tray icon (let tray handle it)
@@ -1596,6 +1655,14 @@ bool EmojiPanel::eventFilter(QObject* watched, QEvent* event)
             if (clickedWidget && !isAncestorOf(clickedWidget) && clickedWidget != this) {
                 hidePanel();
             }
+        }
+    } else if (event->type() == QEvent::MouseButtonRelease) {
+        if (m_pressTimer && m_pressTimer->isActive()) {
+            m_pressTimer->stop();
+        }
+        if (m_longPressTriggered) {
+            m_longPressTriggered = false;
+            return true;
         }
     }
     return QWidget::eventFilter(watched, event);

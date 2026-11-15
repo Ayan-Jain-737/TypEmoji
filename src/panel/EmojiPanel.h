@@ -101,4 +101,7 @@ private:
     QString m_pendingEmoji;
     bool m_wasActivated = false;
     QTimer* m_clickOutsideTimer = nullptr;
+    QTimer* m_pressTimer = nullptr;
+    QModelIndex m_pressedIndex;
+    bool m_longPressTriggered = false;
 };

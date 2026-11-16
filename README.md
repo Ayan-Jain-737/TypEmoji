@@ -39,11 +39,11 @@ curl -fsSL https://raw.githubusercontent.com/Ayan-Jain-737/TypEmoji/main/install
 
 | Distribution | One-Command Install |
 | :--- | :--- |
-| **Arch Linux / Manjaro** | `sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst` |
-| **Ubuntu / Debian / Mint** | `sudo apt install ./TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb` *(or via installer above)* |
-| **Fedora / RHEL** | `sudo dnf install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm` |
-| **openSUSE** | `sudo zypper install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm` |
-| **Universal Linux (.run)** | `chmod +x TypEmoji-2.3.0-Universal-Installer.run && ./TypEmoji-2.3.0-Universal-Installer.run` |
+| **Arch Linux / Manjaro** | `sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.1-Arch-Linux-x86_64.pkg.tar.zst` |
+| **Ubuntu / Debian / Mint** | `sudo apt install ./TypEmoji-2.3.1-Ubuntu-Debian-x86_64.deb` *(or via installer above)* |
+| **Fedora / RHEL** | `sudo dnf install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.1-Fedora-openSUSE-x86_64.rpm` |
+| **openSUSE** | `sudo zypper install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.1-Fedora-openSUSE-x86_64.rpm` |
+| **Universal Linux (.run)** | `chmod +x TypEmoji-2.3.1-Universal-Installer.run && ./TypEmoji-2.3.1-Universal-Installer.run` |
 
 All precompiled packages and standalone tarballs are available on the **[Releases Page](https://github.com/Ayan-Jain-737/TypEmoji/releases/latest)**.
 
@@ -72,8 +72,12 @@ TypEmoji gives you the missing native experience:
 
 ---
 
-## ✨ Features & What's New in v2.3.0
+## ✨ Features & What's New in v2.3.1
 
+- 📌 **Multi-Emoji Continuous Typing & Pin Mode (v2.3.1)**:
+  - **Seamless Multi-Emoji Typing**: Hold `Shift` while clicking or pressing `Enter` (`Shift + Click` or `Shift + Enter`) to keep the picker open and type multiple emojis in rapid succession.
+  - **Header Pin Toggle Button (`📌`)**: One-click persistent pin button in the header bar. When toggled on, every click and Enter key inserts emojis continuously without closing the panel.
+  - **Target Focus & Window Activation Protection**: Fixed premature panel dismissal caused by asynchronous paste events, with focus automatically returned to the emoji grid and target window state preserved across insertions.
 - 🎨 **Windows-Style Common Grouper & Colour Selector Bar**:
   - Deduplicates all **2,030 Fitzpatrick skin tone variants** under **388 clean base emojis** (eliminates 2,000+ duplicate rows).
   - Quick-select skin tones with a live 6-swatch bar (`👋 Default`, `👋🏻 Light`, `👋🏼 Medium-Light`, `👋🏽 Medium`, `👋🏾 Medium-Dark`, `👋🏿 Dark`) that updates the whole grid in real time.
@@ -116,7 +120,8 @@ TypEmoji gives you the missing native experience:
 - **Search**: Type immediately when the picker opens to filter emojis by name or keyword.
 - **Select & Type**:
   - `Click` or `Enter`: Types emoji and closes the panel.
-  - `Shift + Click` or `Shift + Enter`: Types emoji and keeps the panel open for multi-emoji typing.
+  - `Shift + Click` or `Shift + Enter`: Types emoji and keeps the panel open for continuous multi-emoji typing.
+  - `📌 Pin Button`: Toggle persistent multi-emoji mode so every selection keeps the panel active.
 - **Dismiss**: Press `Escape` or `Ctrl + W` (or click outside the window).
 - **Exit Daemon**: Press `Ctrl + Q` inside the panel, right-click tray -> **Exit**, or run `EmojiTyper --quit`.
 

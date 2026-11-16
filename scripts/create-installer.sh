@@ -6,13 +6,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build"
+VERSION=$(grep -oP 'project\(EmojiTyper VERSION \K[0-9.]+' "$PROJECT_ROOT/CMakeLists.txt" || echo "2.3.1")
 TAR_FILE="$(ls -t "$BUILD_DIR"/*-Linux.tar.gz 2>/dev/null | head -n1 || echo "")"
 if [[ -z "$TAR_FILE" || ! -f "$TAR_FILE" ]]; then
     cd "$BUILD_DIR"
     cpack -G TGZ
     TAR_FILE="$(ls -t "$BUILD_DIR"/*-Linux.tar.gz 2>/dev/null | head -n1)"
 fi
-OUTPUT_RUN="$BUILD_DIR/TypEmoji-2.3.0-Universal-Installer.run"
+OUTPUT_RUN="$BUILD_DIR/TypEmoji-${VERSION}-Universal-Installer.run"
 
 TEMP_HEADER="$(mktemp /tmp/installer_header_XXXXXX.sh)"
 

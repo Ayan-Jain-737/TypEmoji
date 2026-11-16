@@ -9,7 +9,7 @@
 # ==============================================================================
 set -euo pipefail
 
-VERSION="2.3.0"
+VERSION="2.3.1"
 GITHUB_REPO="Ayan-Jain-737/TypEmoji"
 RELEASE_BASE_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}"
 REPO_CLONE_URL="https://github.com/${GITHUB_REPO}.git"

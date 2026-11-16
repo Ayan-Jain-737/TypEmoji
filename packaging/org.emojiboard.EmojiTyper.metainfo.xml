@@ -36,6 +36,11 @@
     <name>Ayan Jain</name>
   </developer>
   <releases>
+    <release version="2.3.1" date="2026-11-17">
+      <description>
+        <p>Fixed multi-emoji continuous typing on Linux Wayland/X11 desktops, prevented premature focus loss dismissal during asynchronous injection, and added a header Pin button toggle for rapid multi-emoji typing.</p>
+      </description>
+    </release>
     <release version="2.3.0" date="2026-11-16">
       <description>
         <p>Windows-Style Common Grouper (grid deduplication), interactive colour and skin tone selector bar, instant variation flyout on corner triangle click or right-click, and live viewport repainting.</p>

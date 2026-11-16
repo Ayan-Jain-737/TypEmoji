@@ -8,7 +8,8 @@ build-*/
 cmake-build-*/
 bin/
 lib/
-dist/
+dist/*
+!dist/*.md
 
 # CMake artifacts & build caches
 CMakeFiles/

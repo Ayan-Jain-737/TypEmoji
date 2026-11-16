@@ -46,7 +46,7 @@ jobs:
         run: |
           mkdir -p dist
           VERSION="${GITHUB_REF_NAME#v}"
-          [ -z "$VERSION" ] && VERSION="2.3.0"
+          [ -z "$VERSION" ] && VERSION="2.3.1"
           DEB=$(find build -name "*.deb" | head -n 1)
           [ -n "$DEB" ] && cp "$DEB" "dist/TypEmoji-${VERSION}-Ubuntu-Debian-x86_64.deb"
           RUN=$(find build -name "*.run" | head -n 1)
@@ -85,7 +85,7 @@ jobs:
           cpack -G RPM
           mkdir -p ../dist
           VERSION="${GITHUB_REF_NAME#v}"
-          [ -z "$VERSION" ] && VERSION="2.3.0"
+          [ -z "$VERSION" ] && VERSION="2.3.1"
           RPM=$(find . -name "*.rpm" | head -n 1)
           [ -n "$RPM" ] && cp "$RPM" "../dist/TypEmoji-${VERSION}-Fedora-openSUSE-x86_64.rpm"
 
@@ -124,7 +124,7 @@ jobs:
           "
           mkdir -p dist
           VERSION="${GITHUB_REF_NAME#v}"
-          [ -z "$VERSION" ] && VERSION="2.3.0"
+          [ -z "$VERSION" ] && VERSION="2.3.1"
           PKG=$(find /tmp/pkgbuild/packaging -name "emojityper-2*.pkg.tar.zst" ! -name "*-debug*" | head -n 1)
           if [ -n "$PKG" ]; then
             cp "$PKG" "dist/TypEmoji-${VERSION}-Arch-Linux-x86_64.pkg.tar.zst"

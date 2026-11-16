@@ -14,6 +14,7 @@
     recentEmojis: ['🚀', '🐧', '🔥', '✨', '💻', '💡', '🎉'],
     isPanelVisible: true,
     shiftKeyDown: false,
+    isPinned: false,
     defaultSkinTone: 0
   };
 
@@ -183,6 +184,7 @@
     const panelWrapper = document.getElementById('virtual-typemoji-panel');
     const searchInput = document.getElementById('sim-search-input');
     const searchClear = document.getElementById('sim-search-clear');
+    const panelPin = document.getElementById('sim-panel-pin');
     const panelClose = document.getElementById('sim-panel-close');
     const gridContainer = document.getElementById('sim-grid-container');
     const categoryTabs = document.querySelectorAll('.cat-tab');
@@ -291,7 +293,7 @@
 
         // Click injects into active host window
         btn.addEventListener('click', (e) => {
-          injectEmoji({ ...item, char: displayChar }, e.shiftKey || state.shiftKeyDown);
+          injectEmoji({ ...item, char: displayChar }, e.shiftKey || state.shiftKeyDown || state.isPinned);
         });
 
         fragment.appendChild(btn);
@@ -350,7 +352,7 @@
       }
 
       if (keepOpen) {
-        showToast(`Typed "${item.char}" (Shift active: Panel stays open)`, '⚡');
+        showToast(`Typed "${item.char}" (${state.isPinned ? 'Pin Mode 📌' : 'Shift active ⚡'}: Panel stays open)`, '⚡');
       } else {
         showToast(`Injected "${item.char}" directly into active window!`, '⌨️');
         // Simulate auto-dismiss feedback
@@ -433,6 +435,15 @@
         state.searchQuery = '';
         searchClear.style.display = 'none';
         renderGrid();
+      });
+    }
+
+    if (panelPin) {
+      panelPin.addEventListener('click', () => {
+        state.isPinned = !state.isPinned;
+        panelPin.classList.toggle('pinned', state.isPinned);
+        panelPin.setAttribute('aria-pressed', state.isPinned ? 'true' : 'false');
+        showToast(state.isPinned ? 'Multi-Emoji Mode Pinned 📌' : 'Unpinned — Single Click Mode', '📌');
       });
     }
 
@@ -571,51 +582,51 @@
     const distroData = {
       arch: {
         title: 'Terminal — Install on Arch Linux / Manjaro',
-        cmd: 'sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst',
-        artifact: 'TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst',
+        cmd: 'sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.1/TypEmoji-2.3.1-Arch-Linux-x86_64.pkg.tar.zst',
+        artifact: 'TypEmoji-2.3.1-Arch-Linux-x86_64.pkg.tar.zst',
         size: '~774 KB',
         deps: 'qt6-base, libx11, libxtst (optional: kglobalaccel)',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst'
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.1/TypEmoji-2.3.1-Arch-Linux-x86_64.pkg.tar.zst'
       },
       ubuntu: {
         title: 'Terminal — Install on Ubuntu / Debian / Linux Mint',
-        cmd: 'wget https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb && sudo apt install ./TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb',
-        artifact: 'TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb',
+        cmd: 'wget https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.1/TypEmoji-2.3.1-Ubuntu-Debian-x86_64.deb && sudo apt install ./TypEmoji-2.3.1-Ubuntu-Debian-x86_64.deb',
+        artifact: 'TypEmoji-2.3.1-Ubuntu-Debian-x86_64.deb',
         size: '~1.1 MB',
         deps: 'libqt6core6, libqt6widgets6, libx11-6, libxtst6, ydotool / wtype',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb'
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.1/TypEmoji-2.3.1-Ubuntu-Debian-x86_64.deb'
       },
       fedora: {
         title: 'Terminal — Install on Fedora 39/40 / RHEL 9',
-        cmd: 'sudo dnf install https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm',
-        artifact: 'TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm',
+        cmd: 'sudo dnf install https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.1/TypEmoji-2.3.1-Fedora-openSUSE-x86_64.rpm',
+        artifact: 'TypEmoji-2.3.1-Fedora-openSUSE-x86_64.rpm',
         size: '~1.1 MB',
         deps: 'qt6-qtbase, libX11, libXtst, kf6-kglobalaccel (optional)',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm'
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.1/TypEmoji-2.3.1-Fedora-openSUSE-x86_64.rpm'
       },
       opensuse: {
         title: 'Terminal — Install on openSUSE Tumbleweed / Leap',
-        cmd: 'sudo zypper install https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm',
-        artifact: 'TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm',
+        cmd: 'sudo zypper install https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.1/TypEmoji-2.3.1-Fedora-openSUSE-x86_64.rpm',
+        artifact: 'TypEmoji-2.3.1-Fedora-openSUSE-x86_64.rpm',
         size: '~1.1 MB',
         deps: 'libQt6Core6, libQt6Widgets6, libX11-6, libXtst6',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm'
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.1/TypEmoji-2.3.1-Fedora-openSUSE-x86_64.rpm'
       },
       universal: {
         title: 'Terminal — Universal .run Self-Extracting Installer',
-        cmd: 'wget https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Universal-Installer.run && chmod +x TypEmoji-2.3.0-Universal-Installer.run && ./TypEmoji-2.3.0-Universal-Installer.run',
-        artifact: 'TypEmoji-2.3.0-Universal-Installer.run',
+        cmd: 'wget https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.1/TypEmoji-2.3.1-Universal-Installer.run && chmod +x TypEmoji-2.3.1-Universal-Installer.run && ./TypEmoji-2.3.1-Universal-Installer.run',
+        artifact: 'TypEmoji-2.3.1-Universal-Installer.run',
         size: '~1.1 MB',
         deps: 'Self-contained binary installer with desktop & autostart integration',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Universal-Installer.run'
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.1/TypEmoji-2.3.1-Universal-Installer.run'
       },
       source: {
         title: 'Terminal — Compile from Source (C++23 & Qt 6)',
         cmd: 'git clone https://github.com/Ayan-Jain-737/TypEmoji.git && cd TypEmoji && cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build && sudo cmake --install build',
-        artifact: 'TypEmoji-2.3.0-Portable-Linux-x86_64.tar.gz',
+        artifact: 'TypEmoji-2.3.1-Portable-Linux-x86_64.tar.gz',
         size: 'Source Tarball',
         deps: 'cmake >= 3.25, ninja, g++-13 / clang-16, qt6-base, libx11-dev',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Portable-Linux-x86_64.tar.gz'
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.1/TypEmoji-2.3.1-Portable-Linux-x86_64.tar.gz'
       }
     };
 

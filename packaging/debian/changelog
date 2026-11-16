@@ -1,3 +1,13 @@
+typemoji (2.3.1-1) unstable; urgency=medium
+
+  * Fix multi-emoji continuous typing on Linux Wayland and X11 desktops.
+  * Resolve premature window activation loss during asynchronous emoji injection.
+  * Add header Pin button toggle (📌) for one-click continuous multi-emoji typing.
+  * Prevent target application state loss across rapid consecutive insertions.
+  * Atomic KWin script sequence numbering to avoid script ID collisions.
+
+ -- TypEmoji Contributors <contact@typemoji.org>  Tue, 17 Nov 2026 00:30:00 +0530
+
 typemoji (2.3.0-1) unstable; urgency=medium
 
   * Windows-Style Common Grouper and grid deduplication (388 base emojis).

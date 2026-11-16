@@ -45,12 +45,14 @@ jobs:
       - name: Rename Packages for Clarity
         run: |
           mkdir -p dist
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ -z "$VERSION" ] && VERSION="2.3.0"
           DEB=$(find build -name "*.deb" | head -n 1)
-          [ -n "$DEB" ] && cp "$DEB" dist/TypEmoji-2.1.0-Ubuntu-Debian-x86_64.deb
+          [ -n "$DEB" ] && cp "$DEB" "dist/TypEmoji-${VERSION}-Ubuntu-Debian-x86_64.deb"
           RUN=$(find build -name "*.run" | head -n 1)
-          [ -n "$RUN" ] && cp "$RUN" dist/TypEmoji-2.1.0-Universal-Installer.run
+          [ -n "$RUN" ] && cp "$RUN" "dist/TypEmoji-${VERSION}-Universal-Installer.run"
           TGZ=$(find build -name "*.tar.gz" | head -n 1)
-          [ -n "$TGZ" ] && cp "$TGZ" dist/TypEmoji-2.1.0-Portable-Linux-x86_64.tar.gz
+          [ -n "$TGZ" ] && cp "$TGZ" "dist/TypEmoji-${VERSION}-Portable-Linux-x86_64.tar.gz"
           ls -la dist/
 
       - name: Upload artifacts
@@ -82,8 +84,10 @@ jobs:
           cd build
           cpack -G RPM
           mkdir -p ../dist
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ -z "$VERSION" ] && VERSION="2.3.0"
           RPM=$(find . -name "*.rpm" | head -n 1)
-          [ -n "$RPM" ] && cp "$RPM" ../dist/TypEmoji-2.1.0-Fedora-openSUSE-x86_64.rpm
+          [ -n "$RPM" ] && cp "$RPM" "../dist/TypEmoji-${VERSION}-Fedora-openSUSE-x86_64.rpm"
 
       - name: Upload RPM artifact
         uses: actions/upload-artifact@v4
@@ -119,9 +123,11 @@ jobs:
             makepkg -s --noconfirm
           "
           mkdir -p dist
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ -z "$VERSION" ] && VERSION="2.3.0"
           PKG=$(find /tmp/pkgbuild/packaging -name "emojityper-2*.pkg.tar.zst" ! -name "*-debug*" | head -n 1)
           if [ -n "$PKG" ]; then
-            cp "$PKG" dist/TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst
+            cp "$PKG" "dist/TypEmoji-${VERSION}-Arch-Linux-x86_64.pkg.tar.zst"
           fi
           ls -la dist/
 

@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.0] - 2026-11-16
 
+### Fixed
+- **Instant Model Viewport Repaints**: Fixed Qt model notification by emitting full-range `dataChanged` without restrictive custom roles so `QListView` unconditionally updates and repaints every cell immediately when the skin tone swatch changes.
+- **Direct Corner Triangle Click**: Clicking directly on the bottom-right corner triangle indicator of any tone-capable emoji now opens the variation flyout immediately without requiring a long press or right click.
+- **Flyout Outside-Dismiss Protection**: Guarded panel auto-hide during popup mouse interactions so clicking options inside the skin tone menu does not dismiss the parent panel prematurely.
+- **Binary Daemon Synchronization**: Updated local launcher and user systemd service to point to the freshly built binary at `~/.local/bin/EmojiTyper`.
+
 ### Added
 - **Windows-Style Common Grouper (Grid Deduplication)**: Grouped all 2,030 Unicode Fitzpatrick skin tone variants under their base emojis with 0 unmatched sequences across the entire dataset. "People & Body" and search views now present a clean, un-cluttered grid of base emojis (collapsed from 2,418 duplicate entries down to 388 base emojis).
 - **Interactive Colour & Skin Tone Selector Bar**: Added a Windows 11-style horizontal swatch bar (`👋 Default (Yellow)`, `👋🏻 Light`, `👋🏼 Medium-Light`, `👋🏽 Medium`, `👋🏾 Medium-Dark`, `👋🏿 Dark`) with smart visibility (displays on tone-capable categories and search results, hides on Objects/Symbols/Flags/Kaomoji).

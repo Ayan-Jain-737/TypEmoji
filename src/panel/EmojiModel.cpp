@@ -21,7 +21,7 @@ EmojiModel::EmojiModel(EmojiDatabase* database, QObject* parent)
         Q_UNUSED(tone);
         int rows = rowCount();
         if (rows > 0) {
-            emit dataChanged(index(0, 0), index(rows - 1, 0), {EmojiCharRole, NameRole, CodepointsRole});
+            emit dataChanged(index(0, 0), index(rows - 1, 0));
         }
     });
 }
@@ -69,6 +69,9 @@ QVariant EmojiModel::data(const QModelIndex& index, int role) const
         return m_isRecentCategory ? QString("Recent") : entry->category;
     case SubcategoryRole:
         return entry->subcategory;
+    case Qt::ToolTipRole:
+        return entry->name;
+    case Qt::DisplayRole:
     case EmojiCharRole: {
         if (!m_isRecentCategory && entry->hasSkinTones && m_database) {
             int tone = Settings::instance().defaultSkinTone();

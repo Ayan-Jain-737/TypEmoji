@@ -207,6 +207,11 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
     connect(&Settings::instance(), &Settings::defaultSkinToneChanged, this, [this](int tone) {
         Q_UNUSED(tone);
         updateSkinToneBarSelection();
+        for (QListView* lv : m_listViews) {
+            if (lv && lv->viewport()) {
+                lv->viewport()->update();
+            }
+        }
     });
 
     if (qApp) {
@@ -437,6 +442,11 @@ void EmojiPanel::setupSkinToneBar()
             Settings::instance().setDefaultSkinTone(i);
             Settings::instance().save();
             updateSkinToneBarSelection();
+            for (QListView* lv : m_listViews) {
+                if (lv && lv->viewport()) {
+                    lv->viewport()->update();
+                }
+            }
         });
 
         barLayout->addWidget(btn);
@@ -1127,29 +1137,12 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
 {
     if (!index.isValid()) return;
 
-    // Extract emoji and name immediately before anything else
+    // Extract emoji and name immediately (EmojiModel::data already accurately resolves the active preferred skin tone variant)
     QString emoji = m_proxyModel->data(index, EmojiModel::EmojiCharRole).toString();
     QString name = m_proxyModel->data(index, EmojiModel::NameRole).toString();
     if (emoji.isEmpty()) return;
 
-    // Apply default preferred skin tone if selected in Preferences and emoji supports skin tones
     Settings& settings = Settings::instance();
-    int toneIdx = settings.defaultSkinTone();
-    if (toneIdx > 0 && index.data(EmojiModel::HasSkinTonesRole).toBool()) {
-        static const QStringList toneCodes = {"", "1F3FB", "1F3FC", "1F3FD", "1F3FE", "1F3FF"};
-        if (toneIdx < toneCodes.size()) {
-            const QString& targetTone = toneCodes[toneIdx];
-            QVariantList variants = index.data(EmojiModel::SkinToneVariantsRole).toList();
-            for (const QVariant& v : variants) {
-                QVariantMap map = v.toMap();
-                if (map["codepoints"].toString().contains(targetTone, Qt::CaseInsensitive)) {
-                    emoji = map["emojiChar"].toString();
-                    name = map["name"].toString();
-                    break;
-                }
-            }
-        }
-    }
 
     if (m_isInjecting) {
         // Queue this emoji so rapid keystrokes/clicks are not dropped
@@ -1452,9 +1445,15 @@ void EmojiPanel::onSkinToneRequested(const QModelIndex& index)
     int curIdx = m_stackedWidget->currentIndex();
     QListView* curList = (curIdx >= 0 && curIdx < m_listViews.size()) ? m_listViews[curIdx] : nullptr;
     QPoint globalPos;
-    if (curList) {
+    if (curList && curList->viewport()) {
         QRect cellRect = curList->visualRect(index);
-        globalPos = curList->mapToGlobal(cellRect.topLeft() - QPoint(10, 44));
+        QPoint cellGlobal = curList->viewport()->mapToGlobal(cellRect.topLeft());
+        int popupH = 46;
+        if (cellGlobal.y() - popupH < 10) {
+            globalPos = curList->viewport()->mapToGlobal(cellRect.bottomLeft() + QPoint(-10, 4));
+        } else {
+            globalPos = cellGlobal - QPoint(10, popupH);
+        }
     } else {
         globalPos = QCursor::pos();
     }
@@ -1959,15 +1958,33 @@ bool EmojiPanel::eventFilter(QObject* watched, QEvent* event)
                 m_pressedIndex = curList->indexAt(pos);
                 m_longPressTriggered = false;
                 if (m_pressedIndex.isValid() && m_pressedIndex.data(EmojiModel::HasSkinTonesRole).toBool()) {
+                    QRect cellRect = curList->visualRect(m_pressedIndex);
+                    // Single direct click on bottom-right corner triangle indicator opens choice flyout immediately
+                    if (pos.x() >= cellRect.right() - 12 && pos.y() >= cellRect.bottom() - 12) {
+                        m_longPressTriggered = true;
+                        onSkinToneRequested(m_pressedIndex);
+                        return true;
+                    }
                     m_pressTimer->start();
                 }
             }
         }
         // Check if the click is outside our panel geometry
         if (isVisible() && !geometry().contains(mouseEvent->globalPosition().toPoint())) {
-            // Don't hide if the click is on the tray icon (let tray handle it)
+            // Don't hide if a popup menu is currently active or if click is on a popup window/menu
+            if (QApplication::activePopupWidget()) {
+                return false;
+            }
             QWidget* clickedWidget = QApplication::widgetAt(mouseEvent->globalPosition().toPoint());
-            if (clickedWidget && !isAncestorOf(clickedWidget) && clickedWidget != this) {
+            if (clickedWidget) {
+                if (clickedWidget == this || isAncestorOf(clickedWidget)) {
+                    return false;
+                }
+                if (clickedWidget->inherits("QMenu") || (clickedWidget->window() && clickedWidget->window()->inherits("QMenu"))) {
+                    return false;
+                }
+                hidePanel();
+            } else {
                 hidePanel();
             }
         }

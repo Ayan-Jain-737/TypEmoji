@@ -43,6 +43,8 @@ private slots:
     void onScaleSliderChanged(int value);
     void onKeySequenceChanged(const QKeySequence& sequence);
     void onResetShortcutClicked();
+    void onExportHistoryClicked();
+    void onImportHistoryClicked();
     void onClearHistoryClicked();
     void onResetSizeClicked();
     void onSkinToneButtonClicked(int id);
@@ -69,6 +71,8 @@ private:
     QPushButton* m_skinToneButtons[6] = {nullptr};
     int m_selectedSkinTone = 0;
     QLabel* m_historyStatusLabel = nullptr;
+    QPushButton* m_exportHistoryBtn = nullptr;
+    QPushButton* m_importHistoryBtn = nullptr;
     QPushButton* m_clearHistoryBtn = nullptr;
 
     // Shortcuts Tab widgets
@@ -81,6 +85,7 @@ private:
     QComboBox* m_themeCombo = nullptr;
     QLabel* m_themeDescLabel = nullptr;
     QComboBox* m_sizePresetCombo = nullptr;
+    QComboBox* m_gridDensityCombo = nullptr;
     QSlider* m_scaleSlider = nullptr;
     QLabel* m_scaleLabel = nullptr;
     QLabel* m_currentSizeLabel = nullptr;

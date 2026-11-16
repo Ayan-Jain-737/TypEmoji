@@ -1147,34 +1147,114 @@ void EmojiDatabase::loadKaomoji()
     };
 
     static const KaomojiDef kaomojiList[] = {
-        {"(•‿•)", "Happy Face", "happy smile cute joyful face"},
-        {"(◕‿◕✿)", "Flower Girl", "flower girl cheerful cute anime happy"},
-        {"(╯°□°)╯︵ ┻━┻", "Table Flip", "table flip rage angry smash tableflip"},
-        {"┬─┬ノ( º _ ºノ)", "Put Table Back", "calm respect put table back unflip"},
-        {"¯\\_(ツ)_/¯", "Shrug", "shrug whatever idk don't know care"},
-        {"( ͡° ͜ʖ ͡°)", "Lenny Face", "lenny face smirk mischief naughty eyes"},
-        {"(｡♥‿♥｡)", "Heart Eyes", "heart eyes love crush inlove romance"},
-        {"ʕ•ᴥ•ʔ", "Little Bear", "bear animal cute kawaii teddy"},
-        {"(>_<)", "Troubled", "troubled annoyed frustrated ouch"},
-        {"(づ｡◕‿‿◕｡)づ", "Hugs", "hug hugs embrace love cute warm"},
-        {"(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧", "Magic Sparkles", "magic sparkle glitter happy cheer excited"},
-        {"ಠ_ಠ", "Look of Disapproval", "disapproval stare glare angry judging suspicious"},
-        {"(☞ﾟヮﾟ)☞", "Finger Guns", "finger guns you got it nice hey bro"},
-        {"(T_T)", "Crying Face", "cry crying tears sad weep upset"},
-        {"(¬_¬)", "Side Glance", "glance side eye suspicious unimpressed whatever"},
-        {"(づ￣ ³￣)づ", "Blowing Kiss", "kiss kissing love affection sweetheart"},
-        {"(ง'̀-'́)ง", "Ready to Fight", "fight boxer punch challenge angry tough"},
-        {"(・_・;)", "Nervous Sweat", "nervous sweat sweatdrop anxious worried"},
-        {"(・ω・)", "Cat Face", "cat face kitty pet cute mouth"},
-        {"(=^･ω･^=)", "Cat with Ears", "cat kitten ears whiskers meow"},
-        {"(｡•́︿•̀｡)", "Sad Pout", "sad pout crying lonely hurt"},
-        {"(✿◠‿◠)", "Blushing Flower", "blush shy gentle sweet pretty"},
-        {"(¬‿¬)", "Smug Grin", "smug grin knowing evil smile"},
-        {"(；一_一)", "Doubtful", "doubt skeptical squint suspect annoyed"},
-        {"(★‿★)", "Star Struck", "star eyes wow amazing dazzle"},
-        {"(⌐■_■)", "Deal With It", "deal with it sunglasses cool boss"},
-        {"(°ロ°) !", "Shocked", "shocked gasp surprise startled what"},
-        {"(ノಠ益ಠ)ノ彡┻━┻", "Rage Table Flip", "rage flip fury table furious crazy"}
+        // --- 1. Greetings & Waving ---
+        {"( ´ ∀ ` )ﾉ", "Waving Hello", "greeting wave waving hello hi greet greetings bye farewell yo see ya cheerful"},
+        {"(・∀・)ノ", "Friendly Wave", "greeting wave friendly hand hello hi greet greetings bye casual happy"},
+        {"＼(＾▽＾)／", "Joyful Greeting", "greeting joy joyful welcome cheer hello hi yay hands up excited hooray celebrate"},
+        {"( ^_^)／", "Simple Wave", "greeting wave waving hand hello hi greet friendly bye farewell casual"},
+        {"(*°∀°)=3", "Excited Greeting", "greeting excited pant huff pumped energetic hello enthusiastic yay hi"},
+        {"( ´ ▽ ` )ﾉ", "Gentle Wave", "greeting gentle wave soft smile hello hi waving bye farewell friend"},
+        {"(￣▽￣)ノ", "Casual Wave", "greeting casual wave relaxed hello hey yo sup greet bye chill"},
+        {"(*＾▽＾)／", "Happy Wave", "greeting happy wave cheerful hello hi welcome excited glad friendly"},
+
+        // --- 2. Animals & Pets (Cats, Dogs, Bears) ---
+        {"(=^･ｪ･^=)", "Kitten Face", "animal animals pet pets cat kitten kitty whiskers meow ears feline cute"},
+        {"( =①ω①=)", "Wide-Eyed Cat", "animal animals pet pets cat kitten kitty glowing eyes whiskers meow feline"},
+        {"▼(´ᴥ`)▼", "Floppy-Eared Dog", "animal animals pet pets dog puppy doge hound canine ears cute woof bark"},
+        {"(ᵔᴥᵔ)", "Baby Bear", "animal animals pet pets bear cub baby cute polar teddy kawaii"},
+        {"(=^･ω･^=)丿", "Waving Cat", "animal animals pet pets cat kitten waving paw kitty meow hello bye"},
+        {"U^ｪ^U", "Happy Doggy", "animal animals pet pets dog puppy hound pup bark woof canine happy"},
+        {"ʕ•ᴥ•ʔ", "Little Bear", "animal animals pet pets bear cute kawaii teddy brown polar cub beast"},
+        {"(=^･ω･^=)", "Cat with Ears", "animal animals pet pets cat kitten ears whiskers meow kitty feline"},
+        {"(・ω・)", "Cat Face", "animal animals pet pets cat face kitty cute mouth whiskers innocent"},
+        {"ฅ^•ﻌ•^ฅ", "Playful Kitty", "animal animals pet pets cat paws kitten kitty playful claws meow feline"},
+
+        // --- 3. Sleepy & Tired ---
+        {"(∪｡∪)｡｡｡zzz", "Deep Sleep", "sleepy tired sleep sleeping zzz dreaming nap bed rest peaceful snore"},
+        {"(￣o￣) zzZZ", "Snoring Snooze", "sleepy tired sleep snoring snooze yawning asleep nap rest exhausted fatigue"},
+        {"(－_－) zzz", "Dozing Off", "sleepy tired sleep dozing resting weary nap eyes closed zzz slumber"},
+        {"(ρω-｡)", "Sleepy Eye Rub", "sleepy tired rubbing eyes waking up sleepyhead cute yawn drowsy groggy"},
+        {"(＿ ＿*) zzZ", "Passed Out Sleep", "sleepy tired asleep passed out exhausted face down sleeping bed zzz collapse"},
+        {"(ᴗ_ ᴗ。)", "Weary and Drained", "sleepy tired weary drained sigh exhausted down low sad gloomy fatigue"},
+        {"(￣ρ￣)..zzZZ", "Drooling Snooze", "sleepy tired sleep drooling asleep silly funny dream rest nap slumber"},
+        {"(－ω－) zzz", "Peaceful Slumber", "sleepy tired peaceful sleep nap calm relaxed resting zzz night quiet"},
+
+        // --- 4. Cheerful, Dancing & Celebrating ---
+        {"♪ヽ( ⌒o⌒)人(⌒-⌒ )v ♪", "Dancing Friends", "cheerful dancing celebrating dance music party celebrate celebration singing groove happy friends"},
+        {"└(＾＾)┐", "Step Dance Left", "cheerful dancing celebrating dance step happy celebration groove moving beat fun music"},
+        {"┌(＾＾)┘", "Step Dance Right", "cheerful dancing celebrating dance party disco fun happy rhythm music beat"},
+        {"(ノ^∇^)ノ", "Joyful Celebration", "cheerful dancing celebrating celebrate joy victory cheering yay hooray happy excited"},
+        {"(*^▽^*)", "Radiant Smile", "cheerful happy radiant smile laughing joyful delighted beam grin cheerful excited"},
+        {"ヽ(´▽`)/", "Carefree Joy", "cheerful carefree joy hurrah yay hands up excited thrilled glad cheerful"},
+        {"(•‿•)", "Happy Face", "cheerful happy smile cute joyful face pleasant glad beaming cheerful"},
+        {"(◕‿◕✿)", "Flower Girl", "cheerful flower girl cute anime happy pretty sweet bloom cheerful"},
+        {"(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧", "Magic Sparkles", "cheerful magic sparkle glitter happy cheer excited celebration fairy star sparkle"},
+        {"(★‿★)", "Star Struck", "cheerful star eyes wow amazing dazzle impressed sparkly excited cheer celebration"},
+
+        // --- 5. Bowing, Apology & Gratitude ---
+        {"(m;_ _)m", "Deep Apology Bow", "bowing apology gratitude bow sorry forgive me excuse regret humble pardon"},
+        {"(_ _ ; )", "Sweating Apology", "bowing apology gratitude sweat nervous sorry awkward embarrassed forgive mistake oops"},
+        {"(＿ ＿*)", "Humble Bow", "bowing apology gratitude bow humble respect polite excuse me thanks arigato courtesy"},
+        {"(シ_ _)シ", "Kowtow Bow", "bowing apology gratitude kowtow bow prostrate worship deep respect thanks reverence praise"},
+        {"<(_ _)>", "Formal Bow", "bowing apology gratitude formal bow polite greeting respect sincere thank you excuse me"},
+        {"m(_ _)m", "Dogeza Bow", "bowing apology gratitude dogeza bow deep apologize begging please sorry respect honor"},
+        {"(*_ _)人", "Praying Apology", "bowing apology gratitude praying pray please sorry plead forgive excuse thanks grateful"},
+        {"(シ. .)シ", "Prostrating Thanks", "bowing apology gratitude gratitude thank you bow humble indebted worship respect sincere"},
+
+        // --- 6. Love, Romance & Affection ---
+        {"(♡-_-♡)", "Dreamy Love", "love romance affection heart affectionate dreamy sweet crush romantic smitten inlove"},
+        {"(灬♥ω♥灬)", "Blushing Love", "love romance affection blushing heart passion crush adoration in love sweet tender"},
+        {"(ര_ര๑)", "Shy Admiration", "love romance affection shy admiration tender cute gaze crush sweet innocent"},
+        {"(ღ˘⌣˘ღ)", "Peaceful Bliss", "love romance affection peaceful bliss happy contented warm tender fond serene love"},
+        {"(人´3` )⌒♡", "Blowing Love Heart", "love romance affection kiss blowing kiss heart romance sweetheart muah flirting"},
+        {"(｡♥‿♥｡)", "Heart Eyes", "love romance affection heart eyes crush inlove romance adorable smitten infatuated"},
+        {"(づ￣ ³￣)づ", "Blowing Kiss", "love romance affection kiss kissing love sweetheart romantic smooch pucker darling"},
+        {"(づ｡◕‿‿◕｡)づ", "Hugs", "love romance affection hug hugs embrace love cute warm affectionate squeeze cuddle"},
+        {"(✿◠‿◠)", "Blushing Flower", "love romance affection blush shy gentle sweet pretty lovely charming maiden tender"},
+        {"(´,,•ω•,,)♡", "Heart Flutter", "love romance affection flutter heart blush fond innocent darling warm cute loving"},
+
+        // --- 7. Shock, Surprise & Disbelief ---
+        {"(⊙_⊙)", "Wide-Eyed Shock", "shock surprise disbelief wide eyes stunned disbelief what stare omg startled"},
+        {"( ; ﾟДﾟ)", "Sweating Shock", "shock surprise disbelief sweating scared panic gasping terrified stunned frightened"},
+        {"(O_O;)", "Nervous Shock", "shock surprise disbelief nervous anxiety disbelief wide eyes sweat sweating startled"},
+        {"(°ロ°) !", "Gasping Shock", "shock surprise disbelief shocked gasp surprise startled what screaming scream stunned"},
+        {"Σ(ﾟДﾟ)", "Sudden Jolt", "shock surprise disbelief sudden jolt surprised stunned yikes whoa jumped alarm gasp"},
+        {"(・_・;)", "Nervous Sweat", "shock surprise disbelief nervous sweat sweatdrop anxious worried uneasy awkward concerned"},
+        {"(；一_一)", "Doubtful", "shock surprise disbelief doubt skeptical squint suspect annoyed judging suspicious stare"},
+        {"ಠ_ಠ", "Look of Disapproval", "shock surprise disbelief disapproval stare glare angry judging suspicious stern serious"},
+        {"((( ;°Д°)))", "Trembling Horror", "shock surprise disbelief tremble trembling shivering scared fright horror terrified shudder"},
+
+        // --- 8. Shrug, Smug & Cool ---
+        {"¯\\_(ツ)_/¯", "Shrug", "shrug smug cool whatever idk don't know care clueless meh neutral who knows"},
+        {"(¬‿¬)", "Smug Grin", "shrug smug cool grin knowing evil smile sneaky sly cocky clever smirk"},
+        {"( ͡° ͜ʖ ͡°)", "Lenny Face", "shrug smug cool lenny face smirk mischief naughty eyes creepy funny meme suggestive"},
+        {"(⌐■_■)", "Deal With It", "shrug smug cool deal with it sunglasses boss shades badass slick swagger"},
+        {"(￣▽￣)", "Smug Satisfaction", "shrug smug cool satisfied relaxed grinning complacent content easygoing chill grin"},
+        {"(¬_¬)", "Side Glance", "shrug smug cool glance side eye suspicious unimpressed whatever skeptical judge"},
+        {"(☞ﾟヮﾟ)☞", "Finger Guns", "shrug smug cool finger guns you got it nice hey bro wink cool point ayy"},
+        {"(˘▾˘)", "Chilling Cool", "shrug smug cool chill chilling unbothered relaxed calm peaceful vibe smooth"},
+
+        // --- 9. Hiding, Peeking & Shy ---
+        {"|ω･)ﾉ", "Peeking and Waving", "hiding peeking shy peek wall hide waving hello spy secretly covert stealth"},
+        {"|･ω･)", "Curious Peeking", "hiding peeking shy peek corner curious watching looking spy quiet hide stealth"},
+        {"(つд⊂)", "Covering Eyes", "hiding peeking shy covering eyes hiding crying bashful see no evil peek ashamed"},
+        {"( *//｀ω´//)", "Flustered and Pouting", "hiding peeking shy flustered blush blushing angry cute embarrassed pout bashful"},
+        {"|д･)", "Cautious Peek", "hiding peeking shy cautious peek hiding wall sneaking spying nervous look see covert"},
+        {"(/ω＼)", "Blushing Behind Hands", "hiding peeking shy shy blush covering face embarrassed cute peek bashful anime hidden"},
+        {"(〃▽〃)", "Sweet Blush", "hiding peeking shy blushing happy embarrassed cute flushed warm joyful sweet"},
+        {"(⁄ ⁄•⁄ω⁄•⁄ ⁄)", "Overwhelmed Blush", "hiding peeking shy overwhelmed blushing super shy red face flushed embarrassed awkward"},
+
+        // --- 10. Rage, Frustration & Table Flips ---
+        {"(╯°□°)╯︵ ┻━┻", "Table Flip", "rage frustration table flip angry smash tableflip furious overthrow breakdown mad chaos"},
+        {"┬─┬ノ( º _ ºノ)", "Put Table Back", "rage frustration table calm respect put table back unflip order manners fix restore patience"},
+        {"(ノಠ益ಠ)ノ彡┻━┻", "Rage Table Flip", "rage frustration table flip fury table furious crazy wrath destroy monstrous anger"},
+        {"(╬ Ò﹏Ó)", "Vein-Popping Anger", "rage frustration angry furious tick vein mad irritated enraged annoyed hostile"},
+        {"(>_<)", "Troubled", "rage frustration troubled annoyed frustrated ouch cringing pain upset struggling stressed"},
+        {"(ง'̀-'́)ง", "Ready to Fight", "rage frustration fight boxer punch challenge angry tough sparring brawl boxing square up"},
+        {"(T_T)", "Crying Face", "rage frustration cry crying tears sad weep upset mourning sobbing tears stream grief"},
+        {"(｡•́︿•̀｡)", "Sad Pout", "rage frustration sad pout crying lonely hurt sorrow gloomy depressed broken gloomy"},
+        {"(ﾒ` ﾛ ´)", "Furious Growl", "rage frustration growl angry furious yelling shout mad aggressive roar scream"},
+        {"(눈_눈)", "Deadpan Scowl", "rage frustration glare scowl deadpan unimpressed cold judge stare annoyed disgust contempt"}
     };
 
     for (const auto& k : kaomojiList) {

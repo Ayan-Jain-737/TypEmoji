@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-11-16
+
+### Added
+- **Configurable Global Hotkeys**: Live key sequence recorder in the Preferences dialog with native portable text serialization, modifier badges, and multi-backend synchronization across KGlobalAccel, XDG Desktop Portal, and X11 (fixes #1).
+- **Recent & Frequent History JSON Export/Import**: One-click export and import for emoji usage history from Preferences with automatic deduplication, frequency merging, schema validation, and configurable capacity limits (fixes #2).
+- **Curated Kaomoji Catalog Expansion**: Expanded Japanese kaomoji collection from 28 to 89 authentic expressions organized into 10 emotional categories (Greetings, Animals, Sleepy, Dancing, Bowing, Love, Shock, Shrug, Peeking, Rage/Table Flips) with complete multi-keyword search indexing (fixes #3).
+- **Customizable Grid Density**: New density configuration in Appearance preferences supporting Compact (36×36px cells, 17pt font), Standard (44×44px cells, 22pt font), and Large (52×52px cells, 26pt font) with live viewport layout updates (fixes #4).
+
 ## [2.1.0] - 2026-11-15
 
 ### Added

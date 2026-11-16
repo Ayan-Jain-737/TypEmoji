@@ -10,6 +10,7 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonArray>
 #include <QtCore/QTimer>
+#include <QtCore/QDateTime>
 #include <QtGui/QKeySequence>
 #include <QtCore/QKeyCombination>
 #include <algorithm>
@@ -50,6 +51,7 @@ void Settings::applyDefaults()
     m_injectionMode = "auto";
     m_typingDelay = 12;
     m_panelScale = 100;
+    m_gridDensity = 1;
     m_panelPos = QPoint(-1, -1);  // Invalid = auto-position
     m_panelSize = QSize(400, 300);
 }
@@ -66,6 +68,7 @@ void Settings::resetToDefaults()
     emit injectionModeChanged(m_injectionMode);
     emit typingDelayChanged(m_typingDelay);
     emit panelScaleChanged(m_panelScale);
+    emit gridDensityChanged(m_gridDensity);
 }
 
 void Settings::load()
@@ -110,6 +113,7 @@ void Settings::load()
     m_injectionMode = obj.value("injectionMode").toString("auto");
     m_typingDelay = obj.value("typingDelay").toInt(12);
     m_panelScale = obj.value("panelScale").toInt(100);
+    m_gridDensity = obj.value("gridDensity").toInt(1);
 
     // Recent emojis
     QJsonArray recentArr = obj.value("recentEmojis").toArray();
@@ -154,6 +158,7 @@ void Settings::save()
     obj["injectionMode"] = m_injectionMode;
     obj["typingDelay"] = m_typingDelay;
     obj["panelScale"] = m_panelScale;
+    obj["gridDensity"] = m_gridDensity;
 
     // Recent emojis
     QJsonArray recentArr;
@@ -391,6 +396,133 @@ void Settings::setPanelScale(int percent)
         save();
         emit panelScaleChanged(m_panelScale);
     }
+}
+
+void Settings::setGridDensity(int density)
+{
+    density = std::clamp(density, 0, 2);
+    if (m_gridDensity != density) {
+        m_gridDensity = density;
+        save();
+        emit gridDensityChanged(m_gridDensity);
+    }
+}
+
+bool Settings::exportHistory(const QString& filePath) const
+{
+    if (filePath.isEmpty()) {
+        return false;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qWarning() << "Failed to open file for history export:" << filePath;
+        return false;
+    }
+
+    QJsonObject root;
+    root["version"] = 1;
+    root["exportedAt"] = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+
+    QJsonArray recentArray;
+    for (const QString& emoji : m_recentEmojis) {
+        recentArray.append(emoji);
+    }
+    root["recent"] = recentArray;
+
+    QJsonObject frequentObj;
+    for (auto it = m_frequentEmojis.begin(); it != m_frequentEmojis.end(); ++it) {
+        frequentObj[it.key()] = it.value().toInt();
+    }
+    root["frequent"] = frequentObj;
+
+    QJsonDocument doc(root);
+    qint64 bytesWritten = file.write(doc.toJson(QJsonDocument::Indented));
+    file.close();
+
+    return bytesWritten > 0;
+}
+
+bool Settings::importHistory(const QString& filePath)
+{
+    if (filePath.isEmpty()) {
+        return false;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Failed to open file for history import:" << filePath;
+        return false;
+    }
+
+    QByteArray data = file.readAll();
+    file.close();
+
+    QJsonParseError parseError;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+    if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+        qWarning() << "Failed to parse history JSON:" << parseError.errorString();
+        return false;
+    }
+
+    QJsonObject root = doc.object();
+    if (!root.contains("recent") && !root.contains("frequent")) {
+        qWarning() << "Invalid history JSON: missing both 'recent' and 'frequent' keys";
+        return false;
+    }
+
+    // Process recent emojis (merge: imported items first, then existing non-duplicates, capped at MAX_RECENT)
+    if (root.contains("recent")) {
+        QJsonArray recentArray = root.value("recent").toArray();
+        QStringList mergedRecent;
+        for (const QJsonValue& val : recentArray) {
+            QString emoji = val.toString();
+            if (!emoji.isEmpty() && !mergedRecent.contains(emoji)) {
+                mergedRecent.append(emoji);
+            }
+        }
+        for (const QString& emoji : m_recentEmojis) {
+            if (!mergedRecent.contains(emoji)) {
+                mergedRecent.append(emoji);
+            }
+        }
+        while (mergedRecent.size() > MAX_RECENT) {
+            mergedRecent.removeLast();
+        }
+        m_recentEmojis = mergedRecent;
+    }
+
+    // Process frequent emojis (accumulate counts, capped at MAX_FREQUENT)
+    if (root.contains("frequent")) {
+        QJsonObject frequentObj = root.value("frequent").toObject();
+        for (auto it = frequentObj.begin(); it != frequentObj.end(); ++it) {
+            QString emoji = it.key();
+            int count = it.value().toInt();
+            if (!emoji.isEmpty() && count > 0) {
+                int currentCount = m_frequentEmojis.value(emoji, 0).toInt();
+                m_frequentEmojis[emoji] = currentCount + count;
+            }
+        }
+
+        if (m_frequentEmojis.size() > MAX_FREQUENT) {
+            QList<QPair<QString, int>> sorted;
+            for (auto it = m_frequentEmojis.begin(); it != m_frequentEmojis.end(); ++it) {
+                sorted.append({it.key(), it.value().toInt()});
+            }
+            std::sort(sorted.begin(), sorted.end(),
+                [](const auto& a, const auto& b) { return a.second < b.second; });
+
+            while (m_frequentEmojis.size() > MAX_FREQUENT && !sorted.isEmpty()) {
+                m_frequentEmojis.remove(sorted.takeFirst().first);
+            }
+        }
+    }
+
+    save();
+    emit recentEmojisChanged();
+    emit frequentEmojisChanged();
+
+    return true;
 }
 
 void Settings::addRecentEmoji(const QString& emoji)

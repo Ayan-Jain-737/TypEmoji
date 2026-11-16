@@ -65,6 +65,7 @@ private slots:
     void onSearchTextChanged(const QString& text);
     void onCategoryChanged(int index);
     void onSkinToneRequested(const QModelIndex& index);
+    void updateGridDensity(int density);
     void saveGeometry();
 
 private:

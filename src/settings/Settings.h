@@ -25,6 +25,7 @@ class Settings : public QObject
     Q_PROPERTY(QString injectionMode READ injectionMode WRITE setInjectionMode NOTIFY injectionModeChanged)
     Q_PROPERTY(int typingDelay READ typingDelay WRITE setTypingDelay NOTIFY typingDelayChanged)
     Q_PROPERTY(int panelScale READ panelScale WRITE setPanelScale NOTIFY panelScaleChanged)
+    Q_PROPERTY(int gridDensity READ gridDensity WRITE setGridDensity NOTIFY gridDensityChanged)
 
 public:
     static Settings& instance();
@@ -79,6 +80,14 @@ public:
     int panelScale() const { return m_panelScale; }
     void setPanelScale(int percent);
 
+    // Grid density: 0 = Compact (36px), 1 = Standard (44px), 2 = Large (52px)
+    int gridDensity() const { return m_gridDensity; }
+    void setGridDensity(int density);
+
+    // History Export / Import
+    bool exportHistory(const QString& filePath) const;
+    bool importHistory(const QString& filePath);
+
     // Recent emojis (max 50)
     QStringList recentEmojis() const { return m_recentEmojis; }
     void addRecentEmoji(const QString& emoji);
@@ -109,6 +118,7 @@ signals:
     void injectionModeChanged(const QString& mode);
     void typingDelayChanged(int delayMs);
     void panelScaleChanged(int scalePercent);
+    void gridDensityChanged(int density);
 
 private:
     explicit Settings(QObject* parent = nullptr);
@@ -127,6 +137,7 @@ private:
     QString m_injectionMode = "auto";    // auto, ydotool, wtype, clipboard
     int m_typingDelay = 12;              // 12ms debounce
     int m_panelScale = 100;              // 100%
+    int m_gridDensity = 1;               // 0: Compact (36px), 1: Standard (44px), 2: Large (52px)
 
     QStringList m_recentEmojis;
     QVariantMap m_frequentEmojis;        // emoji -> count

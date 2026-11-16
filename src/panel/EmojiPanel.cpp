@@ -35,7 +35,35 @@
 
 class EmojiDelegate : public QStyledItemDelegate {
 public:
-    explicit EmojiDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {}
+    explicit EmojiDelegate(QObject* parent = nullptr)
+        : QStyledItemDelegate(parent)
+        , m_density(Settings::instance().gridDensity())
+    {}
+
+    void setDensity(int density) {
+        m_density = density;
+    }
+
+    int density() const {
+        return m_density;
+    }
+
+    int cellSize() const {
+        switch (m_density) {
+        case 0: return 36;
+        case 2: return 52;
+        case 1:
+        default: return 44;
+        }
+    }
+
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
+        Q_UNUSED(option);
+        Q_UNUSED(index);
+        int sz = cellSize();
+        return QSize(sz, sz);
+    }
+
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
         QStyleOptionViewItem opt = option;
         initStyleOption(&opt, index);
@@ -72,14 +100,27 @@ public:
             bool isSymbol = (codepoints.startsWith("SYM_") || subcat == "math" || subcat == "currency" ||
                              subcat == "arrow" || subcat == "greek" || subcat == "typography");
 
+            int baseFontSize = 22;
+            int kaomojiFontSize = 9;
+            int symbolFontSize = 19;
+            if (m_density == 0) {
+                baseFontSize = 17;
+                kaomojiFontSize = 7;
+                symbolFontSize = 15;
+            } else if (m_density == 2) {
+                baseFontSize = 26;
+                kaomojiFontSize = 11;
+                symbolFontSize = 23;
+            }
+
             if (isKaomoji) {
-                f.setPointSize(9);
+                f.setPointSize(kaomojiFontSize);
                 f.setFamily("JetBrains Mono, monospace, sans-serif");
             } else if (isSymbol) {
-                f.setPointSize(19);
+                f.setPointSize(symbolFontSize);
                 f.setFamilies({"Noto Sans Math", "Noto Sans Symbols", "JetBrains Mono", "sans-serif", "Noto Color Emoji"});
             } else {
-                f.setPointSize(22);
+                f.setPointSize(baseFontSize);
                 f.setFamilies({"Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji"});
             }
 
@@ -93,7 +134,8 @@ public:
             if (index.data(EmojiModel::HasSkinTonesRole).toBool()) {
                 painter->setPen(QPen(QColor(0, 0, 0, 70), 0.5));
                 painter->setBrush(QColor(255, 185, 80, 220));
-                painter->drawEllipse(r.right() - 6, r.bottom() - 6, 5, 5);
+                int dotSize = (m_density == 0) ? 4 : 5;
+                painter->drawEllipse(r.right() - dotSize - 1, r.bottom() - dotSize - 1, dotSize, dotSize);
             }
 
             painter->restore();
@@ -101,11 +143,9 @@ public:
         }
         QStyledItemDelegate::paint(painter, option, index);
     }
-    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
-        Q_UNUSED(option);
-        Q_UNUSED(index);
-        return QSize(44, 44);
-    }
+
+private:
+    int m_density = 1;
 };
 
 EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
@@ -329,6 +369,7 @@ void EmojiPanel::setupUi()
     m_mainLayout->addWidget(m_containerWidget);
 
     connect(m_searchEdit, &QLineEdit::textChanged, this, &EmojiPanel::onSearchTextChanged);
+    connect(&Settings::instance(), &Settings::gridDensityChanged, this, &EmojiPanel::updateGridDensity);
 }
 
 void EmojiPanel::populateCategories()
@@ -362,13 +403,27 @@ void EmojiPanel::populateCategories()
 
 void EmojiPanel::createCategoryViews()
 {
+    int density = Settings::instance().gridDensity();
+    int cellSize = 44;
+    int iconSize = 36;
+    int fontSize = 22;
+    if (density == 0) {
+        cellSize = 36;
+        iconSize = 28;
+        fontSize = 17;
+    } else if (density == 2) {
+        cellSize = 52;
+        iconSize = 44;
+        fontSize = 26;
+    }
+
     // Create one list view per tab matching Stitch 8-column layout
     for (int i = 0; i < static_cast<int>(m_categoryDefs.size()); ++i) {
         QListView* listView = new QListView(m_stackedWidget);
         listView->setModel(m_proxyModel);
         listView->setViewMode(QListView::IconMode);
-        listView->setIconSize(QSize(36, 36));
-        listView->setGridSize(QSize(44, 44));
+        listView->setIconSize(QSize(iconSize, iconSize));
+        listView->setGridSize(QSize(cellSize, cellSize));
         listView->setSpacing(2);
         listView->setContentsMargins(4, 4, 4, 4);
         listView->setResizeMode(QListView::Adjust);
@@ -382,11 +437,13 @@ void EmojiPanel::createCategoryViews()
         listView->setMouseTracking(true);
         listView->setObjectName(QString("listView_%1").arg(i));
         QFont f = listView->font();
-        f.setPointSize(22);
+        f.setPointSize(fontSize);
         f.setFamilies({"Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji"});
         listView->setFont(f);
         listView->setStyleSheet("QListView { outline: none; border: none; } QListView::item { padding: 0px; }");
-        listView->setItemDelegate(new EmojiDelegate(listView));
+        auto* delegate = new EmojiDelegate(listView);
+        delegate->setDensity(density);
+        listView->setItemDelegate(delegate);
         listView->installEventFilter(this);
         connect(listView, &QListView::clicked, this, &EmojiPanel::onEmojiClicked);
 
@@ -1193,6 +1250,48 @@ void EmojiPanel::saveGeometry()
     Settings& settings = Settings::instance();
     settings.setPanelPos(pos());
     settings.setPanelSize(size());
+}
+
+void EmojiPanel::updateGridDensity(int density)
+{
+    int cellSize = 44;
+    int iconSize = 36;
+    int fontSize = 22;
+
+    switch (density) {
+    case 0:
+        cellSize = 36;
+        iconSize = 28;
+        fontSize = 17;
+        break;
+    case 2:
+        cellSize = 52;
+        iconSize = 44;
+        fontSize = 26;
+        break;
+    case 1:
+    default:
+        cellSize = 44;
+        iconSize = 36;
+        fontSize = 22;
+        break;
+    }
+
+    for (QListView* listView : m_listViews) {
+        if (!listView) continue;
+        listView->setGridSize(QSize(cellSize, cellSize));
+        listView->setIconSize(QSize(iconSize, iconSize));
+
+        QFont f = listView->font();
+        f.setPointSize(fontSize);
+        f.setFamilies({"Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji"});
+        listView->setFont(f);
+
+        if (auto* delegate = dynamic_cast<EmojiDelegate*>(listView->itemDelegate())) {
+            delegate->setDensity(density);
+        }
+        listView->doItemsLayout();
+    }
 }
 
 void EmojiPanel::closeEvent(QCloseEvent* event)

@@ -11,6 +11,7 @@
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QMessageBox>
+#include <QtWidgets/QFileDialog>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QStyle>
 #include <QtGui/QDesktopServices>
@@ -19,6 +20,7 @@
 #include <QtGui/QStyleHints>
 #include <QtCore/QStandardPaths>
 #include <QtCore/QFileInfo>
+#include <QtCore/QDir>
 #include <QtCore/QSysInfo>
 #include <QtCore/QUrl>
 #include <QtCore/QDebug>
@@ -219,18 +221,37 @@ QWidget* SettingsDialog::createGeneralTab()
 
     // Section 3: History & Privacy
     QGroupBox* historyGroup = new QGroupBox(tr("Emoji History & Privacy"), tab);
-    QHBoxLayout* historyLayout = new QHBoxLayout(historyGroup);
-    historyLayout->setSpacing(12);
+    QVBoxLayout* historyLayout = new QVBoxLayout(historyGroup);
+    historyLayout->setSpacing(10);
 
     m_historyStatusLabel = new QLabel(historyGroup);
     m_historyStatusLabel->setStyleSheet("color: rgba(255, 255, 255, 0.7); font-size: 12px;");
-    historyLayout->addWidget(m_historyStatusLabel, 1);
+    historyLayout->addWidget(m_historyStatusLabel);
+
+    QHBoxLayout* historyBtnLayout = new QHBoxLayout();
+    historyBtnLayout->setSpacing(8);
+
+    m_exportHistoryBtn = new QPushButton(tr("Export History..."), historyGroup);
+    m_exportHistoryBtn->setObjectName("exportHistoryBtn");
+    m_exportHistoryBtn->setCursor(Qt::PointingHandCursor);
+    connect(m_exportHistoryBtn, &QPushButton::clicked, this, &SettingsDialog::onExportHistoryClicked);
+    historyBtnLayout->addWidget(m_exportHistoryBtn);
+
+    m_importHistoryBtn = new QPushButton(tr("Import History..."), historyGroup);
+    m_importHistoryBtn->setObjectName("importHistoryBtn");
+    m_importHistoryBtn->setCursor(Qt::PointingHandCursor);
+    connect(m_importHistoryBtn, &QPushButton::clicked, this, &SettingsDialog::onImportHistoryClicked);
+    historyBtnLayout->addWidget(m_importHistoryBtn);
+
+    historyBtnLayout->addStretch();
 
     m_clearHistoryBtn = new QPushButton(tr("Clear History"), historyGroup);
     m_clearHistoryBtn->setObjectName("clearHistoryBtn");
     m_clearHistoryBtn->setCursor(Qt::PointingHandCursor);
     connect(m_clearHistoryBtn, &QPushButton::clicked, this, &SettingsDialog::onClearHistoryClicked);
-    historyLayout->addWidget(m_clearHistoryBtn);
+    historyBtnLayout->addWidget(m_clearHistoryBtn);
+
+    historyLayout->addLayout(historyBtnLayout);
 
     tabLayout->addWidget(historyGroup);
     tabLayout->addStretch();
@@ -389,6 +410,20 @@ QWidget* SettingsDialog::createAppearanceTab()
     });
     sizePresetLayout->addWidget(m_sizePresetCombo, 1);
     sizeLayout->addLayout(sizePresetLayout);
+
+    // Grid item size / density
+    QHBoxLayout* densityLayout = new QHBoxLayout();
+    QLabel* densityLabel = new QLabel(tr("Grid Item Size:"), sizeGroup);
+    densityLabel->setStyleSheet("font-size: 12px;");
+    densityLayout->addWidget(densityLabel);
+
+    m_gridDensityCombo = new QComboBox(sizeGroup);
+    m_gridDensityCombo->setObjectName("gridDensityCombo");
+    m_gridDensityCombo->addItem(tr("Compact (36 × 36 px — High Density)"), 0);
+    m_gridDensityCombo->addItem(tr("Standard (44 × 44 px — Default)"), 1);
+    m_gridDensityCombo->addItem(tr("Large (52 × 52 px — Accessible)"), 2);
+    densityLayout->addWidget(m_gridDensityCombo, 1);
+    sizeLayout->addLayout(densityLayout);
 
     // Scale slider
     QHBoxLayout* scaleLayout = new QHBoxLayout();
@@ -676,6 +711,12 @@ void SettingsDialog::loadSettings()
             m_themeCombo->setCurrentIndex(idx);
         }
     }
+    if (m_gridDensityCombo) {
+        int idx = m_gridDensityCombo->findData(settings.gridDensity());
+        if (idx >= 0) {
+            m_gridDensityCombo->setCurrentIndex(idx);
+        }
+    }
     if (m_scaleSlider) {
         m_scaleSlider->setValue(settings.panelScale());
     }
@@ -722,6 +763,9 @@ void SettingsDialog::apply()
         QString theme = m_themeCombo->currentData().toString();
         settings.setTheme(theme);
         applyDialogStyle(theme);
+    }
+    if (m_gridDensityCombo) {
+        settings.setGridDensity(m_gridDensityCombo->currentData().toInt());
     }
     if (m_scaleSlider) {
         settings.setPanelScale(m_scaleSlider->value());
@@ -842,7 +886,16 @@ void SettingsDialog::updateShortcutBadge(const QString& shortcutText)
         return;
     }
 
-    QStringList keys = shortcutText.split('+', Qt::SkipEmptyParts);
+    QString text = shortcutText;
+    bool endsWithPlus = text.endsWith("++");
+    if (endsWithPlus) {
+        text.chop(1);
+    }
+    QStringList keys = text.split('+', Qt::SkipEmptyParts);
+    if (endsWithPlus) {
+        keys.append("+");
+    }
+
     QStringList kbdList;
     for (const QString& k : keys) {
         QString display = k.trimmed();
@@ -853,6 +906,91 @@ void SettingsDialog::updateShortcutBadge(const QString& shortcutText)
     m_currentShortcutBadge->setText(
         tr("Current shortcut: &nbsp;%1").arg(kbdList.join(" &nbsp;+&nbsp; "))
     );
+}
+
+void SettingsDialog::onExportHistoryClicked()
+{
+    QString defaultPath = QDir::homePath() + "/typemoji_history.json";
+    QString filePath = QFileDialog::getSaveFileName(
+        this,
+        tr("Export Emoji History"),
+        defaultPath,
+        tr("JSON Files (*.json);;All Files (*)")
+    );
+
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    bool ok = Settings::instance().exportHistory(filePath);
+    if (ok) {
+        updateHistoryCountLabel();
+        if (m_historyStatusLabel) {
+            m_historyStatusLabel->setText(
+                m_historyStatusLabel->text() + "<br>" +
+                tr("<span style='color:#4CAF50;'>✓ History exported successfully to %1</span>")
+                    .arg(QFileInfo(filePath).fileName())
+            );
+        }
+        QMessageBox::information(
+            this,
+            tr("Export Successful"),
+            tr("Emoji history was successfully exported to:\n%1").arg(filePath)
+        );
+    } else {
+        if (m_historyStatusLabel) {
+            m_historyStatusLabel->setText(
+                tr("<span style='color:#F44336;'>✗ Failed to export history</span>")
+            );
+        }
+        QMessageBox::warning(
+            this,
+            tr("Export Failed"),
+            tr("Could not export emoji history to the specified file.")
+        );
+    }
+}
+
+void SettingsDialog::onImportHistoryClicked()
+{
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        tr("Import Emoji History"),
+        QDir::homePath(),
+        tr("JSON Files (*.json);;All Files (*)")
+    );
+
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    bool ok = Settings::instance().importHistory(filePath);
+    if (ok) {
+        updateHistoryCountLabel();
+        if (m_historyStatusLabel) {
+            m_historyStatusLabel->setText(
+                m_historyStatusLabel->text() + "<br>" +
+                tr("<span style='color:#4CAF50;'>✓ History imported successfully from %1</span>")
+                    .arg(QFileInfo(filePath).fileName())
+            );
+        }
+        QMessageBox::information(
+            this,
+            tr("Import Successful"),
+            tr("Emoji history was successfully imported and merged from:\n%1").arg(filePath)
+        );
+    } else {
+        if (m_historyStatusLabel) {
+            m_historyStatusLabel->setText(
+                tr("<span style='color:#F44336;'>✗ Failed to parse or import history</span>")
+            );
+        }
+        QMessageBox::warning(
+            this,
+            tr("Import Failed"),
+            tr("The selected file is not a valid TypEmoji history file or could not be read.")
+        );
+    }
 }
 
 void SettingsDialog::onClearHistoryClicked()
@@ -1074,7 +1212,8 @@ void SettingsDialog::applyDialogStyle(const QString& theme)
         QPushButton#saveBtn:hover {
             background-color: #1084D9;
         }
-        QPushButton#applyBtn, QPushButton#cancelBtn, QPushButton#resetDefaultsBtn {
+        QPushButton#applyBtn, QPushButton#cancelBtn, QPushButton#resetDefaultsBtn,
+        QPushButton#exportHistoryBtn, QPushButton#importHistoryBtn, QPushButton#clearHistoryBtn {
             background-color: rgba(255, 255, 255, 0.08);
             color: %2;
             border: 1px solid %3;
@@ -1082,7 +1221,8 @@ void SettingsDialog::applyDialogStyle(const QString& theme)
             padding: 7px 16px;
             font-size: 12px;
         }
-        QPushButton#applyBtn:hover, QPushButton#cancelBtn:hover, QPushButton#resetDefaultsBtn:hover {
+        QPushButton#applyBtn:hover, QPushButton#cancelBtn:hover, QPushButton#resetDefaultsBtn:hover,
+        QPushButton#exportHistoryBtn:hover, QPushButton#importHistoryBtn:hover, QPushButton#clearHistoryBtn:hover {
             background-color: rgba(255, 255, 255, 0.15);
         }
     )")

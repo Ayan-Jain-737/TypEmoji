@@ -1186,6 +1186,76 @@ section {
   border-bottom: 2px solid #00F0FF;
 }
 
+/* Windows 11 Skin Tone Bar matching Qt setupSkinToneBar() */
+.panel-skin-tone-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 12px;
+  background-color: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  height: 34px;
+}
+
+.panel-skin-tone-bar.hidden {
+  display: none !important;
+}
+
+.skin-tone-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.skin-tone-swatches {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tone-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: 1.5px solid transparent;
+  background-color: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  font-family: var(--font-emoji);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 120ms ease;
+}
+
+.tone-btn:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.tone-btn.active {
+  background-color: rgba(96, 205, 255, 0.22);
+  border-color: #0078D4;
+}
+
+.emoji-item {
+  position: relative;
+}
+
+.emoji-item.has-tone::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 5px 5px;
+  border-color: transparent transparent rgba(200, 200, 215, 0.75) transparent;
+  pointer-events: none;
+}
+
 /* Emoji Grid Body matching Qt #stackedWidget & QListView */
 .panel-body {
   flex: 1;

@@ -39,11 +39,11 @@ curl -fsSL https://raw.githubusercontent.com/Ayan-Jain-737/TypEmoji/main/install
 
 | Distribution | One-Command Install |
 | :--- | :--- |
-| **Arch Linux / Manjaro** | `sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst` |
-| **Ubuntu / Debian / Mint** | `sudo apt install ./TypEmoji-2.1.0-Ubuntu-Debian-x86_64.deb` *(or via installer above)* |
-| **Fedora / RHEL** | `sudo dnf install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.1.0-Fedora-openSUSE-x86_64.rpm` |
-| **openSUSE** | `sudo zypper install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.1.0-Fedora-openSUSE-x86_64.rpm` |
-| **Universal Linux (.run)** | `chmod +x TypEmoji-2.1.0-Universal-Installer.run && ./TypEmoji-2.1.0-Universal-Installer.run` |
+| **Arch Linux / Manjaro** | `sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst` |
+| **Ubuntu / Debian / Mint** | `sudo apt install ./TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb` *(or via installer above)* |
+| **Fedora / RHEL** | `sudo dnf install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm` |
+| **openSUSE** | `sudo zypper install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm` |
+| **Universal Linux (.run)** | `chmod +x TypEmoji-2.3.0-Universal-Installer.run && ./TypEmoji-2.3.0-Universal-Installer.run` |
 
 All precompiled packages and standalone tarballs are available on the **[Releases Page](https://github.com/Ayan-Jain-737/TypEmoji/releases/latest)**.
 
@@ -69,6 +69,31 @@ TypEmoji gives you the missing native experience:
 2. **Instant Search**: Type immediately to fuzzy-filter names, categories, and keywords.
 3. **Zero Clipboard Overwrite**: Types characters into the target application while cleanly preserving whatever was in your system clipboard.
 4. **Wayland & X11 Native**: Built with C++23 and Qt 6. Supports KDE Plasma 6, GNOME 44+, Sway, Hyprland, XFCE, Cinnamon, and i3.
+
+---
+
+## ✨ Features & What's New in v2.3.0
+
+- 🎨 **Windows-Style Common Grouper & Colour Selector Bar**:
+  - Deduplicates all **2,030 Fitzpatrick skin tone variants** under **388 clean base emojis** (eliminates 2,000+ duplicate rows).
+  - Quick-select skin tones with a live 6-swatch bar (`👋 Default`, `👋🏻 Light`, `👋🏼 Medium-Light`, `👋🏽 Medium`, `👋🏾 Medium-Dark`, `👋🏿 Dark`) that updates the whole grid in real time.
+  - Authentic Windows 11 subtle corner triangle indicator on variation-capable cells.
+  - Direct corner click, right-click, or long-press pops up an elevated 6-variant flyout card for instant one-off selection.
+- ⌨️ **Configurable Global Shortcuts**:
+  - Live shortcut sequence recorder in Preferences dialog with native badge indicators (`Super`, `Ctrl`, `Alt`, `Shift`).
+  - Native multi-backend routing: **KGlobalAccel** on KDE Plasma Wayland, **XDG Desktop Portal** on GNOME 44+/Sway/Hyprland, and **XGrabKey** on X11.
+- 💾 **Usage History Backup & Restore**:
+  - Export and import your recent and frequent emoji history in clean, standardized JSON format.
+  - Automatic deduplication, frequency counter merging, and configurable capacity limits.
+- (•‿•) **Curated Japanese Kaomoji Catalog**:
+  - Expanded library of **89 authentic expressions** organized across 10 emotional categories (Greetings, Animals, Sleepy, Dancing, Bowing, Love, Shock, Shrug, Peeking, Table Flips/Rage).
+  - Searchable by keywords (e.g. typing "cat", "happy", "shrug", "flip").
+- 📐 **Customizable Grid Density**:
+  - Choose between **Compact** (36px cells), **Standard** (44px cells), or **Large** (52px cells) in Appearance preferences with live viewport updates.
+- 🚀 **Zero Clipboard Overwrite**:
+  - Types characters directly into the focused window via native synthetic input without modifying, corrupting, or clearing your clipboard buffer.
+- ⚡ **Lightweight & High-Performance**:
+  - Native C++23 & Qt 6 codebase consuming under ~14 MB RAM with instantaneous ~3.8ms wake-to-render latency.
 
 ---
 

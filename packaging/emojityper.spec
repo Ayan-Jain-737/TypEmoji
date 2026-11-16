@@ -1,5 +1,5 @@
 Name:           emojityper
-Version:        2.1.0
+Version:        2.3.0
 Release:        1%{?dist}
 Summary:        Direct emoji picker and typing utility for Linux (X11 & Wayland)
 

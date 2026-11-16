@@ -13,7 +13,8 @@
     searchQuery: '',
     recentEmojis: ['🚀', '🐧', '🔥', '✨', '💻', '💡', '🎉'],
     isPanelVisible: true,
-    shiftKeyDown: false
+    shiftKeyDown: false,
+    defaultSkinTone: 0
   };
 
   // ==========================================================================
@@ -198,11 +199,50 @@
     if (!gridContainer || !window.TYPEMOJI_DATA) return;
 
     const dataset = window.TYPEMOJI_DATA;
+    const simSkinToneBar = document.getElementById('simSkinToneBar');
+
+    function isToneCapableEmoji(item) {
+      if (item.category === 'Kaomoji') return false;
+      if (item.category === 'People & Body') return true;
+      const c = item.char;
+      return /[\u{1F440}-\u{1F4AA}\u{1F590}-\u{1F596}\u{1F918}-\u{1F91F}\u{1F926}\u{1F937}\u{1F9CF}-\u{1F9DF}\u{1FAF0}-\u{1FAF8}]/u.test(c);
+    }
+
+    function applyFitzpatrickTone(char, toneIndex) {
+      if (!toneIndex || toneIndex <= 0) return char;
+      const clean = char.replace(/\uFE0F/g, '');
+      const modifier = String.fromCodePoint(0x1F3FA + toneIndex);
+      return clean + modifier;
+    }
+
+    // Wire up tone selector swatches
+    if (simSkinToneBar) {
+      const toneBtns = simSkinToneBar.querySelectorAll('.tone-btn');
+      toneBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          toneBtns.forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.defaultSkinTone = parseInt(btn.getAttribute('data-tone') || '0', 10);
+          renderGrid();
+        });
+      });
+    }
 
     // Render Grid items based on category and search query
     function renderGrid() {
       gridContainer.innerHTML = '';
       const query = state.searchQuery.trim().toLowerCase();
+
+      // Update skin tone bar visibility: visible for People & Body or search results with tone capability
+      if (simSkinToneBar) {
+        if (query) {
+          simSkinToneBar.classList.remove('hidden');
+        } else if (state.activeCategory === 'People & Body') {
+          simSkinToneBar.classList.remove('hidden');
+        } else {
+          simSkinToneBar.classList.add('hidden');
+        }
+      }
 
       let items = [];
 
@@ -236,19 +276,22 @@
       items.forEach((item) => {
         const btn = document.createElement('button');
         const isKaomoji = item.category === 'Kaomoji';
-        btn.className = `emoji-item ${isKaomoji ? 'is-kaomoji' : ''}`;
-        btn.textContent = item.char;
+        const isTone = !isKaomoji && isToneCapableEmoji(item);
+        const displayChar = isTone && state.defaultSkinTone > 0 ? applyFitzpatrickTone(item.char, state.defaultSkinTone) : item.char;
+
+        btn.className = `emoji-item ${isKaomoji ? 'is-kaomoji' : ''} ${isTone ? 'has-tone' : ''}`;
+        btn.textContent = displayChar;
         btn.setAttribute('title', `${item.name} (${item.shortcode})`);
         btn.setAttribute('aria-label', item.name);
 
         // Hover updates preview bar
         btn.addEventListener('mouseenter', () => {
-          updatePreview(item);
+          updatePreview({ ...item, char: displayChar });
         });
 
         // Click injects into active host window
         btn.addEventListener('click', (e) => {
-          injectEmoji(item, e.shiftKey || state.shiftKeyDown);
+          injectEmoji({ ...item, char: displayChar }, e.shiftKey || state.shiftKeyDown);
         });
 
         fragment.appendChild(btn);
@@ -258,7 +301,10 @@
 
       // Default preview to first item
       if (items.length > 0) {
-        updatePreview(items[0]);
+        const first = items[0];
+        const isTone = isToneCapableEmoji(first);
+        const firstDisplay = isTone && state.defaultSkinTone > 0 ? applyFitzpatrickTone(first.char, state.defaultSkinTone) : first.char;
+        updatePreview({ ...first, char: firstDisplay });
       }
     }
 
@@ -525,51 +571,51 @@
     const distroData = {
       arch: {
         title: 'Terminal — Install on Arch Linux / Manjaro',
-        cmd: 'sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst',
-        artifact: 'TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst',
-        size: '~4.1 MB',
-        deps: 'qt6-base, qt6-tools, libx11, libxtst (optional: kglobalaccel)',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst'
+        cmd: 'sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst',
+        artifact: 'TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst',
+        size: '~774 KB',
+        deps: 'qt6-base, libx11, libxtst (optional: kglobalaccel)',
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst'
       },
       ubuntu: {
         title: 'Terminal — Install on Ubuntu / Debian / Linux Mint',
-        cmd: 'wget https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Ubuntu-Debian-x86_64.deb && sudo apt install ./TypEmoji-2.1.0-Ubuntu-Debian-x86_64.deb',
-        artifact: 'TypEmoji-2.1.0-Ubuntu-Debian-x86_64.deb',
-        size: '~4.2 MB',
-        deps: 'qt6-base-dev, libx11-6, libxtst6, ydotool / wtype',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Ubuntu-Debian-x86_64.deb'
+        cmd: 'wget https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb && sudo apt install ./TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb',
+        artifact: 'TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb',
+        size: '~1.1 MB',
+        deps: 'libqt6core6, libqt6widgets6, libx11-6, libxtst6, ydotool / wtype',
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb'
       },
       fedora: {
         title: 'Terminal — Install on Fedora 39/40 / RHEL 9',
-        cmd: 'sudo dnf install https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Fedora-openSUSE-x86_64.rpm',
-        artifact: 'TypEmoji-2.1.0-Fedora-openSUSE-x86_64.rpm',
-        size: '~4.3 MB',
+        cmd: 'sudo dnf install https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm',
+        artifact: 'TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm',
+        size: '~1.1 MB',
         deps: 'qt6-qtbase, libX11, libXtst, kf6-kglobalaccel (optional)',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Fedora-openSUSE-x86_64.rpm'
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm'
       },
       opensuse: {
         title: 'Terminal — Install on openSUSE Tumbleweed / Leap',
-        cmd: 'sudo zypper install https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Fedora-openSUSE-x86_64.rpm',
-        artifact: 'TypEmoji-2.1.0-Fedora-openSUSE-x86_64.rpm',
-        size: '~4.3 MB',
+        cmd: 'sudo zypper install https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm',
+        artifact: 'TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm',
+        size: '~1.1 MB',
         deps: 'libQt6Core6, libQt6Widgets6, libX11-6, libXtst6',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Fedora-openSUSE-x86_64.rpm'
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm'
       },
       universal: {
         title: 'Terminal — Universal .run Self-Extracting Installer',
-        cmd: 'wget https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Universal-Installer.run && chmod +x TypEmoji-2.1.0-Universal-Installer.run && ./TypEmoji-2.1.0-Universal-Installer.run',
-        artifact: 'TypEmoji-2.1.0-Universal-Installer.run',
-        size: '~4.4 MB',
+        cmd: 'wget https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Universal-Installer.run && chmod +x TypEmoji-2.3.0-Universal-Installer.run && ./TypEmoji-2.3.0-Universal-Installer.run',
+        artifact: 'TypEmoji-2.3.0-Universal-Installer.run',
+        size: '~1.1 MB',
         deps: 'Self-contained binary installer with desktop & autostart integration',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Universal-Installer.run'
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Universal-Installer.run'
       },
       source: {
         title: 'Terminal — Compile from Source (C++23 & Qt 6)',
         cmd: 'git clone https://github.com/Ayan-Jain-737/TypEmoji.git && cd TypEmoji && cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build && sudo cmake --install build',
-        artifact: 'TypEmoji-2.1.0-Portable-Linux-x86_64.tar.gz',
+        artifact: 'TypEmoji-2.3.0-Portable-Linux-x86_64.tar.gz',
         size: 'Source Tarball',
         deps: 'cmake >= 3.25, ninja, g++-13 / clang-16, qt6-base, libx11-dev',
-        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Portable-Linux-x86_64.tar.gz'
+        url: 'https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Portable-Linux-x86_64.tar.gz'
       }
     };
 

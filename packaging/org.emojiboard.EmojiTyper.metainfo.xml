@@ -36,6 +36,16 @@
     <name>Ayan Jain</name>
   </developer>
   <releases>
+    <release version="2.3.0" date="2026-11-16">
+      <description>
+        <p>Windows-Style Common Grouper (grid deduplication), interactive colour and skin tone selector bar, instant variation flyout on corner triangle click or right-click, and live viewport repainting.</p>
+      </description>
+    </release>
+    <release version="2.2.0" date="2026-11-16">
+      <description>
+        <p>Configurable global hotkeys with live key sequence recorder, usage history JSON export/import, expanded 89-item curated Japanese kaomoji catalog, and customizable grid density (Compact, Standard, Large).</p>
+      </description>
+    </release>
     <release version="2.1.0" date="2026-11-15">
       <description>
         <p>Visual redesign and UX overhaul: spacious geometry, concentric rounded design, vector search bar, pill category tabs, jitter-free emoji cells, and elevated preview bar.</p>

@@ -1,3 +1,15 @@
+typemoji (2.3.0-1) unstable; urgency=medium
+
+  * Windows-Style Common Grouper and grid deduplication (388 base emojis).
+  * Interactive live colour & skin tone selector bar with 6 swatches.
+  * Direct corner triangle click and floating variation flyout.
+  * Configurable global hotkeys with live key recorder in Preferences.
+  * Recent and frequent history JSON export and import.
+  * Curated Kaomoji library expansion to 89 expressions across 10 categories.
+  * Customizable grid density (Compact, Standard, Large).
+
+ -- TypEmoji Contributors <contact@typemoji.org>  Mon, 16 Nov 2026 20:00:00 +0530
+
 emojityper (1.0.0-1) unstable; urgency=medium
 
   * Initial release.

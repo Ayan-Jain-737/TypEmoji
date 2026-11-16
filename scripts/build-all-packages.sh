@@ -29,9 +29,9 @@ chmod +x "$PROJECT_ROOT/scripts/create-installer.sh"
 "$PROJECT_ROOT/scripts/create-installer.sh"
 
 echo "▶ 5. Packaging into dist/ folder..."
-find "$BUILD_DIR" -maxdepth 1 -name "*.deb" -exec cp {} "$DIST_DIR/TypEmoji-1.0.0-Ubuntu-Debian-x86_64.deb" \;
-find "$BUILD_DIR" -maxdepth 1 -name "*.run" -exec cp {} "$DIST_DIR/TypEmoji-1.0.0-Universal-Installer.run" \;
-find "$BUILD_DIR" -maxdepth 1 -name "*.tar.gz" -exec cp {} "$DIST_DIR/TypEmoji-1.0.0-Portable-Linux-x86_64.tar.gz" \;
+find "$BUILD_DIR" -maxdepth 1 -name "*.deb" -exec cp {} "$DIST_DIR/TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb" \;
+find "$BUILD_DIR" -maxdepth 1 -name "*.run" -exec cp {} "$DIST_DIR/TypEmoji-2.3.0-Universal-Installer.run" \;
+find "$BUILD_DIR" -maxdepth 1 -name "*.tar.gz" -exec cp {} "$DIST_DIR/TypEmoji-2.3.0-Portable-Linux-x86_64.tar.gz" \;
 
 # Arch package build if makepkg is available
 if command -v makepkg &>/dev/null; then
@@ -43,7 +43,7 @@ if command -v makepkg &>/dev/null; then
     sed -i 's/sha256sums=(.*)/sha256sums=()/g' PKGBUILD
     sed -i "s|\$pkgname-\$pkgver|$TMP_ARCH_DIR|g" PKGBUILD
     makepkg -f --nodeps --noconfirm 2>/dev/null || true
-    find . -maxdepth 1 -name "*.pkg.tar.zst" ! -name "*-debug-*" -exec cp {} "$DIST_DIR/TypEmoji-1.0.0-Arch-Linux-x86_64.pkg.tar.zst" \;
+    find . -maxdepth 1 -name "*.pkg.tar.zst" ! -name "*-debug-*" -exec cp {} "$DIST_DIR/TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst" \;
     rm -rf "$TMP_ARCH_DIR"
 fi
 

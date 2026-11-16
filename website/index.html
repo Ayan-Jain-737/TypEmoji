@@ -33,7 +33,7 @@
         </div>
         <div class="brand-text">
           <span class="brand-title">TypEmoji</span>
-          <span class="version-badge" title="Current Stable Release">v2.1.0</span>
+          <span class="version-badge" title="Current Stable Release">v2.3.0</span>
         </div>
       </a>
 
@@ -53,7 +53,7 @@
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          <span>Get v2.1.0</span>
+          <span>Get v2.3.0</span>
         </a>
 
         <a href="https://github.com/Ayan-Jain-737/TypEmoji" target="_blank" rel="noopener noreferrer" class="github-badge-link" aria-label="GitHub Repository">
@@ -73,7 +73,7 @@
           <!-- Tactile Release Tag -->
           <div class="hero-pill-tag">
             <span class="pill-dot"></span>
-            <span class="pill-distro">v2.1.0 Released</span>
+            <span class="pill-distro">v2.3.0 Released</span>
             <span class="pill-sep">•</span>
             <span class="pill-title">Native C++23 &amp; Qt 6 for Linux</span>
           </div>
@@ -258,6 +258,19 @@
                 <button class="cat-tab kaomoji-tab" data-cat="Kaomoji" title="Japanese Kaomoji" role="tab" aria-selected="false">(•‿•)</button>
               </div>
 
+              <!-- Windows 11-Style Skin Tone Bar matching Qt setupSkinToneBar() -->
+              <div class="panel-skin-tone-bar" id="simSkinToneBar">
+                <span class="skin-tone-label">Skin tone:</span>
+                <div class="skin-tone-swatches">
+                  <button class="tone-btn active" data-tone="0" title="Default skin tone (Yellow / Neutral)">👋</button>
+                  <button class="tone-btn" data-tone="1" title="Light skin tone">👋🏻</button>
+                  <button class="tone-btn" data-tone="2" title="Medium-light skin tone">👋🏼</button>
+                  <button class="tone-btn" data-tone="3" title="Medium skin tone">👋🏽</button>
+                  <button class="tone-btn" data-tone="4" title="Medium-dark skin tone">👋🏾</button>
+                  <button class="tone-btn" data-tone="5" title="Dark skin tone">👋🏿</button>
+                </div>
+              </div>
+
               <!-- Main Emoji / Kaomoji Grid -->
               <div class="panel-body" id="stackedWidget">
                 <div class="emoji-grid-scroll" id="sim-grid-container">
@@ -363,6 +376,70 @@
               <span class="tag">Systemd Service</span>
             </div>
           </div>
+
+          <!-- Windows-Style Common Grouper & Colour Selector -->
+          <div class="arch-card">
+            <div class="arch-card-header">
+              <div class="arch-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                </svg>
+              </div>
+              <h3 class="arch-title">Windows-Style Common Grouper</h3>
+            </div>
+            <p class="arch-body">
+              Deduplicates 2,030 Fitzpatrick skin tone variants into 388 clean base emojis. Live 6-swatch colour bar instantly switches global tones, and direct corner clicks reveal elevated 6-variant flyout cards.
+            </p>
+            <div class="arch-tags">
+              <span class="tag">Skin Tone Bar</span>
+              <span class="tag">Zero Clutter</span>
+              <span class="tag">Flyout Card</span>
+              <span class="tag">Live Repaint</span>
+            </div>
+          </div>
+
+          <!-- Configurable Hotkeys Card -->
+          <div class="arch-card">
+            <div class="arch-card-header">
+              <div class="arch-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                  <path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"></path>
+                </svg>
+              </div>
+              <h3 class="arch-title">Configurable Hotkey Recorder</h3>
+            </div>
+            <p class="arch-body">
+              Record any custom key sequence in Preferences. Rebind from Super+. to any combination with live modifier badges synced across KGlobalAccel, XDG Desktop Portal, and X11.
+            </p>
+            <div class="arch-tags">
+              <span class="tag">Key Recorder</span>
+              <span class="tag">Multi-Backend</span>
+              <span class="tag">Custom Bindings</span>
+            </div>
+          </div>
+
+          <!-- History Backup & Grid Density -->
+          <div class="arch-card">
+            <div class="arch-card-header">
+              <div class="arch-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              </div>
+              <h3 class="arch-title">History JSON &amp; Grid Density</h3>
+            </div>
+            <p class="arch-body">
+              Backup and restore your frequent and recent emoji usage with one-click JSON export/import. Customize grid cell density between Compact (36px), Standard (44px), and Large (52px).
+            </p>
+            <div class="arch-tags">
+              <span class="tag">JSON Export</span>
+              <span class="tag">Density Control</span>
+              <span class="tag">89 Kaomojis</span>
+            </div>
+          </div>
         </div>
 
         <!-- Compatibility Matrix Table -->
@@ -450,7 +527,7 @@
             <div class="bench-bars">
               <div class="bench-row highlight-row">
                 <div class="bench-label-group">
-                  <span class="bench-name">TypEmoji v2.1.0 (Native Qt6)</span>
+                  <span class="bench-name">TypEmoji v2.3.0 (Native Qt6)</span>
                   <span class="bench-val">13.8 MB</span>
                 </div>
                 <div class="bench-bar-track">
@@ -490,7 +567,7 @@
             <div class="bench-bars">
               <div class="bench-row highlight-row">
                 <div class="bench-label-group">
-                  <span class="bench-name">TypEmoji v2.1.0</span>
+                  <span class="bench-name">TypEmoji v2.3.0</span>
                   <span class="bench-val">3.8 ms</span>
                 </div>
                 <div class="bench-bar-track">
@@ -551,7 +628,7 @@
           <div class="section-tag">Distribution Packages</div>
           <h2 class="section-title">Install on Any Linux Distribution</h2>
           <p class="section-desc">
-            Official v2.1.0 pre-compiled native packages for every major Linux package manager and a universal installer.
+            Official v2.3.0 pre-compiled native packages for every major Linux package manager and a universal installer.
           </p>
         </div>
 
@@ -609,7 +686,7 @@
                   <span class="copy-text">Copy Command</span>
                 </button>
               </div>
-              <pre class="code-pre"><code id="distro-install-snippet" class="language-bash">sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst</code></pre>
+              <pre class="code-pre"><code id="distro-install-snippet" class="language-bash">sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst</code></pre>
             </div>
 
             <!-- Distro Metadata & Direct Download Bar -->
@@ -617,20 +694,20 @@
               <div class="distro-meta-info">
                 <div class="meta-item">
                   <span class="meta-label">Release Artifact:</span>
-                  <span class="meta-value" id="distro-artifact-name">TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst</span>
+                  <span class="meta-value" id="distro-artifact-name">TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst</span>
                 </div>
                 <div class="meta-item">
                   <span class="meta-label">Package Size:</span>
-                  <span class="meta-value" id="distro-size">~4.1 MB</span>
+                  <span class="meta-value" id="distro-size">~774 KB</span>
                 </div>
                 <div class="meta-item">
                   <span class="meta-label">Dependencies:</span>
-                  <span class="meta-value" id="distro-deps">qt6-base, qt6-tools, libx11, libxtst</span>
+                  <span class="meta-value" id="distro-deps">qt6-base, libx11, libxtst (optional: kglobalaccel)</span>
                 </div>
               </div>
 
               <div class="distro-buttons">
-                <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst" id="distro-direct-download" class="btn btn-primary" download>
+                <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst" id="distro-direct-download" class="btn btn-primary" download>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
@@ -638,7 +715,7 @@
                   </svg>
                   <span>Download Package</span>
                 </a>
-                <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/tag/v2.1.0" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+                <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/tag/v2.3.0" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
                   Release Notes
                 </a>
               </div>
@@ -756,11 +833,11 @@
       </div>
 
       <div class="footer-links-col">
-        <div class="footer-heading">Downloads (v2.1.0)</div>
-        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Arch-Linux-x86_64.pkg.tar.zst">Arch Linux (.pkg.tar.zst)</a>
-        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Ubuntu-Debian-x86_64.deb">Ubuntu / Debian (.deb)</a>
-        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Fedora-openSUSE-x86_64.rpm">Fedora / openSUSE (.rpm)</a>
-        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.1.0/TypEmoji-2.1.0-Universal-Installer.run">Universal Installer (.run)</a>
+        <div class="footer-heading">Downloads (v2.3.0)</div>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Arch-Linux-x86_64.pkg.tar.zst">Arch Linux (.pkg.tar.zst)</a>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Ubuntu-Debian-x86_64.deb">Ubuntu / Debian (.deb)</a>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Fedora-openSUSE-x86_64.rpm">Fedora / openSUSE (.rpm)</a>
+        <a href="https://github.com/Ayan-Jain-737/TypEmoji/releases/download/v2.3.0/TypEmoji-2.3.0-Universal-Installer.run">Universal Installer (.run)</a>
       </div>
     </div>
   </footer>

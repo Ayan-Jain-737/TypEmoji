@@ -172,7 +172,7 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
     m_clickOutsideTimer = new QTimer(this);
     m_clickOutsideTimer->setInterval(80);
     connect(m_clickOutsideTimer, &QTimer::timeout, this, [this]() {
-        if (!isVisible() || m_isInjecting || !m_wasActivated) return;
+        if (!isVisible() || m_isInjecting || m_keepOpenInProgress || !m_wasActivated) return;
 
         QWidget* active = QApplication::activeWindow();
         if (active && (active == this || isAncestorOf(active) || active->inherits("QMenu") || active->inherits("QToolTip"))) {
@@ -190,6 +190,29 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
             }
         }
     });
+
+    if (m_injector) {
+        connect(m_injector, &EmojiInjector::injectionFinished, this, [this](bool keepOpen) {
+            if (keepOpen && isVisible()) {
+                if (m_targetState) {
+                    m_targetState->activateEmojiPanel();
+                }
+                raise();
+                activateWindow();
+                int curIdx = m_stackedWidget ? m_stackedWidget->currentIndex() : -1;
+                if (curIdx >= 0 && curIdx < m_listViews.size()) {
+                    m_listViews[curIdx]->setFocus();
+                }
+                QTimer::singleShot(180, this, [this]() {
+                    m_isInjecting = false;
+                    m_keepOpenInProgress = false;
+                });
+            } else if (!keepOpen) {
+                m_isInjecting = false;
+                m_keepOpenInProgress = false;
+            }
+        });
+    }
 
     m_pressTimer = new QTimer(this);
     m_pressTimer->setSingleShot(true);
@@ -275,8 +298,26 @@ void EmojiPanel::setupUi()
         if (m_proxyModel->rowCount() > 0) {
             QModelIndex firstIdx = m_proxyModel->index(0, 0);
             if (firstIdx.isValid()) {
-                onEmojiClicked(firstIdx);
+                bool keep = m_isPinned || (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier);
+                onEmojiClicked(firstIdx, keep);
             }
+        }
+    });
+
+    // Pin button (multi-emoji mode toggle)
+    m_pinBtn = new QPushButton("📌", m_headerWidget);
+    m_pinBtn->setFixedSize(28, 28);
+    m_pinBtn->setObjectName("pinBtn");
+    m_pinBtn->setCheckable(true);
+    m_pinBtn->setToolTip("Keep picker open for multiple emojis (Pin)");
+    m_pinBtn->setFocusPolicy(Qt::NoFocus);
+    m_pinBtn->setCursor(Qt::PointingHandCursor);
+    connect(m_pinBtn, &QPushButton::toggled, this, [this](bool checked) {
+        m_isPinned = checked;
+        if (m_previewHints) {
+            m_previewHints->setText(checked ?
+                "<span style='font-weight:700;'>📌 Multi-Emoji Mode Active</span>" :
+                "<span style='font-weight:700;'>↵</span> Insert &nbsp; <span style='font-weight:700;'>⇧↵</span> Keep");
         }
     });
 
@@ -291,6 +332,7 @@ void EmojiPanel::setupUi()
 
     headerLayout->addWidget(searchIcon);
     headerLayout->addWidget(m_searchEdit, 1);
+    headerLayout->addWidget(m_pinBtn);
     headerLayout->addWidget(m_closeBtn);
 
     // Category tab bar (Windows-style emoji category tabs)
@@ -576,7 +618,10 @@ void EmojiPanel::createCategoryViews()
         delegate->setDensity(density);
         listView->setItemDelegate(delegate);
         listView->installEventFilter(this);
-        connect(listView, &QListView::clicked, this, &EmojiPanel::onEmojiClicked);
+        connect(listView, &QListView::clicked, this, [this](const QModelIndex& idx) {
+            bool keep = m_isPinned || (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier);
+            onEmojiClicked(idx, keep);
+        });
 
         // Right-click custom context menu for skin tone picker
         listView->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -659,6 +704,21 @@ void EmojiPanel::applyTheme()
             #searchEdit:focus {
                 border: 1.5px solid #0078D4;
                 background-color: rgba(255, 255, 255, 0.1);
+            }
+            #pinBtn {
+                background-color: rgba(255, 255, 255, 0.05);
+                color: rgba(255, 255, 255, 0.6);
+                border: none;
+                border-radius: 14px;
+                font-size: 13px;
+            }
+            #pinBtn:hover {
+                background-color: rgba(255, 255, 255, 0.15);
+                color: #FFFFFF;
+            }
+            #pinBtn:checked {
+                background-color: #0078D4;
+                color: #FFFFFF;
             }
             #closeBtn {
                 background-color: rgba(255, 255, 255, 0.05);
@@ -812,6 +872,21 @@ void EmojiPanel::applyTheme()
             #searchEdit:focus {
                 border: 1.5px solid #0078D4;
                 background-color: #FFFFFF;
+            }
+            #pinBtn {
+                background-color: rgba(0, 0, 0, 0.04);
+                color: rgba(0, 0, 0, 0.5);
+                border: none;
+                border-radius: 14px;
+                font-size: 13px;
+            }
+            #pinBtn:hover {
+                background-color: rgba(0, 0, 0, 0.1);
+                color: #111111;
+            }
+            #pinBtn:checked {
+                background-color: #0078D4;
+                color: #FFFFFF;
             }
             #closeBtn {
                 background-color: rgba(0, 0, 0, 0.04);
@@ -970,6 +1045,10 @@ void EmojiPanel::showAt(const QPoint& pos)
 
     m_wasActivated = false;
     m_isInjecting = false;
+    m_keepOpenInProgress = false;
+    if (m_reactivateSafetyTimer && m_reactivateSafetyTimer->isActive()) {
+        m_reactivateSafetyTimer->stop();
+    }
     m_pendingEmoji.clear();
     m_searchEdit->clear();
 
@@ -1056,6 +1135,11 @@ void EmojiPanel::hidePanel()
 {
     if (isVisible()) {
         m_wasActivated = false;
+        m_isInjecting = false;
+        m_keepOpenInProgress = false;
+        if (m_reactivateSafetyTimer && m_reactivateSafetyTimer->isActive()) {
+            m_reactivateSafetyTimer->stop();
+        }
         if (m_clickOutsideTimer) {
             m_clickOutsideTimer->stop();
         }
@@ -1133,7 +1217,7 @@ void EmojiPanel::updatePreview(const QString& emoji, const QString& name, const 
     }
 }
 
-void EmojiPanel::onEmojiClicked(const QModelIndex& index)
+void EmojiPanel::onEmojiClicked(const QModelIndex& index, bool forceKeepOpen)
 {
     if (!index.isValid()) return;
 
@@ -1144,14 +1228,8 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
 
     Settings& settings = Settings::instance();
 
-    if (m_isInjecting) {
-        // Queue this emoji so rapid keystrokes/clicks are not dropped
-        m_pendingEmoji = emoji;
-        return;
-    }
-
-    // Check shift modifier: Shift+Click or Shift+Enter keeps the panel open!
-    bool keepOpen = (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier);
+    // Check keep open: explicit parameter, pinned toggle, or Shift modifier
+    bool keepOpen = forceKeepOpen || m_isPinned || (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier);
 
     // Update recent/frequent tracking (FIFO up to 20)
     settings.addRecentEmoji(emoji);
@@ -1164,36 +1242,32 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
     // Direct injection into the target application text box while targetState is valid
     if (m_injector) {
         m_isInjecting = true;
-        bool success = m_injector->insertEmoji(emoji, m_targetState);
+        if (keepOpen) {
+            m_keepOpenInProgress = true;
+        }
+        bool success = m_injector->insertEmoji(emoji, m_targetState, keepOpen);
         if (!success) {
             qWarning() << "Emoji injection failed for:" << emoji;
+            m_isInjecting = false;
+            m_keepOpenInProgress = false;
         } else {
             emit emojiInserted(emoji);
-        }
-        m_isInjecting = false;
-
-        // Immediately handle any pending injection that was queued during injection
-        if (!m_pendingEmoji.isEmpty()) {
-            QString nextEmoji = m_pendingEmoji;
-            m_pendingEmoji.clear();
-            if (m_injector) {
-                m_isInjecting = true;
-                m_injector->insertEmoji(nextEmoji, m_targetState);
-                emit emojiInserted(nextEmoji);
-                m_isInjecting = false;
-            }
         }
     }
 
     if (!keepOpen) {
         hidePanel();
     } else if (isVisible()) {
-        // If Shift was held, return active focus to EmojiPanel for continuous typing
-        if (m_targetState) {
-            m_targetState->activateEmojiPanel();
+        if (!m_reactivateSafetyTimer) {
+            m_reactivateSafetyTimer = new QTimer(this);
+            m_reactivateSafetyTimer->setSingleShot(true);
+            connect(m_reactivateSafetyTimer, &QTimer::timeout, this, [this]() {
+                m_isInjecting = false;
+                m_keepOpenInProgress = false;
+            });
         }
-        raise();
-        activateWindow();
+        m_reactivateSafetyTimer->start(450);
+
         int curIdx = m_stackedWidget->currentIndex();
         if (curIdx >= 0 && curIdx < m_listViews.size()) {
             m_listViews[curIdx]->setFocus();
@@ -1201,7 +1275,7 @@ void EmojiPanel::onEmojiClicked(const QModelIndex& index)
 
         // If currently viewing the Recent tab, refresh it safely on next event loop tick
         if (curIdx == 0) {
-            QTimer::singleShot(50, this, [this]() {
+            QTimer::singleShot(60, this, [this]() {
                 if (isVisible() && m_stackedWidget->currentIndex() == 0) {
                     Settings& s = Settings::instance();
                     QStringList recentCodes = s.recentEmojis();
@@ -1408,7 +1482,7 @@ void EmojiPanel::onSkinToneRequested(const QModelIndex& index)
 
         connect(btn, &QPushButton::clicked, menu, [menu, this, toneEmoji, toneName]() {
             menu->close();
-            bool keepOpen = (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier);
+            bool keepOpen = m_isPinned || (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier);
             Settings& settings = Settings::instance();
             settings.addRecentEmoji(toneEmoji);
             settings.incrementFrequency(toneEmoji);
@@ -1418,21 +1492,30 @@ void EmojiPanel::onSkinToneRequested(const QModelIndex& index)
 
             if (m_injector) {
                 m_isInjecting = true;
-                bool success = m_injector->insertEmoji(toneEmoji, m_targetState);
+                if (keepOpen) {
+                    m_keepOpenInProgress = true;
+                }
+                bool success = m_injector->insertEmoji(toneEmoji, m_targetState, keepOpen);
                 if (success) {
                     emit emojiInserted(toneEmoji);
+                } else {
+                    m_isInjecting = false;
+                    m_keepOpenInProgress = false;
                 }
-                m_isInjecting = false;
             }
 
             if (!keepOpen) {
                 hidePanel();
             } else if (isVisible()) {
-                if (m_targetState) {
-                    m_targetState->activateEmojiPanel();
+                if (!m_reactivateSafetyTimer) {
+                    m_reactivateSafetyTimer = new QTimer(this);
+                    m_reactivateSafetyTimer->setSingleShot(true);
+                    connect(m_reactivateSafetyTimer, &QTimer::timeout, this, [this]() {
+                        m_isInjecting = false;
+                        m_keepOpenInProgress = false;
+                    });
                 }
-                raise();
-                activateWindow();
+                m_reactivateSafetyTimer->start(450);
             }
         });
         hlayout->addWidget(btn);
@@ -1733,10 +1816,13 @@ void EmojiPanel::keyPressEvent(QKeyEvent* event)
         if (event->isAutoRepeat()) {
             return; // Ignore key repeat to prevent flooding
         }
-        if (curList && curList->currentIndex().isValid()) {
-            onEmojiClicked(curList->currentIndex());
-        } else if (m_proxyModel->rowCount() > 0) {
-            onEmojiClicked(m_proxyModel->index(0, 0));
+        {
+            bool keep = m_isPinned || (event->modifiers() & Qt::ShiftModifier);
+            if (curList && curList->currentIndex().isValid()) {
+                onEmojiClicked(curList->currentIndex(), keep);
+            } else if (m_proxyModel->rowCount() > 0) {
+                onEmojiClicked(m_proxyModel->index(0, 0), keep);
+            }
         }
         break;
 
@@ -1772,7 +1858,9 @@ void EmojiPanel::changeEvent(QEvent* event)
     if (event->type() == QEvent::ActivationChange) {
         if (isActiveWindow()) {
             m_wasActivated = true;
-        } else if (m_wasActivated && !m_isInjecting && isVisible()) {
+            m_isInjecting = false;
+            m_keepOpenInProgress = false;
+        } else if (m_wasActivated && !m_isInjecting && !m_keepOpenInProgress && isVisible()) {
             QWidget* active = QApplication::activeWindow();
             if (active && (active == this || isAncestorOf(active) || active->inherits("QMenu") || QApplication::activePopupWidget())) {
                 return;
@@ -1841,10 +1929,11 @@ bool EmojiPanel::eventFilter(QObject* watched, QEvent* event)
         // Return / Enter: Inject emoji
         if (key == Qt::Key_Return || key == Qt::Key_Enter) {
             if (!keyEvent->isAutoRepeat()) {
+                bool keep = m_isPinned || (keyEvent->modifiers() & Qt::ShiftModifier);
                 if (curList && curList->currentIndex().isValid()) {
-                    onEmojiClicked(curList->currentIndex());
+                    onEmojiClicked(curList->currentIndex(), keep);
                 } else if (m_proxyModel->rowCount() > 0) {
-                    onEmojiClicked(m_proxyModel->index(0, 0));
+                    onEmojiClicked(m_proxyModel->index(0, 0), keep);
                 }
             }
             return true;
@@ -1971,8 +2060,8 @@ bool EmojiPanel::eventFilter(QObject* watched, QEvent* event)
         }
         // Check if the click is outside our panel geometry
         if (isVisible() && !geometry().contains(mouseEvent->globalPosition().toPoint())) {
-            // Don't hide if a popup menu is currently active or if click is on a popup window/menu
-            if (QApplication::activePopupWidget()) {
+            // Don't hide if a popup menu is currently active or if injection in progress
+            if (QApplication::activePopupWidget() || m_isInjecting || m_keepOpenInProgress) {
                 return false;
             }
             QWidget* clickedWidget = QApplication::widgetAt(mouseEvent->globalPosition().toPoint());

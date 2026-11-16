@@ -61,7 +61,7 @@ protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private slots:
-    void onEmojiClicked(const QModelIndex& index);
+    void onEmojiClicked(const QModelIndex& index, bool keepOpen = false);
     void onSearchTextChanged(const QString& text);
     void onCategoryChanged(int index);
     void onSkinToneRequested(const QModelIndex& index);
@@ -94,6 +94,7 @@ private:
     QVBoxLayout* m_mainLayout = nullptr;
     QWidget* m_containerWidget = nullptr;
     QWidget* m_headerWidget = nullptr;
+    QPushButton* m_pinBtn = nullptr;
     QPushButton* m_closeBtn = nullptr;
     QWidget* m_footerWidget = nullptr;
     QLabel* m_previewEmoji = nullptr;
@@ -104,9 +105,12 @@ private:
 
     std::vector<CategoryDef> m_categoryDefs;
     bool m_isInjecting = false;
+    bool m_keepOpenInProgress = false;
+    bool m_isPinned = false;
     QString m_pendingEmoji;
     bool m_wasActivated = false;
     QTimer* m_clickOutsideTimer = nullptr;
+    QTimer* m_reactivateSafetyTimer = nullptr;
     QTimer* m_pressTimer = nullptr;
     QModelIndex m_pressedIndex;
     bool m_longPressTriggered = false;

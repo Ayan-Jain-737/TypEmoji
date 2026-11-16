@@ -90,12 +90,16 @@ bool EmojiInjector::pasteViaYdotool() {
     return (ydoProc.exitStatus() == QProcess::NormalExit && ydoProc.exitCode() == 0);
 }
 
-bool EmojiInjector::insertEmoji(const QString &emoji, TargetState *targetState) {
+bool EmojiInjector::insertEmoji(const QString &emoji, TargetState *targetState, bool keepOpen) {
     if (emoji.isEmpty()) return false;
 
     // Direct X11 XTest path if available and not on Wayland
     if (!m_isWayland) {
         if (sendViaXTest(emoji)) {
+            if (keepOpen && targetState) {
+                targetState->activateEmojiPanel();
+            }
+            emit injectionFinished(keepOpen);
             return true;
         }
     } else {
@@ -104,10 +108,18 @@ bool EmojiInjector::insertEmoji(const QString &emoji, TargetState *targetState) 
             m_wtypeTested = true;
             m_wtypeSupported = sendViaWtype(emoji);
             if (m_wtypeSupported) {
+                if (keepOpen && targetState) {
+                    targetState->activateEmojiPanel();
+                }
+                emit injectionFinished(keepOpen);
                 return true;
             }
         } else if (m_wtypeSupported) {
             if (sendViaWtype(emoji)) {
+                if (keepOpen && targetState) {
+                    targetState->activateEmojiPanel();
+                }
+                emit injectionFinished(keepOpen);
                 return true;
             }
         }
@@ -116,6 +128,9 @@ bool EmojiInjector::insertEmoji(const QString &emoji, TargetState *targetState) 
     // Queue emoji for batched clipboard paste to avoid dropping rapid clicks/typing
     m_queuedEmojis.append(emoji);
     m_pendingTargetState = targetState;
+    if (keepOpen) {
+        m_pendingKeepOpen = true;
+    }
 
     if (!m_batchTimer->isActive()) {
         m_batchTimer->start(15);
@@ -137,6 +152,10 @@ void EmojiInjector::processQueue() {
     QString batch = m_queuedEmojis;
     m_queuedEmojis.clear();
     TargetState* target = m_pendingTargetState;
+    bool keepOpen = m_pendingKeepOpen;
+    m_pendingKeepOpen = false;
+
+    emit injectionStarted();
 
     // 1. Preserve current clipboard content before overwriting
     saveClipboard();
@@ -164,6 +183,18 @@ void EmojiInjector::processQueue() {
     m_restoreTimer->start(400);
 
     emit clipboardFallbackUsed(batch);
+
+    // 6. Reactivate EmojiPanel if keepOpen is requested
+    if (keepOpen && target) {
+        target->activateEmojiPanel();
+    }
+
+    // If rapid clicks queued more emojis while simulating paste, process immediately
+    if (!m_queuedEmojis.isEmpty() && !m_batchTimer->isActive()) {
+        m_batchTimer->start(15);
+    }
+
+    emit injectionFinished(keepOpen);
 }
 
 bool EmojiInjector::simulatePaste() {

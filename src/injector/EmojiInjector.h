@@ -18,12 +18,14 @@ public:
     ~EmojiInjector() override = default;
 
     // Insert emoji into target window (queued and batched for zero drops)
-    bool insertEmoji(const QString& emoji, TargetState* targetState);
+    bool insertEmoji(const QString& emoji, TargetState* targetState, bool keepOpen = false);
 
     // Immediately flush any queued emojis
     void flushQueue();
 
 signals:
+    void injectionStarted();
+    void injectionFinished(bool keepOpen);
     void injectionFailed(const QString& reason);
     void clipboardFallbackUsed(const QString& emoji);
 
@@ -47,6 +49,7 @@ private:
 
     QString m_queuedEmojis;
     TargetState* m_pendingTargetState = nullptr;
+    bool m_pendingKeepOpen = false;
     QTimer* m_batchTimer = nullptr;
     QTimer* m_restoreTimer = nullptr;
 };

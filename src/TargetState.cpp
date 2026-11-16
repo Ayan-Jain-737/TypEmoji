@@ -3,6 +3,7 @@
  * High-performance implementation using native QtDBus (0ms process spawn overhead)
  */
 #include "TargetState.h"
+#include <atomic>
 #include <QtCore/QDebug>
 #include <QtCore/QFile>
 #include <QtCore/QDateTime>
@@ -17,6 +18,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/keysym.h>
+
+static std::atomic<uint64_t> s_scriptSeq{0};
 
 TargetState::TargetState(QObject* parent) : QObject(parent)
 {
@@ -56,7 +59,7 @@ bool TargetState::captureKWinWayland()
     );
     f.close();
 
-    QString pluginName = QString("et_cap_%1").arg(QDateTime::currentMSecsSinceEpoch());
+    QString pluginName = QString("et_cap_%1_%2").arg(QDateTime::currentMSecsSinceEpoch()).arg(++s_scriptSeq);
     QDBusInterface kwinScripting("org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting", QDBusConnection::sessionBus());
     QDBusReply<int> reply = kwinScripting.call("loadScript", scriptPath, pluginName);
     if (reply.isValid() && reply.value() > 0) {
@@ -160,7 +163,7 @@ bool TargetState::activateKWinWayland()
     f.write(script.toUtf8());
     f.close();
 
-    QString pluginName = QString("et_act_%1").arg(QDateTime::currentMSecsSinceEpoch());
+    QString pluginName = QString("et_act_%1_%2").arg(QDateTime::currentMSecsSinceEpoch()).arg(++s_scriptSeq);
     QDBusInterface kwinScripting("org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting", QDBusConnection::sessionBus());
     QDBusReply<int> reply = kwinScripting.call("loadScript", scriptPath, pluginName);
     if (reply.isValid() && reply.value() > 0) {
@@ -203,7 +206,7 @@ bool TargetState::activateEmojiPanel()
     f.write(script.toUtf8());
     f.close();
 
-    QString pluginName = QString("et_act_p_%1").arg(QDateTime::currentMSecsSinceEpoch());
+    QString pluginName = QString("et_act_p_%1_%2").arg(QDateTime::currentMSecsSinceEpoch()).arg(++s_scriptSeq);
     QDBusInterface kwinScripting("org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting", QDBusConnection::sessionBus());
     QDBusReply<int> reply = kwinScripting.call("loadScript", scriptPath, pluginName);
     if (reply.isValid() && reply.value() > 0) {

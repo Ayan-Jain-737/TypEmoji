@@ -130,12 +130,19 @@ public:
             // Center emoji cleanly without hover-induced jitter
             painter->drawText(opt.rect, Qt::AlignCenter, emoji);
 
-            // Subtle amber indicator badge in bottom-right corner for skin tone variants
+            // Windows 11-style subtle corner triangle indicator for emojis with skin tone variations
             if (index.data(EmojiModel::HasSkinTonesRole).toBool()) {
-                painter->setPen(QPen(QColor(0, 0, 0, 70), 0.5));
-                painter->setBrush(QColor(255, 185, 80, 220));
-                int dotSize = (m_density == 0) ? 4 : 5;
-                painter->drawEllipse(r.right() - dotSize - 1, r.bottom() - dotSize - 1, dotSize, dotSize);
+                painter->save();
+                painter->setRenderHint(QPainter::Antialiasing, true);
+                int triSize = (m_density == 0) ? 5 : 6;
+                QPolygon tri;
+                tri << QPoint(r.right() - 1, r.bottom() - triSize)
+                    << QPoint(r.right() - 1, r.bottom() - 1)
+                    << QPoint(r.right() - triSize, r.bottom() - 1);
+                painter->setPen(Qt::NoPen);
+                painter->setBrush(QColor(180, 180, 190, 190));
+                painter->drawPolygon(tri);
+                painter->restore();
             }
 
             painter->restore();
@@ -196,6 +203,11 @@ EmojiPanel::EmojiPanel(EmojiDatabase* database, EmojiInjector* injector,
 
     setupUi();
     applyTheme();
+
+    connect(&Settings::instance(), &Settings::defaultSkinToneChanged, this, [this](int tone) {
+        Q_UNUSED(tone);
+        updateSkinToneBarSelection();
+    });
 
     if (qApp) {
         qApp->installEventFilter(this);
@@ -360,9 +372,12 @@ void EmojiPanel::setupUi()
     footerLayout->addLayout(textCol, 1);
     footerLayout->addWidget(m_previewHints);
 
+    setupSkinToneBar();
+
     // Assemble
     containerLayout->addWidget(m_headerWidget);
     containerLayout->addWidget(m_categoryTabBar);
+    containerLayout->addWidget(m_skinToneBar);
     containerLayout->addWidget(m_stackedWidget, 1);
     containerLayout->addWidget(m_footerWidget);
 
@@ -370,6 +385,112 @@ void EmojiPanel::setupUi()
 
     connect(m_searchEdit, &QLineEdit::textChanged, this, &EmojiPanel::onSearchTextChanged);
     connect(&Settings::instance(), &Settings::gridDensityChanged, this, &EmojiPanel::updateGridDensity);
+}
+
+void EmojiPanel::setupSkinToneBar()
+{
+    m_skinToneBar = new QWidget(m_containerWidget);
+    m_skinToneBar->setObjectName("skinToneBar");
+    m_skinToneBar->setFixedHeight(36);
+
+    QHBoxLayout* barLayout = new QHBoxLayout(m_skinToneBar);
+    barLayout->setContentsMargins(12, 2, 12, 4);
+    barLayout->setSpacing(6);
+
+    QLabel* label = new QLabel("Skin tone:", m_skinToneBar);
+    label->setObjectName("skinToneLabel");
+    QFont lf = label->font();
+    lf.setPointSize(10);
+    lf.setWeight(QFont::Medium);
+    label->setFont(lf);
+    barLayout->addWidget(label);
+
+    barLayout->addStretch(1);
+
+    static const struct ToneSwatch {
+        const char* emoji;
+        const char* tooltip;
+        int toneIndex;
+    } s_swatches[6] = {
+        {"👋", "Default skin tone (Yellow / Neutral)", 0},
+        {"👋🏻", "Light skin tone", 1},
+        {"👋🏼", "Medium-light skin tone", 2},
+        {"👋🏽", "Medium skin tone", 3},
+        {"👋🏾", "Medium-dark skin tone", 4},
+        {"👋🏿", "Dark skin tone", 5}
+    };
+
+    m_skinToneButtons.clear();
+    for (int i = 0; i < 6; ++i) {
+        QPushButton* btn = new QPushButton(QString::fromUtf8(s_swatches[i].emoji), m_skinToneBar);
+        btn->setFixedSize(28, 28);
+        btn->setToolTip(s_swatches[i].tooltip);
+        btn->setCursor(Qt::PointingHandCursor);
+        btn->setFocusPolicy(Qt::NoFocus);
+        btn->setProperty("toneIndex", s_swatches[i].toneIndex);
+        QFont bf = btn->font();
+        bf.setPointSize(14);
+        bf.setFamilies({"Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji"});
+        btn->setFont(bf);
+
+        connect(btn, &QPushButton::clicked, this, [this, i]() {
+            Settings::instance().setDefaultSkinTone(i);
+            Settings::instance().save();
+            updateSkinToneBarSelection();
+        });
+
+        barLayout->addWidget(btn);
+        m_skinToneButtons.append(btn);
+    }
+
+    updateSkinToneBarSelection();
+    updateSkinToneBarVisibility();
+}
+
+void EmojiPanel::updateSkinToneBarSelection()
+{
+    int currentTone = Settings::instance().defaultSkinTone();
+    for (QPushButton* btn : m_skinToneButtons) {
+        int tone = btn->property("toneIndex").toInt();
+        bool active = (tone == currentTone);
+        btn->setProperty("active", active);
+        btn->style()->unpolish(btn);
+        btn->style()->polish(btn);
+        btn->update();
+    }
+}
+
+void EmojiPanel::updateSkinToneBarVisibility()
+{
+    if (!m_skinToneBar) return;
+
+    // When searching
+    if (!m_searchEdit->text().trimmed().isEmpty()) {
+        bool hasToneResults = false;
+        if (m_proxyModel) {
+            int rows = std::min(m_proxyModel->rowCount(), 40);
+            for (int r = 0; r < rows; ++r) {
+                QModelIndex idx = m_proxyModel->index(r, 0);
+                if (idx.data(EmojiModel::HasSkinTonesRole).toBool()) {
+                    hasToneResults = true;
+                    break;
+                }
+            }
+        }
+        m_skinToneBar->setVisible(hasToneResults);
+        return;
+    }
+
+    // By category
+    int curTab = m_categoryTabBar->currentIndex();
+    if (curTab >= 0 && curTab < static_cast<int>(m_categoryDefs.size())) {
+        const QString& cat = m_categoryDefs[curTab].categoryName;
+        if (cat == "Objects" || cat == "Symbols" || cat == "Flags" || cat == "Kaomoji") {
+            m_skinToneBar->setVisible(false);
+            return;
+        }
+    }
+    m_skinToneBar->setVisible(true);
 }
 
 void EmojiPanel::populateCategories()
@@ -569,6 +690,28 @@ void EmojiPanel::applyTheme()
                 background-color: rgba(255, 255, 255, 0.08);
                 color: #FFFFFF;
             }
+            #skinToneBar {
+                background-color: transparent;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            #skinToneLabel {
+                color: rgba(255, 255, 255, 0.65);
+                font-size: 11px;
+                font-weight: 600;
+            }
+            #skinToneBar QPushButton {
+                background-color: rgba(255, 255, 255, 0.05);
+                border: 2px solid transparent;
+                border-radius: 6px;
+            }
+            #skinToneBar QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.16);
+                border: 2px solid rgba(255, 255, 255, 0.25);
+            }
+            #skinToneBar QPushButton[active="true"] {
+                background-color: rgba(96, 205, 255, 0.22);
+                border: 2px solid #0078D4;
+            }
             #stackedWidget {
                 background-color: transparent;
                 border: none;
@@ -700,6 +843,28 @@ void EmojiPanel::applyTheme()
                 background-color: rgba(0, 0, 0, 0.04);
                 color: #000000;
             }
+            #skinToneBar {
+                background-color: transparent;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            }
+            #skinToneLabel {
+                color: rgba(0, 0, 0, 0.65);
+                font-size: 11px;
+                font-weight: 600;
+            }
+            #skinToneBar QPushButton {
+                background-color: rgba(0, 0, 0, 0.04);
+                border: 2px solid transparent;
+                border-radius: 6px;
+            }
+            #skinToneBar QPushButton:hover {
+                background-color: rgba(0, 0, 0, 0.09);
+                border: 2px solid rgba(0, 0, 0, 0.18);
+            }
+            #skinToneBar QPushButton[active="true"] {
+                background-color: rgba(0, 120, 212, 0.15);
+                border: 2px solid #0078D4;
+            }
             #stackedWidget {
                 background-color: transparent;
                 border: none;
@@ -790,6 +955,8 @@ void EmojiPanel::showAt(const QPoint& pos)
     int initialTab = (recent.size() >= 16) ? 0 : 1;
     m_categoryTabBar->setCurrentIndex(initialTab);
     onCategoryChanged(initialTab);
+    updateSkinToneBarSelection();
+    updateSkinToneBarVisibility();
 
     m_wasActivated = false;
     m_isInjecting = false;
@@ -1105,6 +1272,7 @@ void EmojiPanel::onSearchTextChanged(const QString& text)
             updatePreview("✨", "Emoji Picker", ":picker:");
         }
     }
+    updateSkinToneBarVisibility();
 }
 
 void EmojiPanel::onCategoryChanged(int index)
@@ -1155,13 +1323,28 @@ void EmojiPanel::onCategoryChanged(int index)
     } else {
         updatePreview(m_categoryDefs[index].emoji, m_categoryDefs[index].tooltip, QString());
     }
+    updateSkinToneBarVisibility();
 }
 
 void EmojiPanel::onSkinToneRequested(const QModelIndex& index)
 {
     if (!index.isValid()) return;
     QVariantList variants = index.data(EmojiModel::SkinToneVariantsRole).toList();
-    if (variants.isEmpty()) return;
+    if (variants.size() <= 1) return;
+
+    Settings& settings = Settings::instance();
+    bool isDark = (settings.theme() == "dark");
+    if (settings.theme() == "system") {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+        isDark = (QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark);
+#else
+        isDark = (palette().color(QPalette::Window).lightness() < 128);
+#endif
+    }
+    QString accent = palette().color(QPalette::Highlight).name();
+    if (accent.isEmpty()) {
+        accent = isDark ? "#60cdff" : "#0078d4";
+    }
 
     QMenu* menu = new QMenu(this);
     menu->setAttribute(Qt::WA_DeleteOnClose);
@@ -1170,33 +1353,66 @@ void EmojiPanel::onSkinToneRequested(const QModelIndex& index)
 
     QWidget* container = new QWidget(menu);
     container->setObjectName("skinToneContainer");
-    container->setStyleSheet(
+    QString containerStyle = QString(
         "#skinToneContainer {"
-        "  background-color: #202024;"
-        "  border: 1px solid rgba(255, 255, 255, 0.15);"
+        "  background-color: %1;"
+        "  border: 1px solid %2;"
         "  border-radius: 8px;"
         "}"
-    );
+    ).arg(isDark ? "#202024" : "#ffffff",
+          isDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.12)");
+    container->setStyleSheet(containerStyle);
+
     QHBoxLayout* hlayout = new QHBoxLayout(container);
     hlayout->setContentsMargins(6, 4, 6, 4);
     hlayout->setSpacing(4);
+
+    int currentTone = settings.defaultSkinTone();
 
     for (const QVariant& v : variants) {
         QVariantMap map = v.toMap();
         QString toneEmoji = map["emojiChar"].toString();
         QString toneName = map["name"].toString();
+        int toneIndex = map["toneIndex"].toInt();
+
         QPushButton* btn = new QPushButton(toneEmoji, container);
-        btn->setFixedSize(32, 32);
+        btn->setFixedSize(34, 34);
         btn->setToolTip(toneName);
         QFont tf = btn->font();
-        tf.setPointSize(16);
+        tf.setPointSize(17);
         tf.setFamilies({"Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji"});
         btn->setFont(tf);
         btn->setCursor(Qt::PointingHandCursor);
-        btn->setStyleSheet(
-            "QPushButton { background: transparent; border: none; border-radius: 6px; }"
-            "QPushButton:hover { background: rgba(255, 255, 255, 0.15); }"
-        );
+
+        bool isActiveTone = (toneIndex == currentTone);
+        QString btnStyle;
+        if (isActiveTone) {
+            btnStyle = QString(
+                "QPushButton {"
+                "  background: %1;"
+                "  border: 2px solid %2;"
+                "  border-radius: 6px;"
+                "}"
+                "QPushButton:hover {"
+                "  background: %3;"
+                "}"
+            ).arg(isDark ? "rgba(96, 205, 255, 0.22)" : "rgba(0, 120, 212, 0.15)",
+                  accent,
+                  isDark ? "rgba(96, 205, 255, 0.35)" : "rgba(0, 120, 212, 0.25)");
+        } else {
+            btnStyle = QString(
+                "QPushButton {"
+                "  background: transparent;"
+                "  border: 2px solid transparent;"
+                "  border-radius: 6px;"
+                "}"
+                "QPushButton:hover {"
+                "  background: %1;"
+                "}"
+            ).arg(isDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.08)");
+        }
+        btn->setStyleSheet(btnStyle);
+
         connect(btn, &QPushButton::clicked, menu, [menu, this, toneEmoji, toneName]() {
             menu->close();
             bool keepOpen = (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier);

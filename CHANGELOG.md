@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-11-16
+
+### Added
+- **Windows-Style Common Grouper (Grid Deduplication)**: Grouped all 2,030 Unicode Fitzpatrick skin tone variants under their base emojis with 0 unmatched sequences across the entire dataset. "People & Body" and search views now present a clean, un-cluttered grid of base emojis (collapsed from 2,418 duplicate entries down to 388 base emojis).
+- **Interactive Colour & Skin Tone Selector Bar**: Added a Windows 11-style horizontal swatch bar (`👋 Default (Yellow)`, `👋🏻 Light`, `👋🏼 Medium-Light`, `👋🏽 Medium`, `👋🏾 Medium-Dark`, `👋🏿 Dark`) with smart visibility (displays on tone-capable categories and search results, hides on Objects/Symbols/Flags/Kaomoji).
+- **Dynamic Live Grid Tone Updates**: Switching the active tone in the selector bar instantly re-renders all tone-capable emojis in the grid to that selected skin tone via Qt model notifications without reloading or viewport flicker.
+- **Per-Emoji Variation Flyout Card**: Right-clicking, long-pressing (350ms), or pressing `Space`/`Menu` on any tone-capable emoji displays an elevated Windows 11-style floating card popup with all 6 variants, highlighting the active default tone and supporting rapid one-off selection.
+- **Windows 11 Subtle Corner Triangle Indicator**: Replaced circular badge with the authentic Windows 11 subtle corner triangle indicator in the bottom-right corner of variation-capable emoji cells.
+- **O(1) Pre-Indexed Tone Lookups**: Added pre-indexed variant slots on `EmojiEntry` and `variantForTone()`, providing instantaneous O(1) variant lookups and preserving exact tones in Recents and frequency tracking.
+
 ## [2.2.0] - 2026-11-16
 
 ### Added

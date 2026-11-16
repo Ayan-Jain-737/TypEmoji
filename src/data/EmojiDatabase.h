@@ -22,6 +22,10 @@ struct EmojiEntry
     bool hasSkinTones = false;
     bool isZwjSequence = false;
     QString emojiChar;       // Actual emoji character(s) for display
+    bool isSkinToneVariant = false; // true if this entry has Fitzpatrick modifier (1F3FB..1F3FF)
+    int toneIndex = 0;              // 0: default/yellow, 1: 1F3FB, 2: 1F3FC, 3: 1F3FD, 4: 1F3FE, 5: 1F3FF
+    int baseEmojiIndex = -1;        // Index of the base emoji if this is a variant
+    int skinToneVariantsByTone[6] = {-1, -1, -1, -1, -1, -1}; // [0]=base, [1..5]=variant indices
 };
 
 class EmojiDatabase : public QObject
@@ -73,6 +77,9 @@ public:
     // Get skin tone variants for an emoji
     QVector<EmojiEntry> skinToneVariants(const EmojiEntry& base) const;
 
+    // Get specific skin tone variant (0 = default/yellow, 1..5 = Light..Dark)
+    const EmojiEntry* variantForTone(const EmojiEntry& base, int tone) const;
+
     // Total count
     int count() const { return m_emojis.size(); }
 
@@ -115,6 +122,9 @@ private:
 
     // Parse emoji-zwj-sequences.txt
     bool parseZwjSequences(const QString& data);
+
+    // Group skin tone variants under their base emojis
+    void groupSkinToneVariants();
 
     // Build search indexes
     void buildIndexes();

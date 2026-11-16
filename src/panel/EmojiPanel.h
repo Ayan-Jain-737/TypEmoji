@@ -70,6 +70,9 @@ private slots:
 
 private:
     void setupUi();
+    void setupSkinToneBar();
+    void updateSkinToneBarSelection();
+    void updateSkinToneBarVisibility();
     void applyTheme();
     void positionAtCaret(const QPoint& caretPos);
     void populateCategories();
@@ -85,6 +88,8 @@ private:
     QVector<QListView*> m_listViews;
     QLineEdit* m_searchEdit = nullptr;
     QTabBar* m_categoryTabBar = nullptr;
+    QWidget* m_skinToneBar = nullptr;
+    QVector<QPushButton*> m_skinToneButtons;
     QStackedWidget* m_stackedWidget = nullptr;
     QVBoxLayout* m_mainLayout = nullptr;
     QWidget* m_containerWidget = nullptr;

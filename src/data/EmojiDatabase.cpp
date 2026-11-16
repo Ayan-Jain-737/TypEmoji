@@ -72,6 +72,7 @@ bool EmojiDatabase::load()
 
     loadKaomoji();
     loadSymbols();
+    groupSkinToneVariants();
     buildIndexes();
 
     qDebug() << "Loaded" << m_emojis.size() << "emojis in" << m_categories.size() << "categories";
@@ -178,10 +179,20 @@ bool EmojiDatabase::parseEmojiTest(const QString& data)
             entry.emojiChar = emojiChar;
 
             // Check for skin tone modifiers
-            if (codepoints.contains("1F3FB") || codepoints.contains("1F3FC") ||
-                codepoints.contains("1F3FD") || codepoints.contains("1F3FE") ||
-                codepoints.contains("1F3FF")) {
-                entry.hasSkinTones = true;
+            static const QHash<QString, int> s_toneMap = {
+                {"1F3FB", 1}, {"1F3FC", 2}, {"1F3FD", 3}, {"1F3FE", 4}, {"1F3FF", 5}
+            };
+            QStringList cpTokens = codepoints.split(' ', Qt::SkipEmptyParts);
+            entry.isSkinToneVariant = false;
+            entry.toneIndex = 0;
+            for (const QString& token : cpTokens) {
+                auto itTone = s_toneMap.constFind(token);
+                if (itTone != s_toneMap.constEnd()) {
+                    entry.isSkinToneVariant = true;
+                    entry.hasSkinTones = true;
+                    entry.toneIndex = itTone.value();
+                    break;
+                }
             }
 
             // Check for ZWJ sequences
@@ -248,10 +259,20 @@ bool EmojiDatabase::parseZwjSequences(const QString& data)
             entry.emojiChar = emojiChar;
             entry.isZwjSequence = true;
 
-            if (codepoints.contains("1F3FB") || codepoints.contains("1F3FC") ||
-                codepoints.contains("1F3FD") || codepoints.contains("1F3FE") ||
-                codepoints.contains("1F3FF")) {
-                entry.hasSkinTones = true;
+            static const QHash<QString, int> s_toneMap = {
+                {"1F3FB", 1}, {"1F3FC", 2}, {"1F3FD", 3}, {"1F3FE", 4}, {"1F3FF", 5}
+            };
+            QStringList cpTokens = codepoints.split(' ', Qt::SkipEmptyParts);
+            entry.isSkinToneVariant = false;
+            entry.toneIndex = 0;
+            for (const QString& token : cpTokens) {
+                auto itTone = s_toneMap.constFind(token);
+                if (itTone != s_toneMap.constEnd()) {
+                    entry.isSkinToneVariant = true;
+                    entry.hasSkinTones = true;
+                    entry.toneIndex = itTone.value();
+                    break;
+                }
             }
 
             QStringList keywords;
@@ -510,6 +531,105 @@ void EmojiDatabase::attachPurposeKeywords(EmojiEntry& entry)
     }
 }
 
+void EmojiDatabase::groupSkinToneVariants()
+{
+    static const QHash<QString, int> s_toneMap = {
+        {"1F3FB", 1}, {"1F3FC", 2}, {"1F3FD", 3}, {"1F3FE", 4}, {"1F3FF", 5}
+    };
+
+    static const QHash<QString, QString> specialMultiPersonMap = {
+        {"1FAF1 200D 1FAF2", "1F91D"},                      // Handshake
+        {"1F9D1 200D 1F430 200D 1F9D1", "1F46F"},           // Bunny ears
+        {"1F9D1 200D 1F93C 200D 1F9D1", "1F93C"},           // Wrestlers
+        {"1F9D1 200D 2764 200D 1F48B 200D 1F9D1", "1F48F"}, // Kiss
+        {"1F9D1 200D 2764 200D 1F9D1", "1F491"},           // Couple with heart
+        {"1F468 200D 1F91D 200D 1F468", "1F46C"},           // Men holding hands
+        {"1F469 200D 1F91D 200D 1F469", "1F46D"},           // Women holding hands
+        {"1F469 200D 1F91D 200D 1F468", "1F46B"},           // Woman and man holding hands
+        // Additional E17 multi-person sequences
+        {"1F468 200D 1F430 200D 1F468", "1F46F 200D 2642"}, // Men with bunny ears
+        {"1F469 200D 1F430 200D 1F469", "1F46F 200D 2640"}, // Women with bunny ears
+        {"1F9D1 200D 1FAEF 200D 1F9D1", "1F93C"},           // People wrestling
+        {"1F468 200D 1FAEF 200D 1F468", "1F93C 200D 2642"}, // Men wrestling
+        {"1F469 200D 1FAEF 200D 1F469", "1F93C 200D 2640"}  // Women wrestling
+    };
+
+    const int total = static_cast<int>(m_emojis.size());
+
+    // 1. Initialize all emojis with skinToneVariantsByTone[0] = index
+    for (int i = 0; i < total; ++i) {
+        m_emojis[i].skinToneVariantsByTone[0] = i;
+    }
+
+    // 2. Build lookup map for base emojis where key is codepointsWithoutFE0F
+    QHash<QString, int> baseWithoutFE0FMap;
+    baseWithoutFE0FMap.reserve(total);
+    for (int i = 0; i < total; ++i) {
+        if (!m_emojis[i].isSkinToneVariant) {
+            QStringList tokens = m_emojis[i].codepoints.split(' ', Qt::SkipEmptyParts);
+            QStringList clean;
+            for (const QString& t : tokens) {
+                if (t != "FE0F") {
+                    clean.append(t);
+                }
+            }
+            baseWithoutFE0FMap.insert(clean.join(' '), i);
+        }
+    }
+
+    // 3. For every entry where entry.isSkinToneVariant == true, link to base emoji
+    for (int i = 0; i < total; ++i) {
+        if (!m_emojis[i].isSkinToneVariant) continue;
+
+        QStringList tokens = m_emojis[i].codepoints.split(' ', Qt::SkipEmptyParts);
+        QStringList cleanTokens;
+        for (const QString& t : tokens) {
+            if (!s_toneMap.contains(t) && t != "FE0F") {
+                cleanTokens.append(t);
+            }
+        }
+        QString cleanCps = cleanTokens.join(' ');
+        auto itSpecial = specialMultiPersonMap.constFind(cleanCps);
+        if (itSpecial != specialMultiPersonMap.constEnd()) {
+            cleanCps = itSpecial.value();
+        }
+
+        int baseIdx = -1;
+        auto itBase = baseWithoutFE0FMap.constFind(cleanCps);
+        if (itBase != baseWithoutFE0FMap.constEnd()) {
+            baseIdx = itBase.value();
+        } else {
+            auto itCp = m_codepointsIndex.constFind(cleanCps);
+            if (itCp != m_codepointsIndex.constEnd()) {
+                baseIdx = itCp.value();
+            }
+        }
+
+        if (baseIdx >= 0 && baseIdx < total) {
+            m_emojis[i].baseEmojiIndex = baseIdx;
+            EmojiEntry& base = m_emojis[baseIdx];
+            base.hasSkinTones = true;
+            base.skinToneVariantsByTone[0] = baseIdx;
+            int tone = m_emojis[i].toneIndex;
+            if (tone >= 1 && tone <= 5) {
+                if (base.skinToneVariantsByTone[tone] == -1) {
+                    base.skinToneVariantsByTone[tone] = i;
+                }
+            }
+        }
+    }
+
+    // 4. Propagate base skinToneVariantsByTone to all variants for fast O(1) direct lookup
+    for (int i = 0; i < total; ++i) {
+        if (m_emojis[i].isSkinToneVariant && m_emojis[i].baseEmojiIndex >= 0) {
+            int baseIdx = m_emojis[i].baseEmojiIndex;
+            for (int t = 0; t < 6; ++t) {
+                m_emojis[i].skinToneVariantsByTone[t] = m_emojis[baseIdx].skinToneVariantsByTone[t];
+            }
+        }
+    }
+}
+
 void EmojiDatabase::buildIndexes()
 {
     static const QStringList standardOrder = {
@@ -536,23 +656,6 @@ void EmojiDatabase::buildIndexes()
         }
     }
     m_categories = ordered;
-
-    // Mark base emojis that support skin tone variants
-    static const QStringList toneCodes = {"1F3FB", "1F3FC", "1F3FD", "1F3FE", "1F3FF"};
-    for (const auto& entry : m_emojis) {
-        if (entry.hasSkinTones) {
-            QStringList ep = entry.codepoints.split(' ', Qt::SkipEmptyParts);
-            QStringList eb;
-            for (const QString& p : ep) {
-                if (!toneCodes.contains(p)) eb.append(p);
-            }
-            QString baseCps = eb.join(' ');
-            auto it = m_codepointsIndex.find(baseCps);
-            if (it != m_codepointsIndex.end() && it.value() >= 0 && it.value() < m_emojis.size()) {
-                m_emojis[it.value()].hasSkinTones = true;
-            }
-        }
-    }
 
     // Build search vocabulary for rapid typo-tolerant fuzzy matching
     m_searchCache.clear();
@@ -614,7 +717,9 @@ QVector<EmojiEntry> EmojiDatabase::emojisByCategory(const QString& category) con
     if (it != m_categoryIndex.end()) {
         for (int idx : *it) {
             if (idx >= 0 && idx < m_emojis.size()) {
-                result.append(m_emojis[idx]);
+                if (!m_emojis[idx].isSkinToneVariant) {
+                    result.append(m_emojis[idx]);
+                }
             }
         }
     }
@@ -875,15 +980,27 @@ QVector<int> EmojiDatabase::searchIndices(const QString& query) const
     // Direct character or codepoint match (e.g. pasted emoji)
     auto charIt = m_charIndex.constFind(q);
     if (charIt != m_charIndex.constEnd()) {
-        QVector<int> res = {charIt.value()};
-        m_searchCache.insert(q, res);
-        return res;
+        int idx = charIt.value();
+        if (idx >= 0 && idx < m_emojis.size()) {
+            if (m_emojis[idx].isSkinToneVariant && m_emojis[idx].baseEmojiIndex >= 0) {
+                idx = m_emojis[idx].baseEmojiIndex;
+            }
+            QVector<int> res = {idx};
+            m_searchCache.insert(q, res);
+            return res;
+        }
     }
     auto cpIt = m_codepointsIndex.constFind(q.toUpper());
     if (cpIt != m_codepointsIndex.constEnd()) {
-        QVector<int> res = {cpIt.value()};
-        m_searchCache.insert(q, res);
-        return res;
+        int idx = cpIt.value();
+        if (idx >= 0 && idx < m_emojis.size()) {
+            if (m_emojis[idx].isSkinToneVariant && m_emojis[idx].baseEmojiIndex >= 0) {
+                idx = m_emojis[idx].baseEmojiIndex;
+            }
+            QVector<int> res = {idx};
+            m_searchCache.insert(q, res);
+            return res;
+        }
     }
 
     QStringList terms = q.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
@@ -900,6 +1017,9 @@ QVector<int> EmojiDatabase::searchIndices(const QString& query) const
         results.reserve(termScores.size());
         for (auto it = termScores.begin(); it != termScores.end(); ++it) {
             int idx = it.key();
+            if (idx < 0 || idx >= m_emojis.size()) continue;
+            if (m_emojis[idx].isSkinToneVariant) continue;
+
             int score = it.value();
             const auto& e = m_emojis[idx];
             if (!e.hasSkinTones) score += 400;
@@ -936,6 +1056,9 @@ QVector<int> EmojiDatabase::searchIndices(const QString& query) const
         results.reserve(combinedScores.size());
         for (auto it = combinedScores.begin(); it != combinedScores.end(); ++it) {
             int idx = it.key();
+            if (idx < 0 || idx >= m_emojis.size()) continue;
+            if (m_emojis[idx].isSkinToneVariant) continue;
+
             int matched = termsMatchedCount.value(idx, 0);
 
             // If any emojis matched all terms, filter out partial matches
@@ -1098,40 +1221,46 @@ QVector<EmojiEntry> EmojiDatabase::frequentEmojis(const QVariantMap& frequentCod
 
 QVector<EmojiEntry> EmojiDatabase::skinToneVariants(const EmojiEntry& base) const
 {
+    const EmojiEntry* target = &base;
+    if (base.isSkinToneVariant && base.baseEmojiIndex >= 0 && base.baseEmojiIndex < m_emojis.size()) {
+        target = &m_emojis[base.baseEmojiIndex];
+    }
+
+    if (!target->hasSkinTones) {
+        return {};
+    }
+
     QVector<EmojiEntry> variants;
-
-    static const QStringList toneCodes = {"1F3FB", "1F3FC", "1F3FD", "1F3FE", "1F3FF"};
-    QStringList parts = base.codepoints.split(' ', Qt::SkipEmptyParts);
-    QStringList baseParts;
-    for (const QString& p : parts) {
-        if (!toneCodes.contains(p)) {
-            baseParts.append(p);
+    for (int t = 0; t < 6; ++t) {
+        int idx = target->skinToneVariantsByTone[t];
+        if (idx >= 0 && idx < m_emojis.size()) {
+            variants.append(m_emojis[idx]);
         }
     }
-    QString baseCps = baseParts.join(' ');
-
-    // 1. Add neutral/yellow base entry if available
-    const EmojiEntry* baseEntry = findByCodepoints(baseCps);
-    if (baseEntry) {
-        variants.append(*baseEntry);
-    }
-
-    // 2. Add all corresponding skin tone variants
-    for (const EmojiEntry& entry : m_emojis) {
-        if (!entry.hasSkinTones) continue;
-        QStringList ep = entry.codepoints.split(' ', Qt::SkipEmptyParts);
-        QStringList eb;
-        for (const QString& p : ep) {
-            if (!toneCodes.contains(p)) {
-                eb.append(p);
-            }
-        }
-        if (eb.join(' ') == baseCps && entry.codepoints != baseCps) {
-            variants.append(entry);
-        }
-    }
-
     return variants;
+}
+
+const EmojiEntry* EmojiDatabase::variantForTone(const EmojiEntry& base, int tone) const
+{
+    if (tone < 0 || tone > 5) {
+        return &base;
+    }
+
+    const EmojiEntry* target = &base;
+    if (base.isSkinToneVariant && base.baseEmojiIndex >= 0 && base.baseEmojiIndex < m_emojis.size()) {
+        target = &m_emojis[base.baseEmojiIndex];
+    }
+
+    if (tone == 0) {
+        return target;
+    }
+
+    int idx = target->skinToneVariantsByTone[tone];
+    if (idx >= 0 && idx < m_emojis.size()) {
+        return &m_emojis[idx];
+    }
+
+    return target;
 }
 
 void EmojiDatabase::loadKaomoji()

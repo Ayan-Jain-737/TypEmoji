@@ -3,6 +3,7 @@
  */
 #include "EmojiModel.h"
 #include "EmojiDatabase.h"
+#include "../settings/Settings.h"
 #include <QtCore/QDebug>
 
 EmojiModel::EmojiModel(EmojiDatabase* database, QObject* parent)
@@ -15,6 +16,14 @@ EmojiModel::EmojiModel(EmojiDatabase* database, QObject* parent)
             rebuildFilter();
         }
     }
+
+    connect(&Settings::instance(), &Settings::defaultSkinToneChanged, this, [this](int tone) {
+        Q_UNUSED(tone);
+        int rows = rowCount();
+        if (rows > 0) {
+            emit dataChanged(index(0, 0), index(rows - 1, 0), {EmojiCharRole, NameRole, CodepointsRole});
+        }
+    });
 }
 
 int EmojiModel::rowCount(const QModelIndex& parent) const
@@ -34,18 +43,42 @@ QVariant EmojiModel::data(const QModelIndex& index, int role) const
     if (!entry) return QVariant();
 
     switch (role) {
-    case CodepointsRole:
+    case CodepointsRole: {
+        if (!m_isRecentCategory && entry->hasSkinTones && m_database) {
+            int tone = Settings::instance().defaultSkinTone();
+            if (tone > 0) {
+                const EmojiEntry* var = m_database->variantForTone(*entry, tone);
+                if (var) return var->codepoints;
+            }
+        }
         return entry->codepoints;
-    case NameRole:
+    }
+    case NameRole: {
+        if (!m_isRecentCategory && entry->hasSkinTones && m_database) {
+            int tone = Settings::instance().defaultSkinTone();
+            if (tone > 0) {
+                const EmojiEntry* var = m_database->variantForTone(*entry, tone);
+                if (var) return var->name;
+            }
+        }
         return entry->name;
+    }
     case KeywordsRole:
         return entry->keywords.join(", ");
     case CategoryRole:
         return m_isRecentCategory ? QString("Recent") : entry->category;
     case SubcategoryRole:
         return entry->subcategory;
-    case EmojiCharRole:
+    case EmojiCharRole: {
+        if (!m_isRecentCategory && entry->hasSkinTones && m_database) {
+            int tone = Settings::instance().defaultSkinTone();
+            if (tone > 0) {
+                const EmojiEntry* var = m_database->variantForTone(*entry, tone);
+                if (var) return var->emojiChar;
+            }
+        }
         return entry->emojiChar;
+    }
     case HasSkinTonesRole:
         return entry->hasSkinTones;
     case IsZwjSequenceRole:
@@ -59,6 +92,7 @@ QVariant EmojiModel::data(const QModelIndex& index, int role) const
                 map["codepoints"] = v.codepoints;
                 map["emojiChar"] = v.emojiChar;
                 map["name"] = v.name;
+                map["toneIndex"] = v.toneIndex;
                 list.append(map);
             }
             return list;
@@ -190,7 +224,9 @@ void EmojiModel::rebuildFilter()
         m_isRecentCategory = false;
         m_filteredIndices.reserve(all.size());
         for (int i = 0; i < all.size(); ++i) {
-            m_filteredIndices.append(i);
+            if (!all[i].isSkinToneVariant) {
+                m_filteredIndices.append(i);
+            }
         }
     }
 

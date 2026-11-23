@@ -106,8 +106,9 @@ else
     ok "User autostart configured in $AUTOSTART_DIR"
 
     if command -v systemctl &>/dev/null; then
+        systemctl --user disable --now emojityper.service 2>/dev/null || true
+        rm -f "${HOME}/.config/systemd/user/emojityper.service" 2>/dev/null || true
         systemctl --user daemon-reload 2>/dev/null || true
-        systemctl --user enable emojityper.service 2>/dev/null && ok "systemd service enabled" || true
     fi
 
     # Launch daemon for current session if user install

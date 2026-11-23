@@ -1,6 +1,6 @@
 # Maintainer: EmojiTyper Contributors <contact@emojityper.org>
 pkgname=emojityper
-pkgver=2.3.1
+pkgver=2.3.2
 pkgrel=1
 pkgdesc="Direct emoji picker and typing utility for Linux (X11 & Wayland)"
 arch=('x86_64' 'aarch64')

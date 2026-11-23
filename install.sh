@@ -9,7 +9,7 @@
 # ==============================================================================
 set -euo pipefail
 
-VERSION="2.3.1"
+VERSION="2.3.2"
 GITHUB_REPO="Ayan-Jain-737/TypEmoji"
 RELEASE_BASE_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}"
 REPO_CLONE_URL="https://github.com/${GITHUB_REPO}.git"
@@ -250,16 +250,11 @@ install_portable_tarball() {
         gtk-update-icon-cache -f -t "$target_prefix/share/icons/hicolor" 2>/dev/null || true
     fi
 
-    # Enable systemd user service if available
+    # Clean up duplicate systemd user service if present (desktop autostart handles startup cleanly)
     if [[ "$IS_ROOT" == false ]] && command -v systemctl &>/dev/null; then
-        local user_systemd="${HOME}/.config/systemd/user"
-        mkdir -p "$user_systemd"
-        if [[ -f "$target_prefix/lib/systemd/user/emojityper.service" ]]; then
-            cp -f "$target_prefix/lib/systemd/user/emojityper.service" "$user_systemd/"
-            systemctl --user daemon-reload 2>/dev/null || true
-            systemctl --user enable emojityper.service 2>/dev/null || true
-            ok "Enabled systemd user service (emojityper.service)"
-        fi
+        systemctl --user disable --now emojityper.service 2>/dev/null || true
+        rm -f "${HOME}/.config/systemd/user/emojityper.service" 2>/dev/null || true
+        systemctl --user daemon-reload 2>/dev/null || true
     fi
 
     INSTALLED=true

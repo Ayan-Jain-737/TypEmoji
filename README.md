@@ -39,11 +39,11 @@ curl -fsSL https://raw.githubusercontent.com/Ayan-Jain-737/TypEmoji/main/install
 
 | Distribution | One-Command Install |
 | :--- | :--- |
-| **Arch Linux / Manjaro** | `sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.1-Arch-Linux-x86_64.pkg.tar.zst` |
-| **Ubuntu / Debian / Mint** | `sudo apt install ./TypEmoji-2.3.1-Ubuntu-Debian-x86_64.deb` *(or via installer above)* |
-| **Fedora / RHEL** | `sudo dnf install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.1-Fedora-openSUSE-x86_64.rpm` |
-| **openSUSE** | `sudo zypper install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.1-Fedora-openSUSE-x86_64.rpm` |
-| **Universal Linux (.run)** | `chmod +x TypEmoji-2.3.1-Universal-Installer.run && ./TypEmoji-2.3.1-Universal-Installer.run` |
+| **Arch Linux / Manjaro** | `sudo pacman -U https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.2-Arch-Linux-x86_64.pkg.tar.zst` |
+| **Ubuntu / Debian / Mint** | `sudo apt install ./TypEmoji-2.3.2-Ubuntu-Debian-x86_64.deb` *(or via installer above)* |
+| **Fedora / RHEL** | `sudo dnf install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.2-Fedora-openSUSE-x86_64.rpm` |
+| **openSUSE** | `sudo zypper install https://github.com/Ayan-Jain-737/TypEmoji/releases/latest/download/TypEmoji-2.3.2-Fedora-openSUSE-x86_64.rpm` |
+| **Universal Linux (.run)** | `chmod +x TypEmoji-2.3.2-Universal-Installer.run && ./TypEmoji-2.3.2-Universal-Installer.run` |
 
 All precompiled packages and standalone tarballs are available on the **[Releases Page](https://github.com/Ayan-Jain-737/TypEmoji/releases/latest)**.
 
@@ -72,8 +72,11 @@ TypEmoji gives you the missing native experience:
 
 ---
 
-## ✨ Features & What's New in v2.3.1
+## ✨ Features & What's New in v2.3.2
 
+- 🛡️ **Duplicate Tray Icon Resolution & Single-Instance Mutex (v2.3.2)**:
+  - **Clean Autostart Standardization**: Standardized strictly on XDG Autostart across all Linux desktop environments and removed conflicting systemd user services that caused 2 tray icons to launch simultaneously at login.
+  - **`QLockFile` Concurrency Protection**: Added file-level mutex locking in `SingleInstance` to prevent microsecond race conditions during cold boots, ensuring secondary processes immediately exit cleanly.
 - 📌 **Multi-Emoji Continuous Typing & Pin Mode (v2.3.1)**:
   - **Seamless Multi-Emoji Typing**: Hold `Shift` while clicking or pressing `Enter` (`Shift + Click` or `Shift + Enter`) to keep the picker open and type multiple emojis in rapid succession.
   - **Header Pin Toggle Button (`📌`)**: One-click persistent pin button in the header bar. When toggled on, every click and Enter key inserts emojis continuously without closing the panel.

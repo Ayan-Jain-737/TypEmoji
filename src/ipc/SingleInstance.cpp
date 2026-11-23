@@ -1,30 +1,45 @@
 /**
- * SingleInstance implementation - QLocalServer/QLocalSocket IPC
+ * SingleInstance implementation - QLockFile & QLocalServer/QLocalSocket IPC
  */
 #include "SingleInstance.h"
 #include <QtCore/QDebug>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDir>
 #include <QLocalServer>
 #include <QLocalSocket>
 
 SingleInstance::SingleInstance(const QString& instanceKey, QObject* parent)
     : QObject(parent), m_instanceKey(instanceKey)
 {
-    // Try to connect to existing instance
+    // 1. Process-level lock file guarantees race-free single instance
+    QString lockPath = QDir::tempPath() + "/" + m_instanceKey + ".lock";
+    m_lockFile = std::make_unique<QLockFile>(lockPath);
+    m_lockFile->setStaleLockTime(30000);
+
+    if (!m_lockFile->tryLock(200)) {
+        // Lock held by another instance
+        m_anotherRunning = true;
+        qDebug() << "SingleInstance: Lock file held by another instance";
+        return;
+    }
+
+    // 2. We hold the lock. Check if an active server is listening
     QLocalSocket socket;
     socket.connectToServer(m_instanceKey);
 
-    if (socket.waitForConnected(100)) {
-        // Another instance is running
+    if (socket.waitForConnected(200)) {
+        // Another instance is running and responding
         m_anotherRunning = true;
-        qDebug() << "Another instance is already running";
+        qDebug() << "SingleInstance: Another instance is already running";
         socket.disconnectFromServer();
-    } else {
-        // No other instance, create server
-        m_anotherRunning = false;
-        createServer();
-        qDebug() << "SingleInstance created server:" << m_instanceKey;
+        m_lockFile->unlock();
+        return;
     }
+
+    // 3. No other instance. Create server
+    m_anotherRunning = false;
+    createServer();
+    qDebug() << "SingleInstance created server:" << m_instanceKey;
 }
 
 SingleInstance::~SingleInstance()
@@ -32,6 +47,10 @@ SingleInstance::~SingleInstance()
     if (m_server) {
         m_server->close();
         delete m_server;
+        QLocalServer::removeServer(m_instanceKey);
+    }
+    if (m_lockFile && m_lockFile->isLocked()) {
+        m_lockFile->unlock();
     }
 }
 
@@ -45,6 +64,10 @@ void SingleInstance::createServer()
 
     if (!m_server->listen(m_instanceKey)) {
         qWarning() << "Failed to listen on" << m_instanceKey << ":" << m_server->errorString();
+        m_anotherRunning = true;
+        if (m_lockFile && m_lockFile->isLocked()) {
+            m_lockFile->unlock();
+        }
     }
 }
 

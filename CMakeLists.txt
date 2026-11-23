@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(EmojiTyper VERSION 2.3.1 LANGUAGES CXX)
+project(EmojiTyper VERSION 2.3.2 LANGUAGES CXX)
 
 # C++23
 set(CMAKE_CXX_STANDARD 23)

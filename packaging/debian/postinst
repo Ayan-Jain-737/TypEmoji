@@ -13,10 +13,10 @@ case "$1" in
             gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
         fi
 
-        # Enable systemd user service globally for all users
+        # Clean up legacy global systemd service if present to avoid dual-tray-icon conflicts with XDG autostart
         if which systemctl >/dev/null 2>&1; then
+            systemctl --global disable emojityper.service >/dev/null 2>&1 || true
             systemctl --global daemon-reload >/dev/null 2>&1 || true
-            systemctl --global enable emojityper.service >/dev/null 2>&1 || true
         fi
         ;;
     abort-upgrade|abort-remove|abort-deconfigure)

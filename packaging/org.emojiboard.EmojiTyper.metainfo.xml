@@ -36,6 +36,11 @@
     <name>Ayan Jain</name>
   </developer>
   <releases>
+    <release version="2.3.2" date="2026-11-23">
+      <description>
+        <p>Resolved duplicate tray icon issue on login by cleaning up redundant systemd user autostart services and standardizing on XDG Autostart specification, with atomic QLockFile single-instance mutual exclusion to prevent race conditions during desktop login.</p>
+      </description>
+    </release>
     <release version="2.3.1" date="2026-11-17">
       <description>
         <p>Fixed multi-emoji continuous typing on Linux Wayland/X11 desktops, prevented premature focus loss dismissal during asynchronous injection, and added a header Pin button toggle for rapid multi-emoji typing.</p>

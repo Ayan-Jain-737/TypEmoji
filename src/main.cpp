@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     app.setQuitOnLastWindowClosed(false);
     app.setApplicationName("EmojiTyper");
-    app.setApplicationVersion("1.0.0");
+    app.setApplicationVersion("2.3.2");
     app.setOrganizationName("EmojiTyper");
 
     QIcon appIcon(":/icons/emojityper.png");

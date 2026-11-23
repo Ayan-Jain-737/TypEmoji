@@ -6,7 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build"
-VERSION=$(grep -oP 'project\(EmojiTyper VERSION \K[0-9.]+' "$PROJECT_ROOT/CMakeLists.txt" || echo "2.3.1")
+VERSION=$(grep -oP 'project\(EmojiTyper VERSION \K[0-9.]+' "$PROJECT_ROOT/CMakeLists.txt" || echo "2.3.2")
 TAR_FILE="$(ls -t "$BUILD_DIR"/*-Linux.tar.gz 2>/dev/null | head -n1 || echo "")"
 if [[ -z "$TAR_FILE" || ! -f "$TAR_FILE" ]]; then
     cd "$BUILD_DIR"
@@ -156,10 +156,11 @@ if [[ -n "$SUDO" || $EUID -eq 0 ]]; then
     mkdir -p "$AUTOSTART_DIR"
     cp -f "$INSTALL_PREFIX/share/applications/org.emojiboard.EmojiTyper.desktop" "$AUTOSTART_DIR/"
     
-    # Enable systemd user service if systemctl is available
+    # Clean up duplicate systemd user service if present (desktop autostart handles startup cleanly)
     if command -v systemctl &>/dev/null; then
+        systemctl --user disable --now emojityper.service 2>/dev/null || true
+        rm -f "${HOME}/.config/systemd/user/emojityper.service" 2>/dev/null || true
         systemctl --user daemon-reload 2>/dev/null || true
-        systemctl --user enable emojityper.service 2>/dev/null || true
     fi
     BIN_RUN="/usr/local/bin/EmojiTyper"
 else

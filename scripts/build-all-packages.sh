@@ -28,7 +28,7 @@ cd "$PROJECT_ROOT"
 chmod +x "$PROJECT_ROOT/scripts/create-installer.sh"
 "$PROJECT_ROOT/scripts/create-installer.sh"
 
-VERSION=$(grep -oP 'project\(EmojiTyper VERSION \K[0-9.]+' "$PROJECT_ROOT/CMakeLists.txt" || echo "2.3.1")
+VERSION=$(grep -oP 'project\(EmojiTyper VERSION \K[0-9.]+' "$PROJECT_ROOT/CMakeLists.txt" || echo "2.3.2")
 
 echo "▶ 5. Packaging into dist/ folder (v$VERSION)..."
 find "$BUILD_DIR" -maxdepth 1 -name "*.deb" -exec cp {} "$DIST_DIR/TypEmoji-${VERSION}-Ubuntu-Debian-x86_64.deb" \;

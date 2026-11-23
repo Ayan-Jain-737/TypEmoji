@@ -1,3 +1,12 @@
+typemoji (2.3.2-1) unstable; urgency=medium
+
+  * Resolve duplicate tray icon issue on login across Linux desktop environments.
+  * Standardize strictly on XDG Autostart specification and remove duplicate user systemd services.
+  * Implement process-level mutual exclusion using QLockFile in SingleInstance to prevent startup race conditions.
+  * Seamless focus and message forwarding to running instance on secondary process invocation.
+
+ -- TypEmoji Contributors <contact@typemoji.org>  Mon, 23 Nov 2026 15:55:00 +0530
+
 typemoji (2.3.1-1) unstable; urgency=medium
 
   * Fix multi-emoji continuous typing on Linux Wayland and X11 desktops.

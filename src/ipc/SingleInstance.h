@@ -5,7 +5,9 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
+#include <QtCore/QLockFile>
 #include <memory>
+#include <functional>
 
 class QLocalServer;
 class QLocalSocket;
@@ -34,6 +36,7 @@ private:
     void connectToExisting();
 
     QString m_instanceKey;
+    std::unique_ptr<QLockFile> m_lockFile;
     QLocalServer* m_server = nullptr;
     bool m_anotherRunning = false;
     std::function<void(const QString&)> m_messageHandler;
